@@ -58,6 +58,12 @@ from ui import (
 
 from .base import AUTO_CONTINUE_DELAY_SECONDS, HUMAN_INTERVENTION_FILE
 from .memory_manager import debug_memory_system_status, get_graphiti_context
+from .parallel_runner import (
+    get_parallelizable_subtasks,
+    is_parallel_execution_enabled,
+    run_parallel_phase,
+    should_use_parallel_execution,
+)
 from .session import post_session_processing, run_agent_session
 from .utils import (
     find_phase_for_subtask,
@@ -369,6 +375,49 @@ async def run_autonomous_agent(
                 if not next_subtask:
                     print("No pending subtasks found - build may be complete!")
                     break
+
+            # Check for parallel execution opportunities
+            # If the current phase is parallel_safe and has multiple pending subtasks,
+            # we can run them concurrently using sub-agents
+            plan = load_implementation_plan(spec_dir)
+            if plan and should_use_parallel_execution(spec_dir, plan):
+                phase = find_phase_for_subtask(plan, subtask_id) if subtask_id else None
+                if phase and phase.get("parallel_safe", False):
+                    parallelizable = await get_parallelizable_subtasks(spec_dir, plan)
+                    if len(parallelizable) >= 2:
+                        print_status(
+                            f"Found {len(parallelizable)} parallelizable subtasks",
+                            "success",
+                        )
+
+                        # Run parallel execution
+                        parallel_results = await run_parallel_phase(
+                            project_dir=project_dir,
+                            spec_dir=spec_dir,
+                            plan=plan,
+                            phase=phase,
+                            model=phase_model,
+                            session_num=iteration,
+                            recovery_manager=recovery_manager,
+                        )
+
+                        if parallel_results:
+                            # Update subtask counts after parallel execution
+                            subtasks = count_subtasks_detailed(spec_dir)
+                            status_manager.update_subtasks(
+                                completed=subtasks["completed"],
+                                total=subtasks["total"],
+                                in_progress=0,
+                            )
+
+                            # Sync changes to source spec dir
+                            if sync_spec_to_source(spec_dir, source_spec_dir):
+                                print_status("Parallel results synced", "success")
+
+                            # Skip to next iteration to pick up remaining work
+                            iteration += parallel_results.total_subtasks - 1
+                            await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+                            continue
 
             # Get attempt count for recovery context
             attempt_count = recovery_manager.get_attempt_count(subtask_id)

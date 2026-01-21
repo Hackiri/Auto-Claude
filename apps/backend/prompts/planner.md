@@ -537,20 +537,64 @@ If complexity_assessment indicates `skip_validation: true` (documentation-only c
 
 ## PHASE 4: ANALYZE PARALLELISM OPPORTUNITIES
 
-After creating the phases, analyze which can run in parallel:
+After creating the phases, analyze which can run in parallel.
+
+**🚨 CRITICAL: PARALLEL EXECUTION IS A KEY OPTIMIZATION 🚨**
+
+The build system supports running multiple sub-agents in parallel when subtasks are independent.
+This can significantly speed up builds by executing non-conflicting work concurrently.
 
 ### Parallelism Rules
 
-Two phases can run in parallel if:
+**Phases can run in parallel if:**
 1. They have **the same dependencies** (or compatible dependency sets)
 2. They **don't modify the same files**
 3. They are in **different services** (e.g., frontend vs worker)
+
+**Subtasks within a phase can run in parallel if:**
+1. The phase has `"parallel_safe": true`
+2. Subtasks don't have overlapping files in `files_to_modify` or `files_to_create`
+3. Subtasks are scoped to different parts of the same service
+
+### Setting parallel_safe on Phases
+
+Set `"parallel_safe": true` on phases where subtasks are independent:
+
+```json
+{
+  "id": "phase-1-backend",
+  "name": "Backend Models",
+  "parallel_safe": true,  // Subtasks can run concurrently
+  "subtasks": [
+    {"id": "1-1", "files_to_create": ["models/user.py"]},
+    {"id": "1-2", "files_to_create": ["models/product.py"]},
+    {"id": "1-3", "files_to_create": ["models/order.py"]}
+  ]
+}
+```
+
+**The above subtasks CAN run in parallel** because they create different files.
+
+Set `"parallel_safe": false` when subtasks must be sequential:
+
+```json
+{
+  "id": "phase-2-integration",
+  "name": "Integration",
+  "parallel_safe": false,  // Subtasks run sequentially
+  "subtasks": [
+    {"id": "2-1", "description": "Create base service"},
+    {"id": "2-2", "description": "Extend base service (depends on 2-1)"}
+  ]
+}
+```
 
 ### Analysis Steps
 
 1. **Find parallel groups**: Phases with identical `depends_on` arrays
 2. **Check file conflicts**: Ensure no overlapping `files_to_modify` or `files_to_create`
 3. **Count max parallel workers**: Maximum parallelizable phases at any point
+4. **Mark phases**: Set `parallel_safe: true` on phases with independent subtasks
 
 ### Add to Summary
 
@@ -893,6 +937,55 @@ If you skipped investigation, your plan will:
 
 ---
 
+## PHASE 8: MCP CONTEXT FOR PARALLEL EXECUTION
+
+When parallel execution is enabled, each sub-agent can access MCP servers for up-to-date information.
+Configure which MCP servers are needed in the implementation plan:
+
+### Available MCP Servers
+
+| Server | Purpose | When to Include |
+|--------|---------|-----------------|
+| `context7` | Documentation lookups | Always (default) |
+| `graphiti` | Memory/pattern retrieval | When building on previous work |
+| `linear` | Project tracking context | When spec is linked to Linear |
+| `electron` | Desktop app testing | For Electron projects |
+| `puppeteer` | Browser automation | For web frontend testing |
+
+### Adding MCP Configuration to Phases
+
+Add `mcp_context` to phases that benefit from external information:
+
+```json
+{
+  "id": "phase-1-backend",
+  "name": "Backend API",
+  "parallel_safe": true,
+  "mcp_context": {
+    "fetch_before_execution": true,
+    "servers": ["context7", "graphiti"],
+    "documentation_queries": [
+      "FastAPI authentication middleware",
+      "SQLAlchemy async session management"
+    ],
+    "memory_queries": [
+      "Similar API implementations in this project",
+      "Known patterns for user authentication"
+    ]
+  },
+  "subtasks": [...]
+}
+```
+
+### Benefits of MCP Context
+
+1. **Documentation**: Sub-agents can reference up-to-date library docs
+2. **Memory**: Access to patterns/gotchas from previous sessions
+3. **Linear**: Context about related issues and requirements
+4. **Reduced errors**: Better context = fewer implementation mistakes
+
+---
+
 ## BEGIN
 
 **Your scope: PLANNING ONLY. Do NOT implement any code.**
@@ -900,7 +993,8 @@ If you skipped investigation, your plan will:
 1. First, complete PHASE 0 (Deep Codebase Investigation)
 2. Then, read/create the context files in PHASE 1
 3. Create implementation_plan.json based on your findings
-4. Create init.sh and build-progress.txt
-5. Commit planning files and **STOP**
+4. Include `parallel_safe` flags and `mcp_context` where appropriate
+5. Create init.sh and build-progress.txt
+6. Commit planning files and **STOP**
 
 The coder agent will handle implementation in a separate session.
