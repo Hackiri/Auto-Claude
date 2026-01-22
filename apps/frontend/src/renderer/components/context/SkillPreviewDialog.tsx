@@ -1,5 +1,4 @@
 import { FileText, Code } from 'lucide-react';
-import matter from 'gray-matter';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -29,16 +28,13 @@ export function SkillPreviewDialog({
 }: SkillPreviewDialogProps) {
   const { t } = useTranslation(['skills', 'common']);
 
-  // Generate SKILL.md content using gray-matter
-  const skillContent = skill ? matter.stringify(skill.instructions, {
-    name: skill.name,
-    description: skill.description,
-  }) : '';
+  // Build frontmatter object for display
+  const frontmatter = skill
+    ? { name: skill.name, description: skill.description }
+    : {};
 
-  // Parse back to get frontmatter and instructions separately for display
-  const { data: frontmatter, content: instructions } = skill
-    ? matter(skillContent)
-    : { data: {}, content: '' };
+  // Instructions are already available on the skill object
+  const instructions = skill?.instructions || '';
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
