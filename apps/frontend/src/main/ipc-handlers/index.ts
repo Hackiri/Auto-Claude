@@ -28,6 +28,7 @@ import { registerChangelogHandlers } from './changelog-handlers';
 import { registerInsightsHandlers } from './insights-handlers';
 import { registerMemoryHandlers } from './memory-handlers';
 import { registerAppUpdateHandlers } from './app-update-handlers';
+import { registerSkillsHandlers } from './skills-handlers';
 import { registerDebugHandlers } from './debug-handlers';
 import { registerClaudeCodeHandlers } from './claude-code-handlers';
 import { registerMcpHandlers } from './mcp-handlers';
@@ -100,6 +101,9 @@ export function setupIpcHandlers(
   // Insights handlers
   registerInsightsHandlers(getMainWindow);
 
+  // Skills handlers (Claude Agent Skills generation and management)
+  registerSkillsHandlers();
+
   // Memory & infrastructure handlers (for Graphiti/LadybugDB)
   registerMemoryHandlers();
 
@@ -144,5 +148,6 @@ export {
   registerDebugHandlers,
   registerClaudeCodeHandlers,
   registerMcpHandlers,
-  registerProfileHandlers
+  registerProfileHandlers,
+  registerSkillsHandlers
 };
