@@ -14,7 +14,9 @@ import {
   GitPullRequest,
   Bug,
   Sparkles,
-  Target
+  Target,
+  Database,
+  Workflow
 } from 'lucide-react';
 
 // Service type icon mapping
@@ -99,4 +101,20 @@ export const memoryFilterCategories = {
   codebase: { label: 'Codebase', types: ['codebase_discovery', 'codebase_map'] },
   patterns: { label: 'Patterns', types: ['pattern', 'pr_pattern'] },
   gotchas: { label: 'Gotchas', types: ['gotcha', 'pr_gotcha'] }
+};
+
+// Skill source type icon mapping
+export const skillSourceIcons: Record<string, React.ElementType> = {
+  service: Server,
+  database: Database,
+  api: Globe,
+  ci: Workflow
+};
+
+// Skill source type color mapping
+export const skillSourceColors: Record<string, string> = {
+  service: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  database: 'bg-green-500/10 text-green-400 border-green-500/30',
+  api: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+  ci: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
 };

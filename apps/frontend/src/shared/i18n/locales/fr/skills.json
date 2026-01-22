@@ -1,0 +1,58 @@
+{
+  "title": "Compétences",
+  "autoGenerate": "Générer automatiquement les compétences",
+  "enabledCount": "{{count}} activée(s)",
+  "card": {
+    "enabled": "Activée",
+    "disabled": "Désactivée",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "enableTooltip": "Activer cette compétence pour l'export",
+    "disableTooltip": "Désactiver cette compétence",
+    "preview": "Aperçu",
+    "previewTooltip": "Aperçu du contenu SKILL.md",
+    "edit": "Modifier",
+    "editTooltip": "Modifier les métadonnées de la compétence",
+    "export": "Exporter",
+    "exportTooltip": "Exporter vers .claude/skills/",
+    "exportDisabledTooltip": "Activer la compétence pour l'exporter"
+  },
+  "preview": {
+    "title": "Aperçu SKILL.md",
+    "frontmatter": "En-tête",
+    "instructions": "Instructions",
+    "close": "Fermer"
+  },
+  "edit": {
+    "title": "Modifier les métadonnées de la compétence",
+    "name": "Nom",
+    "description": "Description",
+    "namePlaceholder": "nom-competence",
+    "descriptionPlaceholder": "Décrivez quand et ce que fait cette compétence",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "validation": {
+    "nameRequired": "Le nom est requis",
+    "nameTooLong": "Le nom doit contenir 64 caractères ou moins",
+    "nameInvalidChars": "Le nom doit contenir uniquement des lettres minuscules, des chiffres et des tirets",
+    "nameReservedWord": "Le nom ne peut pas contenir de mots réservés : anthropic, claude",
+    "descriptionRequired": "La description est requise",
+    "descriptionTooLong": "La description doit contenir 1024 caractères ou moins"
+  },
+  "export": {
+    "success": "Compétence exportée avec succès",
+    "error": "Échec de l'export de la compétence",
+    "confirmOverwrite": "La compétence existe déjà. Écraser ?"
+  },
+  "generate": {
+    "success": "{{count}} compétence(s) générée(s)",
+    "error": "Échec de la génération des compétences",
+    "noData": "Aucune donnée de projet trouvée. Exécutez l'analyse du projet d'abord."
+  },
+  "empty": {
+    "title": "Aucune compétence générée",
+    "description": "Cliquez sur 'Générer automatiquement les compétences' pour créer des compétences à partir de votre index de projet",
+    "action": "Générer automatiquement les compétences"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "Skills",
+  "autoGenerate": "Auto-Generate Skills",
+  "enabledCount": "{{count}} enabled",
+  "card": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "enableTooltip": "Enable this skill for export",
+    "disableTooltip": "Disable this skill",
+    "preview": "Preview",
+    "previewTooltip": "Preview SKILL.md content",
+    "edit": "Edit",
+    "editTooltip": "Edit skill metadata",
+    "export": "Export",
+    "exportTooltip": "Export to .claude/skills/",
+    "exportDisabledTooltip": "Enable skill to export"
+  },
+  "preview": {
+    "title": "Preview SKILL.md",
+    "frontmatter": "Frontmatter",
+    "instructions": "Instructions",
+    "close": "Close"
+  },
+  "edit": {
+    "title": "Edit Skill Metadata",
+    "name": "Name",
+    "description": "Description",
+    "namePlaceholder": "skill-name",
+    "descriptionPlaceholder": "Describe when and what this skill does",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "nameTooLong": "Name must be 64 characters or less",
+    "nameInvalidChars": "Name must contain only lowercase letters, numbers, and hyphens",
+    "nameReservedWord": "Name cannot contain reserved words: anthropic, claude",
+    "descriptionRequired": "Description is required",
+    "descriptionTooLong": "Description must be 1024 characters or less"
+  },
+  "export": {
+    "success": "Skill exported successfully",
+    "error": "Failed to export skill",
+    "confirmOverwrite": "Skill already exists. Overwrite?"
+  },
+  "generate": {
+    "success": "{{count}} skills generated",
+    "error": "Failed to generate skills",
+    "noData": "No project data found. Run project analysis first."
+  },
+  "empty": {
+    "title": "No Skills Generated",
+    "description": "Click 'Auto-Generate Skills' to create skills from your project index",
+    "action": "Auto-Generate Skills"
+  }
+}
