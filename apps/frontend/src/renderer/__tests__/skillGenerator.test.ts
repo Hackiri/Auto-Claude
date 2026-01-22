@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   generateSkillsFromProjectIndex,
   parseProjectIndexAndGenerateSkills,
-} from '../utils/skillGenerator';
+} from '../../shared/utils/skillGenerator';
 import type { ProjectIndex } from '../../shared/types/project';
 
 describe('Skill Generator', () => {

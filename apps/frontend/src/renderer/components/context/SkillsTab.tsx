@@ -9,7 +9,7 @@ import { SkillCard } from './SkillCard';
 import { SkillPreviewDialog } from './SkillPreviewDialog';
 import { SkillEditDialog } from './SkillEditDialog';
 import { useSkillsStore, exportSingleSkill } from '../../stores/skills-store';
-import { generateSkillsFromProjectIndex } from '../../utils/skillGenerator';
+import { generateSkillsFromProjectIndex } from '../../../shared/utils/skillGenerator';
 import { useContextStore } from '../../stores/context-store';
 import { useTranslation } from 'react-i18next';
 import type { Skill } from '../../../shared/types/skills';

@@ -10,7 +10,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSy
 import { join } from 'path';
 import matter from 'gray-matter';
 import { IPC_CHANNELS } from '../../shared/constants';
-import type { IPCResult, SkillContent, SkillExportResult, SkillReadResult, SkillsListResult } from '../../shared/types';
+import type { IPCResult, SkillContent, SkillExportResult, SkillReadResult, SkillsListResult, SkillGenerationOptions, SkillGenerationResult } from '../../shared/types';
+import { generateSkillsFromProjectIndex } from '../../shared/utils/skillGenerator';
 
 /**
  * Maximum skill file size to read (500KB)
@@ -225,6 +226,45 @@ export function registerSkillsHandlers(): void {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Failed to list skills'
+        };
+      }
+    }
+  );
+
+  // ============================================
+  // Skills Generation from Project Index
+  // ============================================
+
+  ipcMain.handle(
+    IPC_CHANNELS.SKILLS_GENERATE,
+    async (_, projectDir: string, options: SkillGenerationOptions = {}): Promise<IPCResult<SkillGenerationResult>> => {
+      try {
+        // Get project index path
+        const projectIndexPath = join(projectDir, '.auto-claude', 'project_index.json');
+
+        // Check if project index exists
+        if (!existsSync(projectIndexPath)) {
+          return {
+            success: false,
+            error: 'Project index not found. Run project analysis first.'
+          };
+        }
+
+        // Read project index
+        const projectIndexContent = readFileSync(projectIndexPath, 'utf-8');
+        const projectIndex = JSON.parse(projectIndexContent);
+
+        // Generate skills using the shared utility
+        const result = generateSkillsFromProjectIndex(projectIndex, options);
+
+        return {
+          success: result.success,
+          data: result
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to generate skills'
         };
       }
     }
