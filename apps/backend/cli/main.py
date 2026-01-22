@@ -124,6 +124,18 @@ Environment Variables:
         help="Enable verbose output",
     )
 
+    parser.add_argument(
+        "--ralph-loop",
+        action="store_true",
+        help="Use Ralph Wiggum iterative loop technique for build execution",
+    )
+
+    parser.add_argument(
+        "--ralph-status",
+        action="store_true",
+        help="Show Ralph Wiggum loop progress status for a spec",
+    )
+
     # Workspace options
     workspace_group = parser.add_mutually_exclusive_group()
     workspace_group.add_argument(

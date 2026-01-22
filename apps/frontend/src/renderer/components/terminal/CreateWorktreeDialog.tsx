@@ -59,6 +59,7 @@ function sanitizeWorktreeName(value: string, maxLength?: number, trimTrailing = 
   return sanitized;
 }
 
+
 interface CreateWorktreeDialogProps {
   /** Whether the dialog is open */
   open: boolean;

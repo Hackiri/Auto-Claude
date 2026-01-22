@@ -44,7 +44,5 @@
   "devDependencies": {
     "jsdom": "^27.4.0"
   },
-  "overrides": {
-    "@electron/rebuild": "4.0.2"
-  }
+  "overrides": {}
 }
