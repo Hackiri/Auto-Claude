@@ -10,8 +10,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSy
 import { join } from 'path';
 import matter from 'gray-matter';
 import { IPC_CHANNELS } from '../../shared/constants';
-import type { IPCResult, SkillContent, SkillExportResult, SkillReadResult, SkillsListResult, SkillGenerationOptions, SkillGenerationResult } from '../../shared/types';
+import type { IPCResult, Skill, SkillContent, SkillExportResult, SkillReadResult, SkillsListResult, SkillGenerationOptions, SkillGenerationResult } from '../../shared/types';
 import { generateSkillsFromProjectIndex } from '../../shared/utils/skillGenerator';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Maximum skill file size to read (500KB)
@@ -275,4 +276,138 @@ export function registerSkillsHandlers(): void {
       }
     }
   );
+
+  // ============================================
+  // Skills Generation from Natural Language Prompt
+  // ============================================
+
+  ipcMain.handle(
+    IPC_CHANNELS.SKILLS_GENERATE_FROM_PROMPT,
+    async (_, projectDir: string, skillName: string, prompt: string): Promise<IPCResult<Skill>> => {
+      try {
+        // Validate skill name
+        const validation = validateSkillName(skillName);
+        if (!validation.valid) {
+          return {
+            success: false,
+            error: validation.error
+          };
+        }
+
+        // Validate prompt
+        if (!prompt || prompt.trim().length < 10) {
+          return {
+            success: false,
+            error: 'Prompt must be at least 10 characters long'
+          };
+        }
+
+        if (prompt.length > 2000) {
+          return {
+            success: false,
+            error: 'Prompt must be 2000 characters or less'
+          };
+        }
+
+        // Generate skill instructions from the prompt
+        // For now, create a structured skill based on the prompt
+        // In the future, this could call an AI service to generate more sophisticated instructions
+        const instructions = generateSkillInstructionsFromPrompt(skillName, prompt);
+
+        // Create the skill object
+        const skill: Skill = {
+          id: uuidv4(),
+          name: skillName,
+          description: extractDescriptionFromPrompt(prompt),
+          enabled: true,
+          source: 'service' as const, // Default source for prompt-generated skills
+          metadata: {
+            generatedFrom: 'prompt',
+            prompt: prompt.substring(0, 500), // Store first 500 chars of prompt
+            generatedAt: new Date().toISOString()
+          },
+          instructions
+        };
+
+        return {
+          success: true,
+          data: skill
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to generate skill from prompt'
+        };
+      }
+    }
+  );
+}
+
+/**
+ * Generate skill instructions from a natural language prompt
+ */
+function generateSkillInstructionsFromPrompt(skillName: string, prompt: string): string {
+  // Create a structured skill document from the user's prompt
+  const instructions = `# ${skillName}
+
+## Overview
+
+${prompt}
+
+## When to Use This Skill
+
+Use this skill when working on tasks that involve:
+- Tasks matching the description above
+- Related patterns and implementations in this codebase
+
+## Guidelines
+
+When applying this skill, Claude should:
+
+1. **Understand the Context**: Review relevant files and existing patterns before making changes
+2. **Follow Conventions**: Match the existing code style and patterns in the project
+3. **Implement Carefully**: Make incremental changes and verify each step
+4. **Test Thoroughly**: Ensure changes work correctly and don't break existing functionality
+
+## Best Practices
+
+- Always read existing code before making modifications
+- Use the project's established patterns and conventions
+- Write clear, maintainable code with appropriate comments
+- Consider edge cases and error handling
+- Follow the principle of least surprise
+
+## Notes
+
+This skill was generated from a user prompt. Consider customizing the instructions above to better match your specific needs and project requirements.
+`;
+
+  return instructions;
+}
+
+/**
+ * Extract a concise description from the prompt (first 150 chars)
+ */
+function extractDescriptionFromPrompt(prompt: string): string {
+  // Clean up the prompt and extract a description
+  const cleaned = prompt.trim().replace(/\s+/g, ' ');
+
+  if (cleaned.length <= 150) {
+    return cleaned;
+  }
+
+  // Find a good breaking point (end of sentence or word)
+  const truncated = cleaned.substring(0, 150);
+  const lastPeriod = truncated.lastIndexOf('.');
+  const lastSpace = truncated.lastIndexOf(' ');
+
+  if (lastPeriod > 100) {
+    return truncated.substring(0, lastPeriod + 1);
+  }
+
+  if (lastSpace > 100) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+
+  return truncated + '...';
 }

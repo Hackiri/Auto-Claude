@@ -1,6 +1,7 @@
 {
   "title": "Compétences",
   "autoGenerate": "Générer automatiquement les compétences",
+  "generateFromPrompt": "Générer à partir d'un prompt",
   "enabledCount": "{{count}} activée(s)",
   "card": {
     "enabled": "Activée",
@@ -53,7 +54,24 @@
   },
   "empty": {
     "title": "Aucune compétence générée",
-    "description": "Cliquez sur 'Générer automatiquement les compétences' pour créer des compétences à partir de votre index de projet",
+    "description": "Cliquez sur 'Générer automatiquement les compétences' pour créer des compétences à partir de votre index de projet, ou utilisez 'Générer à partir d'un prompt' pour créer une compétence personnalisée",
     "action": "Générer automatiquement les compétences"
+  },
+  "promptGenerate": {
+    "title": "Générer une compétence à partir d'un prompt",
+    "description": "Décrivez ce que vous voulez que la compétence fasse, et nous générerons un fichier SKILL.md pour Claude.",
+    "name": "Nom de la compétence",
+    "namePlaceholder": "ma-competence-personnalisee",
+    "prompt": "Décrivez votre compétence",
+    "promptPlaceholder": "Créer une compétence qui aide à construire des composants React avec TypeScript, des types de props appropriés, et qui suit les conventions de codage du projet...",
+    "promptHint": "Soyez précis sur ce que la compétence doit faire et quand elle doit être utilisée",
+    "examples": "Exemples de prompts :",
+    "exampleReact": "Patterns de composants React",
+    "exampleApi": "Patterns d'endpoints API REST",
+    "exampleTest": "Patterns d'écriture de tests",
+    "generate": "Générer la compétence",
+    "generating": "Génération en cours...",
+    "success": "Compétence générée avec succès",
+    "error": "Échec de la génération de la compétence"
   }
 }

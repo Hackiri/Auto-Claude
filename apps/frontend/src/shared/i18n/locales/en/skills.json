@@ -1,6 +1,7 @@
 {
   "title": "Skills",
   "autoGenerate": "Auto-Generate Skills",
+  "generateFromPrompt": "Generate from Prompt",
   "enabledCount": "{{count}} enabled",
   "card": {
     "enabled": "Enabled",
@@ -53,7 +54,24 @@
   },
   "empty": {
     "title": "No Skills Generated",
-    "description": "Click 'Auto-Generate Skills' to create skills from your project index",
+    "description": "Click 'Auto-Generate Skills' to create skills from your project index, or use 'Generate from Prompt' to create a custom skill",
     "action": "Auto-Generate Skills"
+  },
+  "promptGenerate": {
+    "title": "Generate Skill from Prompt",
+    "description": "Describe what you want the skill to do, and we'll generate a SKILL.md file for Claude to use.",
+    "name": "Skill Name",
+    "namePlaceholder": "my-custom-skill",
+    "prompt": "Describe Your Skill",
+    "promptPlaceholder": "Create a skill that helps build React components with TypeScript, proper prop types, and follows the project's coding conventions...",
+    "promptHint": "Be specific about what the skill should do and when it should be used",
+    "examples": "Example prompts:",
+    "exampleReact": "React component patterns",
+    "exampleApi": "REST API endpoint patterns",
+    "exampleTest": "Test writing patterns",
+    "generate": "Generate Skill",
+    "generating": "Generating...",
+    "success": "Skill generated successfully",
+    "error": "Failed to generate skill"
   }
 }

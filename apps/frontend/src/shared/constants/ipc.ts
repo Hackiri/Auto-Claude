@@ -462,6 +462,7 @@ export const IPC_CHANNELS = {
   SKILLS_LIST: 'skills:list',
   SKILLS_GET: 'skills:get',
   SKILLS_GENERATE: 'skills:generate',
+  SKILLS_GENERATE_FROM_PROMPT: 'skills:generateFromPrompt',
   SKILLS_INSTALL: 'skills:install',
   SKILLS_UPDATE: 'skills:update',
   SKILLS_DELETE: 'skills:delete',

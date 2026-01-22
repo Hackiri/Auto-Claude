@@ -342,6 +342,22 @@ const browserMockAPI: ElectronAPI = {
       skills: []
     }
   }),
+  generateSkillFromPrompt: async (_projectId: string, skillName: string, prompt: string) => ({
+    success: true,
+    data: {
+      id: `skill-${Date.now()}`,
+      name: skillName,
+      description: prompt.substring(0, 150),
+      enabled: true,
+      source: 'service' as const,
+      metadata: {
+        generatedFrom: 'prompt',
+        prompt: prompt.substring(0, 500),
+        generatedAt: new Date().toISOString()
+      },
+      instructions: `# ${skillName}\n\n${prompt}`
+    }
+  }),
   loadSkills: async () => ({
     success: true,
     data: []

@@ -164,3 +164,22 @@ export interface SkillGenerationResult {
     error: string;
   }>;
 }
+
+/**
+ * Options for prompt-based skill generation
+ */
+export interface SkillPromptGenerationOptions {
+  /** The skill name (lowercase, hyphens allowed) */
+  name: string;
+  /** Natural language prompt describing the skill */
+  prompt: string;
+}
+
+/**
+ * Result of prompt-based skill generation
+ */
+export interface SkillPromptGenerationResult {
+  success: boolean;
+  skill?: Skill;
+  error?: string;
+}

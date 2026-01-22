@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { RefreshCw, AlertCircle, Sparkles, Wand2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
@@ -8,6 +8,7 @@ import { cn } from '../../lib/utils';
 import { SkillCard } from './SkillCard';
 import { SkillPreviewDialog } from './SkillPreviewDialog';
 import { SkillEditDialog } from './SkillEditDialog';
+import { SkillGenerateDialog } from './SkillGenerateDialog';
 import { useSkillsStore, exportSingleSkill } from '../../stores/skills-store';
 import { generateSkillsFromProjectIndex } from '../../../shared/utils/skillGenerator';
 import { useContextStore } from '../../stores/context-store';
@@ -36,6 +37,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
   // Dialog states
   const [previewSkill, setPreviewSkill] = useState<Skill | null>(null);
   const [editSkill, setEditSkill] = useState<Skill | null>(null);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
   // Auto-generate skills from project index
   const handleAutoGenerate = () => {
@@ -85,7 +87,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-6">
-        {/* Header with auto-generate button */}
+        {/* Header with auto-generate and prompt generate buttons */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-foreground">{t('skills:title')}</h2>
@@ -101,24 +103,41 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
               )}
             </p>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAutoGenerate}
-                disabled={generationLoading || !projectIndex}
-              >
-                <RefreshCw
-                  className={cn('h-4 w-4 mr-2', generationLoading && 'animate-spin')}
-                />
+          <div className="flex gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowGenerateDialog(true)}
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  {t('skills:generateFromPrompt')}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t('skills:promptGenerate.description')}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoGenerate}
+                  disabled={generationLoading || !projectIndex}
+                >
+                  <RefreshCw
+                    className={cn('h-4 w-4 mr-2', generationLoading && 'animate-spin')}
+                  />
+                  {t('skills:autoGenerate')}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
                 {t('skills:autoGenerate')}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {t('skills:autoGenerate')}
-            </TooltipContent>
-          </Tooltip>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Error state */}
@@ -147,10 +166,19 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
             <p className="text-sm text-muted-foreground mt-2 max-w-sm">
               {t('skills:empty.description')}
             </p>
-            <Button onClick={handleAutoGenerate} className="mt-4" disabled={!projectIndex}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              {t('skills:empty.action')}
-            </Button>
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowGenerateDialog(true)}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                {t('skills:generateFromPrompt')}
+              </Button>
+              <Button onClick={handleAutoGenerate} disabled={!projectIndex}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {t('skills:empty.action')}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -183,6 +211,13 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
         open={!!editSkill}
         skill={editSkill}
         onOpenChange={(open) => !open && setEditSkill(null)}
+      />
+
+      {/* Generate from Prompt Dialog */}
+      <SkillGenerateDialog
+        open={showGenerateDialog}
+        onOpenChange={setShowGenerateDialog}
+        projectId={projectId}
       />
     </ScrollArea>
   );

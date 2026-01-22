@@ -18,6 +18,15 @@ export interface SkillsAPI {
   ) => Promise<IPCResult<SkillGenerationResult>>;
 
   /**
+   * Generate a single skill from a natural language prompt
+   */
+  generateSkillFromPrompt: (
+    projectId: string,
+    skillName: string,
+    prompt: string
+  ) => Promise<IPCResult<Skill>>;
+
+  /**
    * Load existing skills from .claude/skills/ directory
    */
   loadSkills: (projectId: string) => Promise<IPCResult<string[]>>;
@@ -42,6 +51,9 @@ export interface SkillsAPI {
 export const createSkillsAPI = (): SkillsAPI => ({
   generateSkills: (projectId, options = {}) =>
     ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GENERATE, projectId, options),
+
+  generateSkillFromPrompt: (projectId, skillName, prompt) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GENERATE_FROM_PROMPT, projectId, skillName, prompt),
 
   loadSkills: (projectId) =>
     ipcRenderer.invoke(IPC_CHANNELS.SKILLS_LIST, projectId),
