@@ -29,6 +29,7 @@
     "description": "Description",
     "namePlaceholder": "skill-name",
     "descriptionPlaceholder": "Describe when and what this skill does",
+    "characterCount": "{{count}} / {{max}} characters",
     "save": "Save",
     "cancel": "Cancel"
   },

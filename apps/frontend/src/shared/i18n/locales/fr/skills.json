@@ -29,6 +29,7 @@
     "description": "Description",
     "namePlaceholder": "nom-competence",
     "descriptionPlaceholder": "Décrivez quand et ce que fait cette compétence",
+    "characterCount": "{{count}} / {{max}} caractères",
     "save": "Enregistrer",
     "cancel": "Annuler"
   },
