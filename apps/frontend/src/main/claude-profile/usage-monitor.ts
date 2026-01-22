@@ -87,6 +87,41 @@ export class UsageMonitor extends EventEmitter {
   }
 
   /**
+   * Fetch usage on-demand (for UI requests when proactive monitoring is disabled)
+   * This is called by the IPC handler when the UI requests usage data.
+   */
+  async fetchUsageOnDemand(): Promise<ClaudeUsageSnapshot | null> {
+    try {
+      const profileManager = getClaudeProfileManager();
+      const activeProfile = profileManager.getActiveProfile();
+
+      if (!activeProfile) {
+        console.warn('[UsageMonitor] No active profile for on-demand fetch');
+        return null;
+      }
+
+      // Fetch usage without triggering proactive swap logic
+      const decryptedToken = profileManager.getProfileToken(activeProfile.id);
+      const usage = await this.fetchUsage(activeProfile.id, decryptedToken ?? undefined);
+
+      if (usage) {
+        // Update current usage cache
+        this.currentUsage = usage;
+
+        // Emit usage update for UI
+        this.emit('usage-updated', usage);
+
+        console.warn('[UsageMonitor] On-demand fetch successful');
+      }
+
+      return usage;
+    } catch (error) {
+      console.error('[UsageMonitor] On-demand fetch failed:', error);
+      return null;
+    }
+  }
+
+  /**
    * Check usage and trigger swap if thresholds exceeded
    */
   private async checkUsageAndSwap(): Promise<void> {
@@ -295,19 +330,143 @@ export class UsageMonitor extends EventEmitter {
 
   /**
    * Fetch usage via CLI /usage command (fallback)
-   * Note: This is a fallback method. The API method is preferred.
-   * CLI-based fetching would require spawning a Claude process and parsing output,
-   * which is complex. For now, we rely on the API method.
+   * Spawns a Claude process, sends /usage command, and parses the output.
    */
   private async fetchUsageViaCLI(
-    _profileId: string,
-    _profileName: string
+    profileId: string,
+    profileName: string
   ): Promise<ClaudeUsageSnapshot | null> {
-    // CLI-based usage fetching is not implemented yet.
-    // The API method should handle most cases. If we need CLI fallback,
-    // we would need to spawn a Claude process with /usage command and parse the output.
-    console.warn('[UsageMonitor] CLI fallback not implemented, API method should be used');
-    return null;
+    try {
+      const { spawn } = await import('child_process');
+      const { getClaudeCliInvocationAsync } = await import('../claude-cli-utils');
+      const profileManager = getClaudeProfileManager();
+      const profile = profileManager.getProfile(profileId);
+
+      if (!profile) {
+        console.error('[UsageMonitor] Profile not found:', profileId);
+        return null;
+      }
+
+      // Get Claude CLI command and environment
+      const { command, env } = await getClaudeCliInvocationAsync();
+
+      // Add profile-specific config dir if available
+      const profileEnv = { ...env };
+      if (profile.configDir) {
+        profileEnv.CLAUDE_CODE_CONFIG_DIR = profile.configDir;
+      }
+
+      return new Promise((resolve) => {
+        const proc = spawn(command, [], { env: profileEnv });
+        let output = '';
+        let errorOutput = '';
+
+        proc.stdout?.on('data', (data: Buffer) => {
+          output += data.toString();
+        });
+
+        proc.stderr?.on('data', (data: Buffer) => {
+          errorOutput += data.toString();
+        });
+
+        proc.on('close', (code) => {
+          if (code !== 0) {
+            console.error('[UsageMonitor] CLI process exited with code:', code, 'stderr:', errorOutput);
+            resolve(null);
+            return;
+          }
+
+          // Parse the usage output
+          const usage = this.parseUsageOutput(output, profileId, profileName);
+          if (usage) {
+            console.warn('[UsageMonitor] Successfully fetched via CLI');
+          } else {
+            console.warn('[UsageMonitor] Failed to parse CLI output');
+          }
+          resolve(usage);
+        });
+
+        proc.on('error', (error) => {
+          console.error('[UsageMonitor] Failed to spawn Claude CLI:', error);
+          resolve(null);
+        });
+
+        // Send /usage command after a short delay
+        setTimeout(() => {
+          proc.stdin?.write('/usage\n');
+          // Wait for output, then close stdin
+          setTimeout(() => {
+            proc.stdin?.write('/exit\n');
+            proc.stdin?.end();
+          }, 2000);
+        }, 1000);
+      });
+    } catch (error) {
+      console.error('[UsageMonitor] CLI fetch failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Parse Claude CLI /usage command output
+   * Example output:
+   *   Session usage: 42% (resets in 3h 15m)
+   *   Weekly usage: 78% (resets in 2d 5h)
+   */
+  private parseUsageOutput(
+    output: string,
+    profileId: string,
+    profileName: string
+  ): ClaudeUsageSnapshot | null {
+    try {
+      // Match session usage: "Session usage: 42%" or similar patterns
+      const sessionMatch = output.match(/session\s+usage[:\s]+(\d+)%/i);
+      const weeklyMatch = output.match(/weekly\s+usage[:\s]+(\d+)%/i);
+
+      // Also try matching "5-hour" and "7-day" patterns
+      const fiveHourMatch = output.match(/5-hour\s+usage[:\s]+(\d+)%/i);
+      const sevenDayMatch = output.match(/7-day\s+usage[:\s]+(\d+)%/i);
+
+      const sessionPercent = sessionMatch
+        ? parseInt(sessionMatch[1], 10)
+        : fiveHourMatch
+        ? parseInt(fiveHourMatch[1], 10)
+        : 0;
+
+      const weeklyPercent = weeklyMatch
+        ? parseInt(weeklyMatch[1], 10)
+        : sevenDayMatch
+        ? parseInt(sevenDayMatch[1], 10)
+        : 0;
+
+      // Try to extract reset times
+      const sessionResetMatch = output.match(/session[^:]*:\s*\d+%\s*\(resets\s+in\s+([^)]+)\)/i);
+      const weeklyResetMatch = output.match(/weekly[^:]*:\s*\d+%\s*\(resets\s+in\s+([^)]+)\)/i);
+      const fiveHourResetMatch = output.match(/5-hour[^:]*:\s*\d+%\s*\(resets\s+in\s+([^)]+)\)/i);
+      const sevenDayResetMatch = output.match(/7-day[^:]*:\s*\d+%\s*\(resets\s+in\s+([^)]+)\)/i);
+
+      const sessionResetTime = sessionResetMatch?.[1] || fiveHourResetMatch?.[1] || undefined;
+      const weeklyResetTime = weeklyResetMatch?.[1] || sevenDayResetMatch?.[1] || undefined;
+
+      // Only return snapshot if we found at least one usage value
+      if (sessionPercent > 0 || weeklyPercent > 0) {
+        return {
+          sessionPercent,
+          weeklyPercent,
+          sessionResetTime,
+          weeklyResetTime,
+          profileId,
+          profileName,
+          fetchedAt: new Date(),
+          limitType: weeklyPercent > sessionPercent ? 'weekly' : 'session'
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('[UsageMonitor] Failed to parse usage output:', error);
+      return null;
+    }
   }
 
   /**
