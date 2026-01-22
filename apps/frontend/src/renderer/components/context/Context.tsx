@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { FolderTree, Brain } from 'lucide-react';
+import { FolderTree, Brain, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useContextStore } from '../../stores/context-store';
 import { useProjectContext, useRefreshIndex, useMemorySearch } from './hooks';
 import { ProjectIndexTab } from './ProjectIndexTab';
 import { MemoriesTab } from './MemoriesTab';
+import { SkillsTab } from './SkillsTab';
 import type { ContextProps } from './types';
 
 export function Context({ projectId }: ContextProps) {
@@ -31,7 +32,7 @@ export function Context({ projectId }: ContextProps) {
     <div className="flex h-full flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
         <div className="border-b border-border px-6 py-3">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="index" className="gap-2">
               <FolderTree className="h-4 w-4" />
               Project Index
@@ -39,6 +40,10 @@ export function Context({ projectId }: ContextProps) {
             <TabsTrigger value="memories" className="gap-2">
               <Brain className="h-4 w-4" />
               Memories
+            </TabsTrigger>
+            <TabsTrigger value="skills" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Skills
             </TabsTrigger>
           </TabsList>
         </div>
@@ -64,6 +69,11 @@ export function Context({ projectId }: ContextProps) {
             searchLoading={searchLoading}
             onSearch={handleSearch}
           />
+        </TabsContent>
+
+        {/* Skills Tab */}
+        <TabsContent value="skills" className="flex-1 overflow-hidden m-0">
+          <SkillsTab projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>
