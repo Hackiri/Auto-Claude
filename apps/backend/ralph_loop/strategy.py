@@ -18,9 +18,7 @@ from __future__ import annotations
 import logging
 import random
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 
@@ -155,8 +153,12 @@ class RetryStrategy:
         defaults = self.STRATEGY_LIMITS[self.strategy_type]
 
         # Apply overrides
-        self.max_retries = max_retries if max_retries is not None else defaults["max_retries"]
-        self.base_delay = base_delay if base_delay is not None else defaults["base_delay"]
+        self.max_retries = (
+            max_retries if max_retries is not None else defaults["max_retries"]
+        )
+        self.base_delay = (
+            base_delay if base_delay is not None else defaults["base_delay"]
+        )
         self.max_delay = defaults["max_delay"]
         self.backoff_factor = defaults["backoff_factor"]
 
@@ -192,7 +194,7 @@ class RetryStrategy:
 
         # Calculate delay with exponential backoff
         delay = min(
-            self.base_delay * (self.backoff_factor ** attempt_count),
+            self.base_delay * (self.backoff_factor**attempt_count),
             self.max_delay,
         )
 
@@ -304,9 +306,7 @@ class RetryStrategy:
         if attempt_count >= 3:
             # Avoid categories we've already tried
             unused = [
-                c
-                for c in ApproachCategory
-                if c not in self._used_approaches[-3:]
+                c for c in ApproachCategory if c not in self._used_approaches[-3:]
             ]
             if unused:
                 return random.choice(unused)

@@ -12,8 +12,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Literal, Optional, TypedDict
-
+from typing import Any, Literal, TypedDict
 
 # Retry strategy type
 RetryStrategyType = Literal["conservative", "aggressive", "adaptive"]

@@ -10,10 +10,10 @@ import asyncio
 import logging
 import os
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
 
 from core.client import create_client
 from prompt_generator import (
@@ -22,11 +22,11 @@ from prompt_generator import (
     load_subtask_context,
 )
 from recovery import RecoveryManager
-from ui import print_key_value, print_status, highlight, muted
+from ui import highlight, print_key_value, print_status
 
 from .aggregator import ParallelResults, aggregate_results
 from .dependency import DependencyAnalyzer
-from .mcp_fetcher import MCPInfoFetcher, MCPContext
+from .mcp_fetcher import MCPContext, MCPInfoFetcher
 from .subagent import SubagentConfig, SubagentResult, SubagentStatus
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,9 @@ class ParallelExecutor:
         self.spec_dir = spec_dir
         self.config = config or ParallelConfig()
         self.model = self.config.model or model
-        self.recovery_manager = recovery_manager or RecoveryManager(spec_dir, project_dir)
+        self.recovery_manager = recovery_manager or RecoveryManager(
+            spec_dir, project_dir
+        )
 
         # MCP fetcher for context gathering
         self.mcp_fetcher = MCPInfoFetcher(str(project_dir), str(spec_dir))
@@ -113,9 +115,7 @@ class ParallelExecutor:
         # Progress callback
         self._on_progress: Callable[[str, SubagentStatus], None] | None = None
 
-    def set_progress_callback(
-        self, callback: Callable[[str, SubagentStatus], None]
-    ):
+    def set_progress_callback(self, callback: Callable[[str, SubagentStatus], None]):
         """Set callback to receive progress updates."""
         self._on_progress = callback
 
@@ -162,9 +162,7 @@ class ParallelExecutor:
         self._cancel_requested = False
 
         # Create configs for each subtask
-        configs = [
-            SubagentConfig.from_subtask(subtask, phase) for subtask in subtasks
-        ]
+        configs = [SubagentConfig.from_subtask(subtask, phase) for subtask in subtasks]
 
         # Fetch MCP context if enabled
         mcp_context: MCPContext | None = None
@@ -325,7 +323,8 @@ class ParallelExecutor:
 
             try:
                 # Capture git state
-                from agents.utils import get_latest_commit, get_commit_count
+                from agents.utils import get_commit_count, get_latest_commit
+
                 result.commit_before = get_latest_commit(self.project_dir)
                 commit_count_before = get_commit_count(self.project_dir)
 
@@ -346,9 +345,7 @@ class ParallelExecutor:
                 )
 
                 # Add file context
-                context = load_subtask_context(
-                    self.spec_dir, self.project_dir, subtask
-                )
+                context = load_subtask_context(self.spec_dir, self.project_dir, subtask)
                 if context.get("patterns") or context.get("files_to_modify"):
                     prompt += "\n\n" + format_context_for_prompt(context)
 
@@ -356,7 +353,9 @@ class ParallelExecutor:
                 if mcp_context:
                     mcp_prompt = mcp_context.to_prompt_context()
                     if mcp_prompt:
-                        prompt += "\n\n## Additional Context (from MCP)\n\n" + mcp_prompt
+                        prompt += (
+                            "\n\n## Additional Context (from MCP)\n\n" + mcp_prompt
+                        )
 
                 # Create client for this sub-agent
                 client = create_client(

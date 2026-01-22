@@ -91,7 +91,7 @@ def handle_build_command(
     from phase_config import get_phase_model
     from prompts_pkg.prompts import get_base_branch_from_metadata
     from qa_loop import run_qa_validation_loop, should_run_qa
-    from ralph_loop.config import load_ralph_config, is_ralph_loop_enabled
+    from ralph_loop.config import is_ralph_loop_enabled, load_ralph_config
 
     from .utils import print_banner, validate_environment
 
@@ -126,7 +126,7 @@ def handle_build_command(
     if is_ralph_loop_enabled(ralph_config):
         print(f"Ralph loop: {highlight('ENABLED')} (iterative overnight mode)")
         if ralph_config.get("overnight_mode"):
-            print(f"  Overnight mode: Active (reduced logging)")
+            print("  Overnight mode: Active (reduced logging)")
 
     print()
 

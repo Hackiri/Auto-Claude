@@ -15,11 +15,11 @@ Key components:
 - DependencyAnalyzer: Determines which subtasks can run in parallel
 """
 
-from .executor import ParallelExecutor, ParallelConfig
-from .dependency import DependencyAnalyzer, can_run_in_parallel
-from .subagent import SubagentConfig, SubagentResult
 from .aggregator import ParallelResults, aggregate_results
+from .dependency import DependencyAnalyzer, can_run_in_parallel
+from .executor import ParallelConfig, ParallelExecutor
 from .mcp_fetcher import MCPInfoFetcher
+from .subagent import SubagentConfig, SubagentResult
 
 __all__ = [
     "ParallelExecutor",

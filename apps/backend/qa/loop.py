@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 import time as time_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
 
 from core.client import create_client
 from debug import debug, debug_error, debug_section, debug_success, debug_warning
@@ -28,8 +27,10 @@ from phase_event import ExecutionPhase, emit_phase
 from progress import count_subtasks, is_build_complete
 from ralph_loop.config import (
     RalphLoopConfig,
-    get_max_iterations as get_ralph_max_iterations,
     is_ralph_loop_enabled,
+)
+from ralph_loop.config import (
+    get_max_iterations as get_ralph_max_iterations,
 )
 from ralph_loop.strategy import RetryStrategy
 from security.constants import PROJECT_DIR_ENV_VAR
@@ -70,7 +71,7 @@ async def run_qa_validation_loop(
     spec_dir: Path,
     model: str,
     verbose: bool = False,
-    ralph_config: Optional[RalphLoopConfig] = None,
+    ralph_config: RalphLoopConfig | None = None,
 ) -> bool:
     """
     Run the full QA validation loop.
@@ -248,14 +249,22 @@ async def run_qa_validation_loop(
             iteration=qa_iteration,
             max_iters=max_iterations,
             ralph_enabled=ralph_enabled,
-            ralph_consecutive_failures=ralph_consecutive_failures if ralph_enabled else None,
+            ralph_consecutive_failures=ralph_consecutive_failures
+            if ralph_enabled
+            else None,
             overnight_mode=ralph_overnight_mode if ralph_enabled else None,
         )
 
         # Reduce output in overnight mode - only log every 5th iteration or first/last
         if ralph_overnight_mode:
-            if qa_iteration == 1 or qa_iteration % 5 == 0 or qa_iteration == max_iterations:
-                print(f"\n--- QA Iteration {qa_iteration}/{max_iterations} (overnight mode) ---")
+            if (
+                qa_iteration == 1
+                or qa_iteration % 5 == 0
+                or qa_iteration == max_iterations
+            ):
+                print(
+                    f"\n--- QA Iteration {qa_iteration}/{max_iterations} (overnight mode) ---"
+                )
         else:
             print(f"\n--- QA Iteration {qa_iteration}/{max_iterations} ---")
         emit_phase(
@@ -369,7 +378,9 @@ async def run_qa_validation_loop(
 
             # Reduce output in overnight mode
             if not ralph_overnight_mode:
-                print(f"\n❌ QA found issues. Iteration {qa_iteration}/{max_iterations}")
+                print(
+                    f"\n❌ QA found issues. Iteration {qa_iteration}/{max_iterations}"
+                )
             else:
                 # In overnight mode, only log rejections periodically
                 if qa_iteration % 5 == 0:
@@ -498,7 +509,9 @@ async def run_qa_validation_loop(
                 f"QA session error: {response[:200]}",
                 consecutive_errors=consecutive_errors,
                 max_consecutive=MAX_CONSECUTIVE_ERRORS,
-                ralph_consecutive_failures=ralph_consecutive_failures if ralph_enabled else None,
+                ralph_consecutive_failures=ralph_consecutive_failures
+                if ralph_enabled
+                else None,
             )
 
             # Reduce error output in overnight mode
@@ -509,7 +522,9 @@ async def run_qa_validation_loop(
                 )
             else:
                 # In overnight mode, brief error logging
-                print(f"\n❌ QA error (iteration {qa_iteration}, errors: {consecutive_errors})")
+                print(
+                    f"\n❌ QA error (iteration {qa_iteration}, errors: {consecutive_errors})"
+                )
 
             record_iteration(
                 spec_dir,
@@ -583,7 +598,9 @@ async def run_qa_validation_loop(
         iterations=qa_iteration,
         max_iters=max_iterations,
         ralph_enabled=ralph_enabled,
-        ralph_consecutive_failures=ralph_consecutive_failures if ralph_enabled else None,
+        ralph_consecutive_failures=ralph_consecutive_failures
+        if ralph_enabled
+        else None,
         overnight_mode=ralph_overnight_mode if ralph_enabled else None,
     )
     print("\n" + "=" * 70)

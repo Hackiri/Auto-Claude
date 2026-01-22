@@ -9,7 +9,6 @@ Each sub-agent is a specialized worker that handles a specific subtask.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 
@@ -158,7 +157,9 @@ class SubagentResult:
             "config": self.config.to_dict(),
             "status": self.status.value,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
             "success": self.success,
             "error_message": self.error_message,
             "response_text": self.response_text[:1000] if self.response_text else None,

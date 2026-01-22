@@ -9,7 +9,7 @@ import type { InsightsChatMessage } from '../../shared/types';
 
 describe('MessageBubble Truncation', () => {
   const mockMarkdownComponents = {};
-  const mockOnCreateTask = () => {};
+  const mockOnCreateTask = () => { /* noop */ };
 
   it('renders short content without truncation UI', () => {
     const shortMessage: InsightsChatMessage = {

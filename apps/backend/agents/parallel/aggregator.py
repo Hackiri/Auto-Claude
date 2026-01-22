@@ -9,7 +9,6 @@ Handles conflict detection, memory merging, and status reconciliation.
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 from .subagent import SubagentResult, SubagentStatus
@@ -104,11 +103,7 @@ class ParallelResults:
 
     def get_failed_subtasks(self) -> list[str]:
         """Get IDs of failed subtasks."""
-        return [
-            r.subtask_id
-            for r in self.results
-            if r.status == SubagentStatus.FAILED
-        ]
+        return [r.subtask_id for r in self.results if r.status == SubagentStatus.FAILED]
 
     def get_successful_subtasks(self) -> list[str]:
         """Get IDs of successfully completed subtasks."""
@@ -123,7 +118,9 @@ class ParallelResults:
         return {
             "batch_id": self.batch_id,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
             "total_subtasks": self.total_subtasks,
             "completed_count": self.completed_count,
             "failed_count": self.failed_count,

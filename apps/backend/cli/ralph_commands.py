@@ -15,10 +15,9 @@ if str(_PARENT_DIR) not in sys.path:
 
 from progress import count_subtasks
 from ralph_loop.config import (
-    load_ralph_config,
-    is_ralph_loop_enabled,
-    get_max_iterations,
     DEFAULT_RALPH_CONFIG,
+    is_ralph_loop_enabled,
+    load_ralph_config,
 )
 from ui import (
     Icons,
@@ -29,7 +28,6 @@ from ui import (
     info,
     muted,
     success,
-    warning,
 )
 
 from .utils import print_banner
@@ -82,24 +80,32 @@ def print_ralph_status(spec_dir: Path) -> None:
     content.append(bold("Configuration:"))
 
     # Max iterations
-    max_coder = config.get("max_coder_iterations", DEFAULT_RALPH_CONFIG["max_coder_iterations"])
+    max_coder = config.get(
+        "max_coder_iterations", DEFAULT_RALPH_CONFIG["max_coder_iterations"]
+    )
     max_qa = config.get("max_qa_iterations", DEFAULT_RALPH_CONFIG["max_qa_iterations"])
     content.append(f"  Coder max iterations: {highlight(str(max_coder))}")
     content.append(f"  QA max iterations: {highlight(str(max_qa))}")
 
     # Retry strategy
-    retry_strategy = config.get("retry_strategy", DEFAULT_RALPH_CONFIG["retry_strategy"])
+    retry_strategy = config.get(
+        "retry_strategy", DEFAULT_RALPH_CONFIG["retry_strategy"]
+    )
     content.append(f"  Retry strategy: {highlight(retry_strategy)}")
 
     # Overnight mode
-    overnight_mode = config.get("overnight_mode", DEFAULT_RALPH_CONFIG["overnight_mode"])
+    overnight_mode = config.get(
+        "overnight_mode", DEFAULT_RALPH_CONFIG["overnight_mode"]
+    )
     if overnight_mode:
         content.append(f"  Overnight mode: {success('ACTIVE')}")
     else:
         content.append(f"  Overnight mode: {muted('inactive')}")
 
     # Promise timeout
-    timeout = config.get("completion_promise_timeout", DEFAULT_RALPH_CONFIG["completion_promise_timeout"])
+    timeout = config.get(
+        "completion_promise_timeout", DEFAULT_RALPH_CONFIG["completion_promise_timeout"]
+    )
     content.append(f"  Promise timeout: {timeout}s")
 
     content.append("")
@@ -111,7 +117,7 @@ def print_ralph_status(spec_dir: Path) -> None:
         percentage = (completed / total) * 100
         content.append(f"  Subtasks: {completed}/{total} ({percentage:.0f}%)")
     else:
-        content.append(f"  Subtasks: No implementation plan found")
+        content.append("  Subtasks: No implementation plan found")
 
     # Check for ralph_loop_report.md
     report_file = spec_dir / "ralph_loop_report.md"

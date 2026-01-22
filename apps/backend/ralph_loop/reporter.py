@@ -23,8 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import RalphLoopConfig, get_default_config
-from .promises import CompletionPromise, PromiseResult
-
+from .promises import PromiseResult
 
 # =============================================================================
 # DATA CLASSES
@@ -50,7 +49,9 @@ class IterationRecord:
     iteration: int
     phase: str
     status: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     duration_seconds: float | None = None
     subtask_id: str | None = None
     approach: str | None = None
@@ -249,7 +250,9 @@ class RalphLoopReporter:
         """
         self._run_started = True
         self.summary.start_time = datetime.now(timezone.utc).isoformat()
-        self.summary.config_used = dict(config) if config else dict(get_default_config())
+        self.summary.config_used = (
+            dict(config) if config else dict(get_default_config())
+        )
 
     def record_iteration(
         self,
@@ -322,12 +325,14 @@ class RalphLoopReporter:
         Args:
             result: The PromiseResult from evaluation
         """
-        self.summary.promise_results.append({
-            "name": result.promise.name,
-            "passed": result.passed,
-            "message": result.message,
-            "required": result.promise.required,
-        })
+        self.summary.promise_results.append(
+            {
+                "name": result.promise.name,
+                "passed": result.passed,
+                "message": result.message,
+                "required": result.promise.required,
+            }
+        )
         self._save_history()
 
     def finish_run(
@@ -363,13 +368,13 @@ class RalphLoopReporter:
         hours = int(total_duration // 3600)
         minutes = int((total_duration % 3600) // 60)
         seconds = int(total_duration % 60)
-        duration_str = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+        duration_str = (
+            f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+        )
 
         # Calculate success rate
         total = self.summary.total_iterations
-        success_rate = (
-            self.summary.successful_iterations / total if total > 0 else 0
-        )
+        success_rate = self.summary.successful_iterations / total if total > 0 else 0
 
         # Count iterations by phase
         phase_counts: Counter[str] = Counter()
@@ -381,7 +386,11 @@ class RalphLoopReporter:
         for record in self.history:
             if record.error_message:
                 # Extract error type from message
-                error_type = record.error_message.split(":")[0] if ":" in record.error_message else "Unknown"
+                error_type = (
+                    record.error_message.split(":")[0]
+                    if ":" in record.error_message
+                    else "Unknown"
+                )
                 error_counts[error_type] += 1
 
         return {
@@ -455,7 +464,9 @@ class RalphLoopReporter:
         # Add approaches section if any were used
         if stats["approaches_used"]:
             content += "\n## Approach Variations\n\n"
-            content += "The following approach categories were used during retry attempts:\n\n"
+            content += (
+                "The following approach categories were used during retry attempts:\n\n"
+            )
             for approach, count in sorted(
                 stats["approaches_used"].items(), key=lambda x: x[1], reverse=True
             ):
@@ -487,7 +498,9 @@ class RalphLoopReporter:
 
         recent_history = self.history[-20:]  # Last 20 iterations
         for record in recent_history:
-            duration = f"{record.duration_seconds:.1f}s" if record.duration_seconds else "N/A"
+            duration = (
+                f"{record.duration_seconds:.1f}s" if record.duration_seconds else "N/A"
+            )
             subtask = record.subtask_id or "N/A"
             approach = record.approach or "N/A"
             status_emoji = {

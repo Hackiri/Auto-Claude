@@ -6,19 +6,18 @@ Entry point for running parallel sub-agent execution within the coder workflow.
 This module bridges the main coder agent loop with the parallel execution module.
 """
 
-import asyncio
 import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ui import print_key_value, print_status, highlight, bold, box, icon, Icons
+from ui import Icons, bold, box, highlight, icon, print_key_value, print_status
 
 from .parallel import (
-    ParallelExecutor,
-    ParallelConfig,
-    ParallelResults,
     DependencyAnalyzer,
+    ParallelConfig,
+    ParallelExecutor,
+    ParallelResults,
     can_run_in_parallel,
 )
 
@@ -113,12 +112,15 @@ async def run_parallel_phase(
 
     # Get pending subtasks from this phase
     pending_subtasks = [
-        s for s in phase.get("subtasks", phase.get("chunks", []))
+        s
+        for s in phase.get("subtasks", phase.get("chunks", []))
         if s.get("status", "pending") == "pending"
     ]
 
     if len(pending_subtasks) < 2:
-        logger.debug(f"Phase has {len(pending_subtasks)} pending subtasks, skipping parallel")
+        logger.debug(
+            f"Phase has {len(pending_subtasks)} pending subtasks, skipping parallel"
+        )
         return None
 
     # Print parallel execution header

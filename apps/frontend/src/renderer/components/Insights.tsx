@@ -118,6 +118,7 @@ export function Insights({ projectId }: InsightsProps) {
   }, [projectId]);
 
   // Auto-scroll to bottom when messages change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps intentionally trigger scroll on message/content changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [session?.messages, streamingContent]);
@@ -128,6 +129,7 @@ export function Insights({ projectId }: InsightsProps) {
   }, []);
 
   // Reset taskCreated when switching sessions
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when session changes
   useEffect(() => {
     setTaskCreated(new Set());
   }, [session?.id]);
@@ -598,6 +600,7 @@ function ToolUsageHistory({ tools }: ToolUsageHistoryProps) {
   return (
     <div className="mt-2">
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >

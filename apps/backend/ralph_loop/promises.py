@@ -177,7 +177,7 @@ def _evaluate_test_pass(
         full_command = command
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B602 - shell=True needed for test commands
             full_command,
             shell=True,
             cwd=project_dir,
@@ -237,7 +237,7 @@ def _evaluate_build_success(
     timeout = params.get("timeout", 600)
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B602 - shell=True needed for build commands
             command,
             shell=True,
             cwd=project_dir,
@@ -307,7 +307,9 @@ def _evaluate_file_exists(
 
     if all_required:
         passed = len(missing) == 0
-        message = "All files exist" if passed else f"Missing files: {', '.join(missing)}"
+        message = (
+            "All files exist" if passed else f"Missing files: {', '.join(missing)}"
+        )
     else:
         passed = len(existing) > 0
         message = (
@@ -350,7 +352,7 @@ def _evaluate_command_success(
     expected_output = params.get("expected_output")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B602 - shell=True needed for custom commands
             command,
             shell=True,
             cwd=project_dir,
@@ -367,7 +369,9 @@ def _evaluate_command_success(
 
         message = "Command succeeded" if passed else "Command failed"
         if expected_output and result.returncode == 0 and not passed:
-            message = f"Command succeeded but expected output '{expected_output}' not found"
+            message = (
+                f"Command succeeded but expected output '{expected_output}' not found"
+            )
 
         return PromiseResult(
             promise=promise,
@@ -542,8 +546,8 @@ def _evaluate_custom(
     }
 
     try:
-        # Evaluate the expression
-        result = eval(expression, {"__builtins__": {}}, eval_context)
+        # Evaluate the expression (sandboxed - no builtins)
+        result = eval(expression, {"__builtins__": {}}, eval_context)  # nosec B307
         passed = bool(result)
 
         return PromiseResult(

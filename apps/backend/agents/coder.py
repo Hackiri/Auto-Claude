@@ -16,7 +16,6 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from core.client import create_client
 from linear_updater import (
@@ -45,15 +44,16 @@ from prompt_generator import (
     load_subtask_context,
 )
 from prompts import is_first_run
-from ralph_loop.config import RalphLoopConfig, is_ralph_loop_enabled, get_max_iterations
+from ralph_loop.config import RalphLoopConfig, get_max_iterations, is_ralph_loop_enabled
 from ralph_loop.promises import (
-    evaluate_all_promises,
     evaluate_all_promises as evaluate_promises,  # Alias for subtask completion checks
+)
+from ralph_loop.promises import (
     get_default_promises,
     load_promises_from_plan,
 )
 from ralph_loop.reporter import generate_ralph_report
-from ralph_loop.strategy import RetryStrategy, get_varied_approach
+from ralph_loop.strategy import RetryStrategy
 from recovery import RecoveryManager
 from security.constants import PROJECT_DIR_ENV_VAR
 from task_logger import (
@@ -82,7 +82,6 @@ from .base import (
 from .memory_manager import debug_memory_system_status, get_graphiti_context
 from .parallel_runner import (
     get_parallelizable_subtasks,
-    is_parallel_execution_enabled,
     run_parallel_phase,
     should_use_parallel_execution,
 )
@@ -137,7 +136,9 @@ async def run_autonomous_agent(
     # RALPH LOOP INITIALIZATION
     # =============================================================================
     # Determine if we're running in Ralph Wiggum iterative loop mode
-    ralph_loop_enabled = ralph_config is not None and is_ralph_loop_enabled(ralph_config)
+    ralph_loop_enabled = ralph_config is not None and is_ralph_loop_enabled(
+        ralph_config
+    )
 
     # Initialize Ralph loop state tracking
     ralph_consecutive_failures = 0
@@ -675,7 +676,9 @@ async def run_autonomous_agent(
                         "progress",
                     )
                     for result in failed_promises[:3]:  # Show first 3 unmet promises
-                        print(f"  {icon(Icons.PENDING)} {result.promise.name}: {result.message}")
+                        print(
+                            f"  {icon(Icons.PENDING)} {result.promise.name}: {result.message}"
+                        )
 
         # Handle session status
         if status == "complete":
@@ -782,7 +785,9 @@ async def run_autonomous_agent(
                         print(muted(f"  {decision.approach.description}"))
                         if decision.delay_seconds > AUTO_CONTINUE_DELAY_SECONDS:
                             print(
-                                muted(f"  Waiting {decision.delay_seconds:.1f}s before retry...")
+                                muted(
+                                    f"  Waiting {decision.delay_seconds:.1f}s before retry..."
+                                )
                             )
                             await asyncio.sleep(decision.delay_seconds)
                         else:

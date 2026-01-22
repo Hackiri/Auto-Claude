@@ -8,8 +8,6 @@ Uses file overlap detection, service scoping, and explicit dependency tracking.
 
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +101,9 @@ class DependencyAnalyzer:
                     # Update depended_by for dependency subtasks
                     for dep_id in dependency_subtasks:
                         if dep_id in self._dependency_graph:
-                            self._dependency_graph[dep_id].depended_by.append(subtask_id)
+                            self._dependency_graph[dep_id].depended_by.append(
+                                subtask_id
+                            )
 
     def get_subtask_dependencies(self, subtask_id: str) -> DependencyInfo | None:
         """Get dependency info for a specific subtask."""
@@ -169,7 +169,9 @@ class DependencyAnalyzer:
                 # Check if this subtask can run with all others in the current group
                 can_add = True
                 for existing_id in current_group:
-                    can_parallel, reason = self.can_run_parallel(subtask_id, existing_id)
+                    can_parallel, reason = self.can_run_parallel(
+                        subtask_id, existing_id
+                    )
                     if not can_parallel:
                         logger.debug(
                             f"Cannot run {subtask_id} with {existing_id}: {reason}"

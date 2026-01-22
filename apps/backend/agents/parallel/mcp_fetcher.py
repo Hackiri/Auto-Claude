@@ -176,9 +176,7 @@ class MCPInfoFetcher:
                 fetch_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
             )
 
-    async def fetch_memory_context(
-        self, subtask_description: str
-    ) -> MCPFetchResult:
+    async def fetch_memory_context(self, subtask_description: str) -> MCPFetchResult:
         """
         Fetch memory context from Graphiti.
 
@@ -208,8 +206,9 @@ class MCPInfoFetcher:
 
         try:
             # Import here to avoid circular dependency
-            from agents.memory_manager import get_graphiti_context
             from pathlib import Path
+
+            from agents.memory_manager import get_graphiti_context
 
             context = await get_graphiti_context(
                 Path(self.spec_dir),
@@ -236,9 +235,7 @@ class MCPInfoFetcher:
                 fetch_time_ms=(datetime.now() - start_time).total_seconds() * 1000,
             )
 
-    async def fetch_linear_context(
-        self, feature_description: str
-    ) -> MCPFetchResult:
+    async def fetch_linear_context(self, feature_description: str) -> MCPFetchResult:
         """
         Fetch related issues from Linear.
 
@@ -303,9 +300,12 @@ class MCPInfoFetcher:
         tasks = []
 
         if self._is_context7_enabled():
-            tasks.append(("documentation", self.fetch_documentation(
-                subtask_description, libraries
-            )))
+            tasks.append(
+                (
+                    "documentation",
+                    self.fetch_documentation(subtask_description, libraries),
+                )
+            )
 
         if self._is_graphiti_enabled():
             tasks.append(("memory", self.fetch_memory_context(subtask_description)))
@@ -325,12 +325,14 @@ class MCPInfoFetcher:
             for i, (source_name, _) in enumerate(tasks):
                 result = task_results[i]
                 if isinstance(result, Exception):
-                    context.fetch_results.append(MCPFetchResult(
-                        server_name=source_name,
-                        query=subtask_description,
-                        success=False,
-                        error=str(result),
-                    ))
+                    context.fetch_results.append(
+                        MCPFetchResult(
+                            server_name=source_name,
+                            query=subtask_description,
+                            success=False,
+                            error=str(result),
+                        )
+                    )
                 else:
                     context.fetch_results.append(result)
                     if result.success and result.data:
