@@ -85,6 +85,7 @@ export interface ServiceInfo {
     routes: Array<{
       path: string;
       methods: string[];
+      framework?: string;
       requires_auth?: boolean;
     }>;
   };
@@ -94,6 +95,7 @@ export interface ServiceInfo {
     models: Record<string, {
       orm: string;
       fields: Record<string, unknown>;
+      table?: string;
     }>;
   };
   services?: {

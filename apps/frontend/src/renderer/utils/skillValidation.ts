@@ -2,7 +2,7 @@
  * Skill validation utilities for Claude Agent Skills
  */
 
-import type { SkillValidationResult, SkillValidationRules } from '@/shared/types/skills';
+import type { SkillValidationResult, SkillValidationRules } from '../../shared/types/skills';
 
 /**
  * Default validation rules for skills

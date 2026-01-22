@@ -133,6 +133,12 @@ import type {
   GitLabNewCommitsCheck
 } from './integrations';
 import type { APIProfile, ProfilesFile, TestConnectionResult, DiscoverModelsResult } from './profile';
+import type {
+  Skill,
+  SkillGenerationOptions,
+  SkillGenerationResult,
+  SkillExportResult
+} from './skills';
 
 // Electron API exposed via contextBridge
 // Tab state interface (persisted in main process)
@@ -835,6 +841,12 @@ export interface ElectronAPI {
   // MCP Server health check operations
   checkMcpHealth: (server: CustomMcpServer) => Promise<IPCResult<McpHealthCheckResult>>;
   testMcpConnection: (server: CustomMcpServer) => Promise<IPCResult<McpTestConnectionResult>>;
+
+  // Skills operations
+  generateSkills: (projectId: string, options?: SkillGenerationOptions) => Promise<IPCResult<SkillGenerationResult>>;
+  loadSkills: (projectId: string) => Promise<IPCResult<Skill[]>>;
+  exportSkills: (projectId: string, skills: Skill[]) => Promise<IPCResult<void>>;
+  exportSkill: (projectId: string, skill: Skill) => Promise<IPCResult<SkillExportResult>>;
 }
 
 declare global {

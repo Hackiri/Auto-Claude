@@ -332,7 +332,31 @@ const browserMockAPI: ElectronAPI = {
   openLogsFolder: async () => ({ success: false, error: 'Not available in browser mode' }),
   copyDebugInfo: async () => ({ success: false, error: 'Not available in browser mode' }),
   getRecentErrors: async () => [],
-  listLogFiles: async () => []
+  listLogFiles: async () => [],
+
+  // Skills Operations
+  generateSkills: async () => ({
+    success: true,
+    data: {
+      success: true,
+      skills: []
+    }
+  }),
+  loadSkills: async () => ({
+    success: true,
+    data: []
+  }),
+  exportSkills: async () => ({
+    success: true,
+    data: undefined
+  }),
+  exportSkill: async () => ({
+    success: true,
+    data: {
+      success: true,
+      path: '/mock/skills/mock-skill.md'
+    }
+  })
 };
 
 /**

@@ -2,12 +2,12 @@
  * Skill generation utilities for auto-generating Claude Agent Skills from project index
  */
 
-import type { ProjectIndex, ServiceInfo } from '@/shared/types/project';
+import type { ProjectIndex, ServiceInfo } from '../../shared/types/project';
 import type {
   Skill,
   SkillGenerationOptions,
   SkillGenerationResult,
-} from '@/shared/types/skills';
+} from '../../shared/types/skills';
 
 /**
  * Sanitize a string to be used as a skill name
@@ -88,14 +88,14 @@ ${service.entry_point ? `**Entry Point:** \`${service.entry_point}\`\n` : ''}
 ${
   service.key_directories
     ? Object.entries(service.key_directories)
-        .map(([dirName, dirInfo]) => `- **${dirName}**: ${dirInfo.purpose} (\`${dirInfo.path}\`)`)
+        .map(([dirName, dirInfo]: [string, { path: string; purpose: string }]) => `- **${dirName}**: ${dirInfo.purpose} (\`${dirInfo.path}\`)`)
         .join('\n')
     : 'No key directories specified.'
 }
 
 ${
   service.dependencies && service.dependencies.length > 0
-    ? `## Dependencies\n\n${service.dependencies.slice(0, 10).map((dep) => `- ${dep}`).join('\n')}${service.dependencies.length > 10 ? `\n- ...and ${service.dependencies.length - 10} more` : ''}\n`
+    ? `## Dependencies\n\n${service.dependencies.slice(0, 10).map((dep: string) => `- ${dep}`).join('\n')}${service.dependencies.length > 10 ? `\n- ...and ${service.dependencies.length - 10} more` : ''}\n`
     : ''
 }
 ${service.testing ? `## Testing\n\n**Framework:** ${service.testing}\n${service.test_directory ? `**Test Directory:** \`${service.test_directory}\`\n` : ''}\n` : ''}
@@ -369,7 +369,7 @@ export function generateSkillsFromProjectIndex(
 
   // Generate database model skills
   if (includeDatabases && projectIndex.services) {
-    for (const [serviceName, serviceInfo] of Object.entries(projectIndex.services)) {
+    for (const [serviceName, serviceInfo] of Object.entries(projectIndex.services) as [string, ServiceInfo][]) {
       if (serviceInfo.database?.models) {
         for (const [modelName, modelInfo] of Object.entries(serviceInfo.database.models)) {
           try {
@@ -394,7 +394,7 @@ export function generateSkillsFromProjectIndex(
 
   // Generate API route skills
   if (includeApis && projectIndex.services) {
-    for (const [serviceName, serviceInfo] of Object.entries(projectIndex.services)) {
+    for (const [serviceName, serviceInfo] of Object.entries(projectIndex.services) as [string, ServiceInfo][]) {
       if (serviceInfo.api?.routes) {
         for (const route of serviceInfo.api.routes) {
           try {
