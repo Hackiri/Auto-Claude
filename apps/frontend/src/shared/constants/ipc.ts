@@ -458,6 +458,20 @@ export const IPC_CHANNELS = {
   CHANGELOG_GENERATION_COMPLETE: 'changelog:generationComplete',
   CHANGELOG_GENERATION_ERROR: 'changelog:generationError',
 
+  // Skills operations
+  SKILLS_LIST: 'skills:list',
+  SKILLS_GET: 'skills:get',
+  SKILLS_GENERATE: 'skills:generate',
+  SKILLS_INSTALL: 'skills:install',
+  SKILLS_UPDATE: 'skills:update',
+  SKILLS_DELETE: 'skills:delete',
+  SKILLS_VALIDATE: 'skills:validate',
+
+  // Skills events (main -> renderer)
+  SKILLS_GENERATION_PROGRESS: 'skills:generationProgress',
+  SKILLS_GENERATION_COMPLETE: 'skills:generationComplete',
+  SKILLS_GENERATION_ERROR: 'skills:generationError',
+
   // Insights operations
   INSIGHTS_GET_SESSION: 'insights:getSession',
   INSIGHTS_SEND_MESSAGE: 'insights:sendMessage',
