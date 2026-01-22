@@ -78,7 +78,7 @@ export function registerSkillsHandlers(): void {
 
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_INSTALL,
-    async (_, projectDir: string, skillName: string, content: string): Promise<IPCResult<SkillExportResult>> => {
+    async (_, projectDir: string, skillName: string, skillDescription: string, skillInstructions: string): Promise<IPCResult<SkillExportResult>> => {
       try {
         // Validate skill name
         const validation = validateSkillName(skillName);
@@ -97,6 +97,12 @@ export function registerSkillsHandlers(): void {
         if (!existsSync(skillDir)) {
           mkdirSync(skillDir, { recursive: true });
         }
+
+        // Generate SKILL.md content with YAML frontmatter using gray-matter
+        const content = matter.stringify(skillInstructions, {
+          name: skillName,
+          description: skillDescription
+        });
 
         // Write SKILL.md file
         const skillPath = join(skillDir, 'SKILL.md');

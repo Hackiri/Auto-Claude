@@ -1,5 +1,4 @@
 import { ipcRenderer } from 'electron';
-import matter from 'gray-matter';
 import { IPC_CHANNELS } from '../../shared/constants';
 import type {
   IPCResult,
@@ -49,19 +48,14 @@ export const createSkillsAPI = (): SkillsAPI => ({
 
   exportSkills: async (projectId, skills) => {
     try {
-      // Export each skill individually
+      // Export each skill individually - main process handles YAML frontmatter generation
       for (const skill of skills) {
-        // Generate SKILL.md content with YAML frontmatter using gray-matter
-        const content = matter.stringify(skill.instructions, {
-          name: skill.name,
-          description: skill.description
-        });
-
         const result = await ipcRenderer.invoke(
           IPC_CHANNELS.SKILLS_INSTALL,
           projectId,
           skill.name,
-          content
+          skill.description,
+          skill.instructions
         );
 
         if (!result.success) {
@@ -83,17 +77,13 @@ export const createSkillsAPI = (): SkillsAPI => ({
 
   exportSkill: async (projectId, skill) => {
     try {
-      // Generate SKILL.md content with YAML frontmatter using gray-matter
-      const content = matter.stringify(skill.instructions, {
-        name: skill.name,
-        description: skill.description
-      });
-
+      // Main process handles YAML frontmatter generation with gray-matter
       return ipcRenderer.invoke(
         IPC_CHANNELS.SKILLS_INSTALL,
         projectId,
         skill.name,
-        content
+        skill.description,
+        skill.instructions
       );
     } catch (error) {
       return {
