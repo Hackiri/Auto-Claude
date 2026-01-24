@@ -23,7 +23,7 @@ import { SkillCard } from './SkillCard';
 import { SkillPreviewDialog } from './SkillPreviewDialog';
 import { SkillEditDialog } from './SkillEditDialog';
 import { SkillGenerateDialog } from './SkillGenerateDialog';
-import { useSkillsStore, exportSingleSkill, loadSkills } from '../../stores/skills-store';
+import { useSkillsStore, exportSingleSkill, loadSkills, exportSkills } from '../../stores/skills-store';
 // Note: useContextStore no longer needed - AI analyzes project directly without projectIndex
 import { useTranslation } from 'react-i18next';
 import { skillFilterCategories } from './constants';
@@ -122,7 +122,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
       }
     });
 
-    const unsubComplete = window.electronAPI.onSkillsAIComplete((pid, generatedSkills) => {
+    const unsubComplete = window.electronAPI.onSkillsAIComplete(async (pid, generatedSkills) => {
       if (pid === projectId) {
         // Convert generated skills to Skill format
         const convertedSkills: Skill[] = generatedSkills.map((gs: GeneratedSkill) => ({
@@ -138,6 +138,17 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
           }
         }));
         setSkills(convertedSkills);
+
+        // Auto-export all generated skills to disk for persistence
+        try {
+          for (const skill of convertedSkills) {
+            await window.electronAPI.exportSkill(projectId, skill);
+          }
+          console.log(`[SkillsTab] Auto-exported ${convertedSkills.length} skills to disk`);
+        } catch (err) {
+          console.warn('[SkillsTab] Failed to auto-export skills:', err);
+        }
+
         setAiGenerating(false);
         setAiProgress(null);
         setGenerationError(null);
