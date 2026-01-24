@@ -24,7 +24,7 @@ import { SkillPreviewDialog } from './SkillPreviewDialog';
 import { SkillEditDialog } from './SkillEditDialog';
 import { SkillGenerateDialog } from './SkillGenerateDialog';
 import { useSkillsStore, exportSingleSkill } from '../../stores/skills-store';
-import { useContextStore } from '../../stores/context-store';
+// Note: useContextStore no longer needed - AI analyzes project directly without projectIndex
 import { useTranslation } from 'react-i18next';
 import { skillFilterCategories } from './constants';
 import type { Skill } from '../../../shared/types/skills';
@@ -50,7 +50,7 @@ const filterIcons: Record<FilterCategory, React.ElementType> = {
 
 export function SkillsTab({ projectId }: SkillsTabProps) {
   const { t } = useTranslation(['skills', 'common']);
-  const { projectIndex } = useContextStore();
+  // Note: No longer requiring projectIndex - AI analyzes project directly
   const {
     skills,
     skillsLoading,
@@ -236,7 +236,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
                   <Button
                     size="sm"
                     onClick={handleAIGenerate}
-                    disabled={generationLoading || !projectIndex}
+                    disabled={generationLoading || aiGenerating}
                   >
                     <Brain className="h-4 w-4 mr-2" />
                     {t('skills:aiGenerate.button', { defaultValue: 'Analyze & Generate' })}
@@ -309,7 +309,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
                 <Wand2 className="h-4 w-4 mr-2" />
                 {t('skills:generateFromPrompt')}
               </Button>
-              <Button onClick={handleAIGenerate} disabled={!projectIndex}>
+              <Button onClick={handleAIGenerate} disabled={generationLoading || aiGenerating}>
                 <Brain className="h-4 w-4 mr-2" />
                 {t('skills:aiGenerate.button', { defaultValue: 'Analyze & Generate' })}
               </Button>

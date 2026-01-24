@@ -6,6 +6,7 @@
  */
 
 import { ipcMain } from 'electron';
+import type { BrowserWindow } from 'electron';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from 'fs';
 import { join } from 'path';
 import matter from 'gray-matter';
@@ -13,6 +14,11 @@ import { IPC_CHANNELS } from '../../shared/constants';
 import type { IPCResult, Skill, SkillContent, SkillExportResult, SkillReadResult, SkillsListResult, SkillGenerationOptions, SkillGenerationResult } from '../../shared/types';
 import { generateSkillsFromProjectIndex } from '../../shared/utils/skillGenerator';
 import { v4 as uuidv4 } from 'uuid';
+import { projectStore } from '../project-store';
+import type { AgentManager } from '../agent';
+import type { SkillsConfig } from '../agent/types';
+import { debugLog, debugError } from '../../shared/utils/debug-logger';
+import { safeSendToRenderer } from './utils';
 
 /**
  * Maximum skill file size to read (500KB)
@@ -72,7 +78,10 @@ function getSkillsDirectory(projectDir: string): string {
 /**
  * Register all skills-related IPC handlers
  */
-export function registerSkillsHandlers(): void {
+export function registerSkillsHandlers(
+  agentManager: AgentManager,
+  getMainWindow: () => BrowserWindow | null
+): void {
   // ============================================
   // Skills File Export
   // ============================================
@@ -341,6 +350,113 @@ export function registerSkillsHandlers(): void {
       }
     }
   );
+
+  // ============================================
+  // AI-Powered Skills Generation
+  // ============================================
+
+  ipcMain.on(
+    IPC_CHANNELS.SKILLS_GENERATE_AI,
+    (
+      _,
+      projectId: string,
+      config?: SkillsConfig,
+      refresh?: boolean
+    ) => {
+      debugLog('[Skills Handler] AI generation request:', {
+        projectId,
+        config,
+        refresh
+      });
+
+      const mainWindow = getMainWindow();
+      if (!mainWindow) return;
+
+      const project = projectStore.getProject(projectId);
+      if (!project) {
+        debugError('[Skills Handler] Project not found:', projectId);
+        safeSendToRenderer(
+          getMainWindow,
+          IPC_CHANNELS.SKILLS_GENERATE_AI_ERROR,
+          projectId,
+          'Project not found'
+        );
+        return;
+      }
+
+      // Note: No longer requiring project_index.json - AI will analyze project directly
+
+      debugLog('[Skills Handler] Starting agent manager skills generation:', {
+        projectId,
+        projectPath: project.path,
+        config
+      });
+
+      // Start skills generation via agent manager
+      agentManager.startSkillsGeneration(
+        projectId,
+        project.path,
+        config || {},
+        refresh ?? false
+      );
+
+      // Send initial progress
+      safeSendToRenderer(getMainWindow, IPC_CHANNELS.SKILLS_GENERATE_AI_PROGRESS, projectId, {
+        phase: 'analyzing',
+        progress: 10,
+        message: 'Analyzing project architecture...'
+      });
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.SKILLS_GENERATE_AI_STOP,
+    async (_, projectId: string): Promise<IPCResult> => {
+      debugLog('[Skills Handler] Stop AI generation request:', { projectId });
+
+      const wasStopped = agentManager.stopSkillsGeneration(projectId);
+
+      debugLog('[Skills Handler] Stop result:', { projectId, wasStopped });
+
+      if (wasStopped) {
+        safeSendToRenderer(getMainWindow, IPC_CHANNELS.SKILLS_GENERATE_AI_STOPPED, projectId);
+      }
+
+      return { success: wasStopped };
+    }
+  );
+
+  // ============================================
+  // Register AI Skills Generation Event Listeners
+  // ============================================
+
+  // Forward progress events from agent manager to renderer
+  agentManager.on('skills-progress', (projectId: string, status: { phase: string; progress: number; message: string }) => {
+    safeSendToRenderer(getMainWindow, IPC_CHANNELS.SKILLS_GENERATE_AI_PROGRESS, projectId, status);
+  });
+
+  // Forward log events for debugging
+  agentManager.on('skills-log', (projectId: string, log: string) => {
+    debugLog('[Skills] Log:', { projectId, log });
+  });
+
+  // Forward completion events with generated skills
+  agentManager.on('skills-complete', (projectId: string, skills: Array<{ name: string; description: string; instructions: string }>) => {
+    debugLog('[Skills] Generation complete:', { projectId, skillsCount: skills.length });
+    safeSendToRenderer(getMainWindow, IPC_CHANNELS.SKILLS_GENERATE_AI_COMPLETE, projectId, skills);
+  });
+
+  // Forward error events
+  agentManager.on('skills-error', (projectId: string, error: string) => {
+    debugError('[Skills] Generation error:', { projectId, error });
+    safeSendToRenderer(getMainWindow, IPC_CHANNELS.SKILLS_GENERATE_AI_ERROR, projectId, error);
+  });
+
+  // Forward stopped events
+  agentManager.on('skills-stopped', (projectId: string) => {
+    debugLog('[Skills] Generation stopped:', { projectId });
+    safeSendToRenderer(getMainWindow, IPC_CHANNELS.SKILLS_GENERATE_AI_STOPPED, projectId);
+  });
 }
 
 /**
