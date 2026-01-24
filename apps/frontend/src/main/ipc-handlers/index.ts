@@ -102,7 +102,7 @@ export function setupIpcHandlers(
   registerInsightsHandlers(getMainWindow);
 
   // Skills handlers (Claude Agent Skills generation and management)
-  registerSkillsHandlers();
+  registerSkillsHandlers(agentManager, getMainWindow);
 
   // Memory & infrastructure handlers (for Graphiti/LadybugDB)
   registerMemoryHandlers();

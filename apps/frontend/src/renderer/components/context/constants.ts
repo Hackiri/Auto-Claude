@@ -118,3 +118,14 @@ export const skillSourceColors: Record<string, string> = {
   api: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
   ci: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
 };
+
+// Skill filter categories for grouping skills
+export const skillFilterCategories = {
+  all: { label: 'All' },
+  ai: { label: 'AI Generated' },
+  service: { label: 'Services' },
+  database: { label: 'Database' },
+  api: { label: 'API' },
+  ci: { label: 'CI/CD' },
+  enabled: { label: 'Enabled' }
+};
