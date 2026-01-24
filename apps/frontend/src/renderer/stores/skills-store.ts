@@ -145,7 +145,8 @@ export async function loadSkills(projectId: string): Promise<void> {
       return;
     }
 
-    const skillNames = listResult.data;
+    // listResult.data is { success: boolean, skills: string[] }
+    const skillNames = listResult.data.skills || [];
     if (skillNames.length === 0) {
       store.setSkills([]);
       return;
