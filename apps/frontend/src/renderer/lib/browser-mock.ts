@@ -372,7 +372,19 @@ const browserMockAPI: ElectronAPI = {
       success: true,
       path: '/mock/skills/mock-skill.md'
     }
-  })
+  }),
+
+  // AI-Powered Skills Generation
+  generateSkillsAI: (_projectId: string, _config?: unknown, _refresh?: boolean) => {
+    console.warn('[Browser Mock] generateSkillsAI called');
+  },
+  stopSkillsAI: async () => ({
+    success: true
+  }),
+  onSkillsAIProgress: () => () => {},
+  onSkillsAIComplete: () => () => {},
+  onSkillsAIError: () => () => {},
+  onSkillsAIStopped: () => () => {}
 };
 
 /**

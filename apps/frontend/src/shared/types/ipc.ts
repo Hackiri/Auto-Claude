@@ -139,6 +139,11 @@ import type {
   SkillGenerationResult,
   SkillExportResult
 } from './skills';
+import type {
+  SkillsAIConfig,
+  SkillsProgressData,
+  GeneratedSkill
+} from '../../preload/api/skills-api';
 
 // Electron API exposed via contextBridge
 // Tab state interface (persisted in main process)
@@ -848,6 +853,14 @@ export interface ElectronAPI {
   loadSkills: (projectId: string) => Promise<IPCResult<Skill[]>>;
   exportSkills: (projectId: string, skills: Skill[]) => Promise<IPCResult<void>>;
   exportSkill: (projectId: string, skill: Skill) => Promise<IPCResult<SkillExportResult>>;
+
+  // AI-Powered Skills Generation
+  generateSkillsAI: (projectId: string, config?: SkillsAIConfig, refresh?: boolean) => void;
+  stopSkillsAI: (projectId: string) => Promise<IPCResult>;
+  onSkillsAIProgress: (callback: (projectId: string, status: SkillsProgressData) => void) => () => void;
+  onSkillsAIComplete: (callback: (projectId: string, skills: GeneratedSkill[]) => void) => () => void;
+  onSkillsAIError: (callback: (projectId: string, error: string) => void) => () => void;
+  onSkillsAIStopped: (callback: (projectId: string) => void) => () => void;
 }
 
 declare global {
