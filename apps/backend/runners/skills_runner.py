@@ -150,6 +150,12 @@ class SkillsGenerator:
                 await client.query(prompt)
 
                 response_text = ""
+                tool_count = 0
+                # Track progress: 30% start, 90% before completion
+                # Progress increases with each tool use (simulating work done)
+                base_progress = 30
+                max_progress = 90  # Leave room for final completion
+
                 async for msg in client.receive_response():
                     msg_type = type(msg).__name__
 
@@ -160,9 +166,18 @@ class SkillsGenerator:
                                 response_text += block.text
                                 print(block.text, end="", flush=True)
                             elif block_type == "ToolUseBlock" and hasattr(block, "name"):
+                                tool_count += 1
+                                # Calculate progress based on tool usage
+                                # Assume ~10 tool calls for a typical generation
+                                progress = min(
+                                    max_progress,
+                                    base_progress + (tool_count * 6)  # ~6% per tool use
+                                )
                                 print(f"\n[Tool: {block.name}]", flush=True)
+                                print(f"SKILLS_GENERATION_PROGRESS:generating:{progress}")
 
                 print()
+                print("SKILLS_GENERATION_PROGRESS:finalizing:95")
                 print("SKILLS_GENERATION_PROGRESS:complete:100")
                 return True, response_text
 

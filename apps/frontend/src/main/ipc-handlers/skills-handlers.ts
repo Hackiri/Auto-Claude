@@ -88,7 +88,7 @@ export function registerSkillsHandlers(
 
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_INSTALL,
-    async (_, projectDir: string, skillName: string, skillDescription: string, skillInstructions: string): Promise<IPCResult<SkillExportResult>> => {
+    async (_, projectIdOrPath: string, skillName: string, skillDescription: string, skillInstructions: string): Promise<IPCResult<SkillExportResult>> => {
       try {
         // Validate skill name
         const validation = validateSkillName(skillName);
@@ -97,6 +97,15 @@ export function registerSkillsHandlers(
             success: false,
             error: validation.error
           };
+        }
+
+        // Resolve projectId to project path if needed
+        // First try to get project from store (if projectIdOrPath is an ID)
+        // If not found, assume it's already a path
+        let projectDir = projectIdOrPath;
+        const project = projectStore.getProject(projectIdOrPath);
+        if (project) {
+          projectDir = project.path;
         }
 
         // Get skills directory
@@ -140,7 +149,7 @@ export function registerSkillsHandlers(
 
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_GET,
-    async (_, projectDir: string, skillName: string): Promise<IPCResult<SkillReadResult>> => {
+    async (_, projectIdOrPath: string, skillName: string): Promise<IPCResult<SkillReadResult>> => {
       try {
         // Validate skill name
         const validation = validateSkillName(skillName);
@@ -149,6 +158,13 @@ export function registerSkillsHandlers(
             success: false,
             error: validation.error
           };
+        }
+
+        // Resolve projectId to project path if needed
+        let projectDir = projectIdOrPath;
+        const project = projectStore.getProject(projectIdOrPath);
+        if (project) {
+          projectDir = project.path;
         }
 
         // Get skill file path
@@ -209,8 +225,15 @@ export function registerSkillsHandlers(
 
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_LIST,
-    async (_, projectDir: string): Promise<IPCResult<SkillsListResult>> => {
+    async (_, projectIdOrPath: string): Promise<IPCResult<SkillsListResult>> => {
       try {
+        // Resolve projectId to project path if needed
+        let projectDir = projectIdOrPath;
+        const project = projectStore.getProject(projectIdOrPath);
+        if (project) {
+          projectDir = project.path;
+        }
+
         // Get skills directory
         const skillsDir = getSkillsDirectory(projectDir);
 
@@ -253,8 +276,15 @@ export function registerSkillsHandlers(
 
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_GENERATE,
-    async (_, projectDir: string, options: SkillGenerationOptions = {}): Promise<IPCResult<SkillGenerationResult>> => {
+    async (_, projectIdOrPath: string, options: SkillGenerationOptions = {}): Promise<IPCResult<SkillGenerationResult>> => {
       try {
+        // Resolve projectId to project path if needed
+        let projectDir = projectIdOrPath;
+        const project = projectStore.getProject(projectIdOrPath);
+        if (project) {
+          projectDir = project.path;
+        }
+
         // Get project index path
         const projectIndexPath = join(projectDir, '.auto-claude', 'project_index.json');
 
