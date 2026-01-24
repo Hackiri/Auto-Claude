@@ -125,6 +125,7 @@ export async function generateSkills(
 
 /**
  * Load existing skills from .claude/skills/ directory
+ * This first gets the list of skill names, then fetches full content for each
  */
 export async function loadSkills(projectId: string): Promise<void> {
   const store = useSkillsStore.getState();
@@ -132,12 +133,54 @@ export async function loadSkills(projectId: string): Promise<void> {
   store.setSkillsError(null);
 
   try {
-    const result = await window.electronAPI.loadSkills(projectId);
-    if (result.success && result.data) {
-      store.setSkills(result.data);
-    } else {
-      store.setSkillsError(result.error || 'Failed to load skills');
+    // First, get the list of skill names
+    const listResult = await window.electronAPI.loadSkills(projectId);
+    if (!listResult.success || !listResult.data) {
+      // No skills found is not an error - just set empty array
+      if (listResult.error?.includes('ENOENT') || listResult.error?.includes('not found')) {
+        store.setSkills([]);
+      } else {
+        store.setSkillsError(listResult.error || 'Failed to load skills');
+      }
+      return;
     }
+
+    const skillNames = listResult.data;
+    if (skillNames.length === 0) {
+      store.setSkills([]);
+      return;
+    }
+
+    // Fetch full content for each skill
+    const skills: Skill[] = [];
+    for (const skillName of skillNames) {
+      try {
+        const skillResult = await window.electronAPI.getSkill(projectId, skillName);
+        if (skillResult.success && skillResult.data?.content) {
+          const content = skillResult.data.content;
+          skills.push({
+            id: `loaded-${skillName}-${Date.now()}`,
+            name: content.metadata.name || skillName,
+            description: content.metadata.description || '',
+            enabled: true, // Default to enabled for loaded skills
+            source: 'ai' as const, // Assume AI source for loaded skills
+            metadata: {
+              loadedFrom: 'disk',
+              loadedAt: new Date().toISOString(),
+              version: content.metadata.version,
+              'disable-model-invocation': content.metadata['disable-model-invocation'],
+              'allowed-tools': content.metadata['allowed-tools']
+            },
+            instructions: content.instructions
+          });
+        }
+      } catch (err) {
+        console.warn(`Failed to load skill ${skillName}:`, err);
+        // Continue loading other skills
+      }
+    }
+
+    store.setSkills(skills);
   } catch (error) {
     store.setSkillsError(error instanceof Error ? error.message : 'Unknown error');
   } finally {

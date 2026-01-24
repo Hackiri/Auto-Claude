@@ -6,11 +6,39 @@ import type {
   SkillGenerationOptions,
   SkillGenerationResult,
   SkillExportResult,
+  SkillReadResult,
 } from '../../shared/types';
+
+/**
+ * Configuration for AI-powered skills generation
+ */
+export interface SkillsAIConfig {
+  model?: string;          // Model shorthand (opus, sonnet, haiku)
+  thinkingLevel?: string;  // Thinking level (none, low, medium, high, ultrathink)
+  maxSkills?: number;      // Maximum number of skills to generate (default: 8)
+}
+
+/**
+ * Progress data for AI skills generation
+ */
+export interface SkillsProgressData {
+  phase: string;
+  progress: number;
+  message: string;
+}
+
+/**
+ * AI-generated skill data
+ */
+export interface GeneratedSkill {
+  name: string;
+  description: string;
+  instructions: string;
+}
 
 export interface SkillsAPI {
   /**
-   * Generate skills from project index
+   * Generate skills from project index (template-based)
    */
   generateSkills: (
     projectId: string,
@@ -27,9 +55,14 @@ export interface SkillsAPI {
   ) => Promise<IPCResult<Skill>>;
 
   /**
-   * Load existing skills from .claude/skills/ directory
+   * Load existing skills from .claude/skills/ directory (returns skill names)
    */
   loadSkills: (projectId: string) => Promise<IPCResult<string[]>>;
+
+  /**
+   * Get a single skill's full content by name
+   */
+  getSkill: (projectId: string, skillName: string) => Promise<IPCResult<SkillReadResult>>;
 
   /**
    * Export multiple skills to .claude/skills/ directory
@@ -46,6 +79,53 @@ export interface SkillsAPI {
     projectId: string,
     skill: Skill
   ) => Promise<IPCResult<SkillExportResult>>;
+
+  // ============================================
+  // AI-Powered Skills Generation
+  // ============================================
+
+  /**
+   * Start AI-powered skills generation
+   * Results are delivered via events (onSkillsAIProgress, onSkillsAIComplete, onSkillsAIError)
+   */
+  generateSkillsAI: (
+    projectId: string,
+    config?: SkillsAIConfig,
+    refresh?: boolean
+  ) => void;
+
+  /**
+   * Stop AI skills generation
+   */
+  stopSkillsAI: (projectId: string) => Promise<IPCResult>;
+
+  /**
+   * Listen for AI skills generation progress updates
+   */
+  onSkillsAIProgress: (
+    callback: (projectId: string, status: SkillsProgressData) => void
+  ) => () => void;
+
+  /**
+   * Listen for AI skills generation completion
+   */
+  onSkillsAIComplete: (
+    callback: (projectId: string, skills: GeneratedSkill[]) => void
+  ) => () => void;
+
+  /**
+   * Listen for AI skills generation errors
+   */
+  onSkillsAIError: (
+    callback: (projectId: string, error: string) => void
+  ) => () => void;
+
+  /**
+   * Listen for AI skills generation stopped
+   */
+  onSkillsAIStopped: (
+    callback: (projectId: string) => void
+  ) => () => void;
 }
 
 export const createSkillsAPI = (): SkillsAPI => ({
@@ -57,6 +137,9 @@ export const createSkillsAPI = (): SkillsAPI => ({
 
   loadSkills: (projectId) =>
     ipcRenderer.invoke(IPC_CHANNELS.SKILLS_LIST, projectId),
+
+  getSkill: (projectId, skillName) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GET, projectId, skillName),
 
   exportSkills: async (projectId, skills) => {
     try {
@@ -103,5 +186,56 @@ export const createSkillsAPI = (): SkillsAPI => ({
         error: error instanceof Error ? error.message : 'Failed to export skill'
       };
     }
+  },
+
+  // ============================================
+  // AI-Powered Skills Generation
+  // ============================================
+
+  generateSkillsAI: (projectId, config, refresh) => {
+    ipcRenderer.send(IPC_CHANNELS.SKILLS_GENERATE_AI, projectId, config, refresh);
+  },
+
+  stopSkillsAI: (projectId) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SKILLS_GENERATE_AI_STOP, projectId),
+
+  onSkillsAIProgress: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, projectId: string, status: SkillsProgressData) => {
+      callback(projectId, status);
+    };
+    ipcRenderer.on(IPC_CHANNELS.SKILLS_GENERATE_AI_PROGRESS, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.SKILLS_GENERATE_AI_PROGRESS, handler);
+    };
+  },
+
+  onSkillsAIComplete: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, projectId: string, skills: GeneratedSkill[]) => {
+      callback(projectId, skills);
+    };
+    ipcRenderer.on(IPC_CHANNELS.SKILLS_GENERATE_AI_COMPLETE, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.SKILLS_GENERATE_AI_COMPLETE, handler);
+    };
+  },
+
+  onSkillsAIError: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, projectId: string, error: string) => {
+      callback(projectId, error);
+    };
+    ipcRenderer.on(IPC_CHANNELS.SKILLS_GENERATE_AI_ERROR, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.SKILLS_GENERATE_AI_ERROR, handler);
+    };
+  },
+
+  onSkillsAIStopped: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, projectId: string) => {
+      callback(projectId);
+    };
+    ipcRenderer.on(IPC_CHANNELS.SKILLS_GENERATE_AI_STOPPED, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.SKILLS_GENERATE_AI_STOPPED, handler);
+    };
   }
 });

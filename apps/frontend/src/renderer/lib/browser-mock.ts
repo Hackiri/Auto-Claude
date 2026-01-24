@@ -362,6 +362,19 @@ const browserMockAPI: ElectronAPI = {
     success: true,
     data: []
   }),
+  getSkill: async (_projectId: string, skillName: string) => ({
+    success: true,
+    data: {
+      success: true,
+      content: {
+        metadata: {
+          name: skillName,
+          description: `Mock skill: ${skillName}`
+        },
+        instructions: `# ${skillName}\n\nThis is a mock skill.`
+      }
+    }
+  }),
   exportSkills: async () => ({
     success: true,
     data: undefined

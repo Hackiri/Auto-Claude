@@ -137,7 +137,8 @@ import type {
   Skill,
   SkillGenerationOptions,
   SkillGenerationResult,
-  SkillExportResult
+  SkillExportResult,
+  SkillReadResult
 } from './skills';
 import type {
   SkillsAIConfig,
@@ -850,7 +851,8 @@ export interface ElectronAPI {
   // Skills operations
   generateSkills: (projectId: string, options?: SkillGenerationOptions) => Promise<IPCResult<SkillGenerationResult>>;
   generateSkillFromPrompt: (projectId: string, skillName: string, prompt: string) => Promise<IPCResult<Skill>>;
-  loadSkills: (projectId: string) => Promise<IPCResult<Skill[]>>;
+  loadSkills: (projectId: string) => Promise<IPCResult<string[]>>;
+  getSkill: (projectId: string, skillName: string) => Promise<IPCResult<SkillReadResult>>;
   exportSkills: (projectId: string, skills: Skill[]) => Promise<IPCResult<void>>;
   exportSkill: (projectId: string, skill: Skill) => Promise<IPCResult<SkillExportResult>>;
 

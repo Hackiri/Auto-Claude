@@ -23,7 +23,7 @@ import { SkillCard } from './SkillCard';
 import { SkillPreviewDialog } from './SkillPreviewDialog';
 import { SkillEditDialog } from './SkillEditDialog';
 import { SkillGenerateDialog } from './SkillGenerateDialog';
-import { useSkillsStore, exportSingleSkill } from '../../stores/skills-store';
+import { useSkillsStore, exportSingleSkill, loadSkills } from '../../stores/skills-store';
 // Note: useContextStore no longer needed - AI analyzes project directly without projectIndex
 import { useTranslation } from 'react-i18next';
 import { skillFilterCategories } from './constants';
@@ -104,6 +104,13 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
     return skills.filter(skill => skill.source === activeFilter);
   }, [skills, activeFilter]);
 
+  // Load skills from disk on mount and when projectId changes
+  useEffect(() => {
+    if (projectId) {
+      loadSkills(projectId);
+    }
+  }, [projectId]);
+
   // Register AI generation event listeners
   useEffect(() => {
     // Check if electronAPI and AI skills methods are available
@@ -162,11 +169,15 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
 
   // AI-powered skills generation
   const handleAIGenerate = useCallback(() => {
+    console.log('[SkillsTab] handleAIGenerate called, electronAPI:', !!window.electronAPI, 'generateSkillsAI:', !!window.electronAPI?.generateSkillsAI);
     // Check if electronAPI and the generateSkillsAI method exist
     if (!window.electronAPI?.generateSkillsAI) {
-      setGenerationError('AI Skills generation requires the Electron app. Please ensure you are running the desktop application.');
+      const errorMsg = `[FIXED-v4-${Date.now()}] electronAPI.generateSkillsAI not available`;
+      console.error('[SkillsTab] API check failed:', errorMsg);
+      setGenerationError(errorMsg);
       return;
     }
+    console.log('[SkillsTab] API check passed, starting generation');
 
     setAiGenerating(true);
     setGenerationError(null);
