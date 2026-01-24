@@ -5,7 +5,7 @@ import { EventEmitter } from 'events';
 import { AgentState } from './agent-state';
 import { AgentEvents } from './agent-events';
 import { AgentProcessManager } from './agent-process';
-import { RoadmapConfig } from './types';
+import { RoadmapConfig, SkillsConfig } from './types';
 import type { IdeationConfig, Idea } from '../../shared/types';
 import { detectRateLimit, createSDKRateLimitInfo, getProfileEnv } from '../rate-limit-detector';
 import { getAPIProfileEnv } from '../services/profile';
@@ -67,7 +67,7 @@ export class AgentQueueManager {
    */
   private async ensurePythonEnvReady(
     projectId: string,
-    eventType: 'ideation-error' | 'roadmap-error'
+    eventType: 'ideation-error' | 'roadmap-error' | 'skills-error'
   ): Promise<boolean> {
     const status = await this.processManager.ensurePythonEnvReady('AgentQueue');
     if (!status.ready) {
@@ -860,5 +860,343 @@ export class AgentQueueManager {
   isRoadmapRunning(projectId: string): boolean {
     const processInfo = this.state.getProcess(projectId);
     return processInfo?.queueProcessType === 'roadmap';
+  }
+
+  /**
+   * Start skills AI generation process
+   */
+  async startSkillsGeneration(
+    projectId: string,
+    projectPath: string,
+    config: SkillsConfig = {},
+    refresh: boolean = false
+  ): Promise<void> {
+    debugLog('[Agent Queue] Starting skills generation:', {
+      projectId,
+      projectPath,
+      config,
+      refresh
+    });
+
+    const autoBuildSource = this.processManager.getAutoBuildSourcePath();
+
+    if (!autoBuildSource) {
+      debugError('[Agent Queue] Auto-build source path not found');
+      this.emitter.emit('skills-error', projectId, 'Auto-build source path not found. Please configure it in App Settings.');
+      return;
+    }
+
+    const skillsRunnerPath = path.join(autoBuildSource, 'runners', 'skills_runner.py');
+
+    if (!existsSync(skillsRunnerPath)) {
+      debugError('[Agent Queue] Skills runner not found at:', skillsRunnerPath);
+      this.emitter.emit('skills-error', projectId, `Skills runner not found at: ${skillsRunnerPath}`);
+      return;
+    }
+
+    const args = [skillsRunnerPath, '--project', projectPath];
+
+    if (refresh) {
+      args.push('--refresh');
+    }
+
+    // Add model and thinking level from config
+    if (config.model) {
+      args.push('--model', config.model);
+    }
+    if (config.thinkingLevel) {
+      args.push('--thinking-level', config.thinkingLevel);
+    }
+    if (config.maxSkills) {
+      args.push('--max-skills', config.maxSkills.toString());
+    }
+
+    debugLog('[Agent Queue] Spawning skills process with args:', args);
+
+    await this.spawnSkillsProcess(projectId, projectPath, args);
+  }
+
+  /**
+   * Spawn a Python process for skills generation
+   */
+  private async spawnSkillsProcess(
+    projectId: string,
+    projectPath: string,
+    args: string[]
+  ): Promise<void> {
+    debugLog('[Agent Queue] Spawning skills process:', { projectId, projectPath });
+
+    // Run from auto-claude source directory so imports work correctly
+    const autoBuildSource = this.processManager.getAutoBuildSourcePath();
+    const cwd = autoBuildSource || process.cwd();
+
+    // Ensure Python environment is ready before spawning
+    if (!await this.ensurePythonEnvReady(projectId, 'skills-error')) {
+      return;
+    }
+
+    // Kill existing process for this project if any
+    const wasKilled = this.processManager.killProcess(projectId);
+    if (wasKilled) {
+      debugLog('[Agent Queue] Killed existing process for project:', projectId);
+    }
+
+    // Generate unique spawn ID for this process instance
+    const spawnId = this.state.generateSpawnId();
+    debugLog('[Agent Queue] Generated skills spawn ID:', spawnId);
+
+    // Get combined environment variables
+    const combinedEnv = this.processManager.getCombinedEnv(projectPath);
+
+    // Get active Claude profile environment (CLAUDE_CODE_OAUTH_TOKEN if not default)
+    const profileEnv = getProfileEnv();
+
+    // Get active API profile environment variables
+    const apiProfileEnv = await getAPIProfileEnv();
+
+    // Get OAuth mode clearing vars (clears stale ANTHROPIC_* vars when in OAuth mode)
+    const oauthModeClearVars = getOAuthModeClearVars(apiProfileEnv);
+
+    // Get Python path from process manager (uses venv if configured)
+    const pythonPath = this.processManager.getPythonPath();
+
+    // Get Python environment from pythonEnvManager (includes bundled site-packages)
+    const pythonEnv = pythonEnvManager.getPythonEnv();
+
+    // Build PYTHONPATH: bundled site-packages (if any) + autoBuildSource for local imports
+    const pythonPathParts: string[] = [];
+    if (pythonEnv.PYTHONPATH) {
+      pythonPathParts.push(pythonEnv.PYTHONPATH);
+    }
+    if (autoBuildSource) {
+      pythonPathParts.push(autoBuildSource);
+    }
+    const combinedPythonPath = pythonPathParts.join(process.platform === 'win32' ? ';' : ':');
+
+    // Build final environment with proper precedence
+    const finalEnv = {
+      ...process.env,
+      ...pythonEnv,
+      ...combinedEnv,
+      ...oauthModeClearVars,
+      ...profileEnv,
+      ...apiProfileEnv,
+      PYTHONPATH: combinedPythonPath,
+      PYTHONUNBUFFERED: '1',
+      PYTHONUTF8: '1'
+    };
+
+    // Parse Python command to handle space-separated commands like "py -3"
+    const [pythonCommand, pythonBaseArgs] = parsePythonCommand(pythonPath);
+    const childProcess = spawn(pythonCommand, [...pythonBaseArgs, ...args], {
+      cwd,
+      env: finalEnv
+    });
+
+    this.state.addProcess(projectId, {
+      taskId: projectId,
+      process: childProcess,
+      startedAt: new Date(),
+      projectPath,
+      spawnId,
+      queueProcessType: 'skills'
+    });
+
+    // Track progress through output
+    let progressPhase = 'analyzing';
+    let progressPercent = 10;
+    // Collect output for rate limit detection
+    let allOutput = '';
+
+    // Helper to emit logs - split multi-line output into individual log lines
+    const emitLogs = (log: string) => {
+      const lines = log.split('\n').filter(line => line.trim().length > 0);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.length > 0) {
+          this.emitter.emit('skills-log', projectId, trimmed);
+        }
+      }
+    };
+
+    // Handle stdout - explicitly decode as UTF-8 for cross-platform Unicode support
+    childProcess.stdout?.on('data', (data: Buffer) => {
+      const log = data.toString('utf8');
+      // Collect output for rate limit detection (keep last 10KB)
+      allOutput = (allOutput + log).slice(-10000);
+
+      // Emit all log lines for the activity log
+      emitLogs(log);
+
+      // Parse progress markers from skills_runner.py
+      const progressMatch = log.match(/SKILLS_GENERATION_PROGRESS:(\w+):(\d+)/);
+      if (progressMatch) {
+        const [, phase, progress] = progressMatch;
+        progressPhase = phase;
+        progressPercent = parseInt(progress, 10);
+      }
+
+      // Check for completion
+      const completeMatch = log.match(/SKILLS_GENERATION_COMPLETE:(\d+)/);
+      if (completeMatch) {
+        const [, skillsCount] = completeMatch;
+        debugLog('[Agent Queue] Skills generation completed:', {
+          projectId,
+          skillsCount: parseInt(skillsCount, 10)
+        });
+      }
+
+      // Check for errors
+      const errorMatch = log.match(/SKILLS_GENERATION_ERROR:(.+)/);
+      if (errorMatch) {
+        const [, errorMessage] = errorMatch;
+        debugError('[Agent Queue] Skills generation error:', { projectId, errorMessage });
+      }
+
+      // Emit progress update
+      const statusMessage = formatStatusMessage(log);
+      this.emitter.emit('skills-progress', projectId, {
+        phase: progressPhase,
+        progress: progressPercent,
+        message: statusMessage
+      });
+    });
+
+    // Handle stderr - also emit as logs, explicitly decode as UTF-8
+    childProcess.stderr?.on('data', (data: Buffer) => {
+      const log = data.toString('utf8');
+      // Collect stderr for rate limit detection too
+      allOutput = (allOutput + log).slice(-10000);
+      console.error('[Skills STDERR]', log);
+      emitLogs(log);
+      this.emitter.emit('skills-progress', projectId, {
+        phase: progressPhase,
+        progress: progressPercent,
+        message: formatStatusMessage(log)
+      });
+    });
+
+    // Handle process exit
+    childProcess.on('exit', (code: number | null) => {
+      debugLog('[Agent Queue] Skills process exited:', { projectId, code, spawnId });
+
+      // Check if this process was intentionally stopped by the user
+      const wasIntentionallyStopped = this.state.wasSpawnKilled(spawnId);
+      if (wasIntentionallyStopped) {
+        debugLog('[Agent Queue] Skills process was intentionally stopped, ignoring exit');
+        this.state.clearKilledSpawn(spawnId);
+        this.emitter.emit('skills-stopped', projectId);
+        return;
+      }
+
+      // Get the stored project path before deleting from map
+      const processInfo = this.state.getProcess(projectId);
+      const storedProjectPath = processInfo?.projectPath;
+      this.state.deleteProcess(projectId);
+
+      // Check for rate limit if process failed
+      if (code !== 0) {
+        debugLog('[Agent Queue] Checking for rate limit (non-zero exit)');
+        const rateLimitDetection = detectRateLimit(allOutput);
+        if (rateLimitDetection.isRateLimited) {
+          debugLog('[Agent Queue] Rate limit detected for skills');
+          const rateLimitInfo = createSDKRateLimitInfo('skills', rateLimitDetection, {
+            projectId
+          });
+          this.emitter.emit('sdk-rate-limit', rateLimitInfo);
+        }
+      }
+
+      if (code === 0) {
+        debugLog('[Agent Queue] Skills generation completed successfully');
+        this.emitter.emit('skills-progress', projectId, {
+          phase: 'complete',
+          progress: 100,
+          message: 'Skills generation complete'
+        });
+
+        // Load and emit the generated skills
+        if (storedProjectPath) {
+          try {
+            const skillsFilePath = path.join(
+              storedProjectPath,
+              '.auto-claude',
+              'skills',
+              'generated_skills.json'
+            );
+            debugLog('[Agent Queue] Loading skills from:', skillsFilePath);
+            if (existsSync(skillsFilePath)) {
+              const loadSkills = async (): Promise<void> => {
+                try {
+                  const content = await fsPromises.readFile(skillsFilePath, 'utf-8');
+                  const skillsData = JSON.parse(content);
+                  const skills = skillsData.skills || [];
+                  debugLog('[Agent Queue] Loaded skills:', {
+                    skillsCount: skills.length
+                  });
+                  this.emitter.emit('skills-complete', projectId, skills);
+                } catch (err) {
+                  debugError('[Skills] Failed to load skills:', err);
+                  this.emitter.emit('skills-error', projectId,
+                    `Failed to load skills: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                }
+              };
+              loadSkills().catch((err: unknown) => {
+                debugError('[Agent Queue] Unhandled error loading skills:', err);
+              });
+            } else {
+              debugError('[Skills] generated_skills.json not found at:', skillsFilePath);
+              this.emitter.emit('skills-error', projectId,
+                'Skills generation completed but file not found.');
+            }
+          } catch (err) {
+            debugError('[Skills] Unexpected error in skills completion:', err);
+            this.emitter.emit('skills-error', projectId,
+              `Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        } else {
+          debugError('[Skills] No project path available for skills completion');
+          this.emitter.emit('skills-error', projectId, 'Skills completed but project path not found.');
+        }
+      } else {
+        debugError('[Agent Queue] Skills generation failed:', { projectId, code });
+        this.emitter.emit('skills-error', projectId, `Skills generation failed with exit code ${code}`);
+      }
+    });
+
+    // Handle process error
+    childProcess.on('error', (err: Error) => {
+      console.error('[Skills] Process error:', err.message);
+      this.state.deleteProcess(projectId);
+      this.emitter.emit('skills-error', projectId, err.message);
+    });
+  }
+
+  /**
+   * Stop skills generation for a project
+   */
+  stopSkillsGeneration(projectId: string): boolean {
+    debugLog('[Agent Queue] Stop skills requested:', { projectId });
+
+    const processInfo = this.state.getProcess(projectId);
+    const isSkills = processInfo?.queueProcessType === 'skills';
+    debugLog('[Agent Queue] Skills process running?', { projectId, isSkills, processType: processInfo?.queueProcessType });
+
+    if (isSkills) {
+      debugLog('[Agent Queue] Killing skills process:', projectId);
+      this.processManager.killProcess(projectId);
+      this.emitter.emit('skills-stopped', projectId);
+      return true;
+    }
+    debugLog('[Agent Queue] No running skills process found for:', projectId);
+    return false;
+  }
+
+  /**
+   * Check if skills generation is running for a project
+   */
+  isSkillsGenerationRunning(projectId: string): boolean {
+    const processInfo = this.state.getProcess(projectId);
+    return processInfo?.queueProcessType === 'skills';
   }
 }
