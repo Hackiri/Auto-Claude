@@ -988,6 +988,18 @@ export class AgentQueueManager {
 
     // Parse Python command to handle space-separated commands like "py -3"
     const [pythonCommand, pythonBaseArgs] = parsePythonCommand(pythonPath);
+
+    // Log spawn details for debugging
+    debugLog('[Agent Queue] Skills spawn details:', {
+      pythonPath,
+      pythonCommand,
+      pythonBaseArgs,
+      cwd,
+      args,
+      PYTHONPATH: combinedPythonPath,
+      autoBuildSource
+    });
+
     const childProcess = spawn(pythonCommand, [...pythonBaseArgs, ...args], {
       cwd,
       env: finalEnv
@@ -1159,8 +1171,12 @@ export class AgentQueueManager {
           this.emitter.emit('skills-error', projectId, 'Skills completed but project path not found.');
         }
       } else {
-        debugError('[Agent Queue] Skills generation failed:', { projectId, code });
-        this.emitter.emit('skills-error', projectId, `Skills generation failed with exit code ${code}`);
+        // Extract error details from output for better error messages
+        const errorLines = allOutput.split('\n').filter(l => l.trim().length > 0);
+        const lastLines = errorLines.slice(-5).join('\n');
+        const errorContext = lastLines.length > 0 ? `\n\nDetails:\n${lastLines}` : '';
+        debugError('[Agent Queue] Skills generation failed:', { projectId, code, lastOutput: lastLines });
+        this.emitter.emit('skills-error', projectId, `Skills generation failed with exit code ${code}${errorContext}`);
       }
     });
 
