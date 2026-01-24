@@ -19,8 +19,8 @@ interface SkillCardProps {
 
 export function SkillCard({ skill, onToggle, onPreview, onEdit, onExport }: SkillCardProps) {
   const { t } = useTranslation(['skills', 'common']);
-  const Icon = skillSourceIcons[skill.source];
-  const colorClass = skillSourceColors[skill.source];
+  const Icon = skillSourceIcons[skill.source] || skillSourceIcons['unknown'];
+  const colorClass = skillSourceColors[skill.source] || skillSourceColors['unknown'];
 
   return (
     <Card className="overflow-hidden">

@@ -16,7 +16,8 @@ import {
   Sparkles,
   Target,
   Database,
-  Workflow
+  Workflow,
+  Brain
 } from 'lucide-react';
 
 // Service type icon mapping
@@ -105,18 +106,22 @@ export const memoryFilterCategories = {
 
 // Skill source type icon mapping
 export const skillSourceIcons: Record<string, React.ElementType> = {
+  ai: Brain,
   service: Server,
   database: Database,
   api: Globe,
-  ci: Workflow
+  ci: Workflow,
+  unknown: Sparkles
 };
 
 // Skill source type color mapping
 export const skillSourceColors: Record<string, string> = {
+  ai: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
   service: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
   database: 'bg-green-500/10 text-green-400 border-green-500/30',
   api: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-  ci: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+  ci: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  unknown: 'bg-muted text-muted-foreground border-muted'
 };
 
 // Skill filter categories for grouping skills
