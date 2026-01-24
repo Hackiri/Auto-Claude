@@ -18,6 +18,7 @@ import logging
 import os
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -146,6 +147,21 @@ from core.auth import (
 from linear_updater import is_linear_enabled
 from prompts_pkg.project_context import detect_project_capabilities, load_project_index
 from security import bash_security_hook
+
+# Import summarizer for large tool response handling
+from core.summarizer import (
+    get_summarizer,
+    SummarizationContext,
+    needs_summarization,
+)
+
+# Import mode manager for permission mode control
+from core.mode_manager import (
+    mode_manager,
+    PermissionMode,
+    should_block_tool,
+    should_prompt_for_tool,
+)
 
 
 def _validate_custom_mcp_server(server: dict) -> bool:
@@ -423,6 +439,114 @@ def should_use_claude_md() -> bool:
     return os.environ.get("USE_CLAUDE_MD", "").lower() == "true"
 
 
+async def mode_manager_hook(
+    input_data: dict[str, Any],
+    tool_use_id: str | None = None,
+    context: Any | None = None,
+) -> dict[str, Any]:
+    """
+    Pre-tool-use hook that enforces permission mode restrictions.
+
+    In SAFE mode, blocks write operations.
+    In ASK mode, flags tools that need user confirmation.
+
+    Args:
+        input_data: Dict containing tool_name and tool_input
+        tool_use_id: Optional tool use ID
+        context: Optional context containing session_id
+
+    Returns:
+        Empty dict to allow, or {"decision": "block", "reason": "..."} to block
+    """
+    tool_name = input_data.get("tool_name", "")
+
+    # Get session ID from context or environment
+    session_id = None
+    if context and hasattr(context, "session_id"):
+        session_id = context.session_id
+    if not session_id:
+        session_id = os.environ.get("AGENT_SESSION_ID", "default")
+
+    # Get current permission mode for this session
+    current_mode = mode_manager.get_permission_mode(session_id)
+
+    # Check if tool should be blocked (SAFE mode blocks writes)
+    if should_block_tool(tool_name, current_mode):
+        return {
+            "decision": "block",
+            "reason": f"Tool '{tool_name}' blocked: Session is in {current_mode.value} mode (read-only). "
+                     f"Use SHIFT+TAB to cycle to 'ask' or 'allow-all' mode to enable writes.",
+        }
+
+    # Note: In ASK mode, the SDK handles user prompting
+    # We just return empty to allow, the prompt behavior is controlled elsewhere
+
+    return {}
+
+
+async def tool_result_summarizer_hook(
+    input_data: dict[str, Any],
+    tool_use_id: str | None = None,
+    context: Any | None = None,
+) -> dict[str, Any]:
+    """
+    Post-tool-use hook that summarizes large tool responses.
+
+    This prevents context bloat from large tool outputs by using Claude Haiku
+    to summarize results that exceed the token threshold.
+
+    Args:
+        input_data: Dict containing tool_name, tool_input, and result
+        tool_use_id: Optional tool use ID
+        context: Optional context
+
+    Returns:
+        Modified result dict with summarized content, or original result
+    """
+    tool_name = input_data.get("tool_name", "")
+    result = input_data.get("result", "")
+
+    # Skip if result is not a string or is empty
+    if not isinstance(result, str) or not result:
+        return {}
+
+    # Skip summarization for certain tools where full output is critical
+    skip_tools = {
+        "Edit",
+        "Write",
+        "StructuredOutput",
+    }
+    if tool_name in skip_tools:
+        return {}
+
+    # Check if summarization is needed
+    if not needs_summarization(result):
+        return {}
+
+    # Build context for summarization
+    tool_input = input_data.get("tool_input", {})
+    ctx = SummarizationContext(
+        tool_name=tool_name,
+        path=tool_input.get("file_path") or tool_input.get("path") or tool_input.get("pattern"),
+        input_params=tool_input,
+        model_intent=tool_input.get("description"),  # If agent provided intent
+    )
+
+    # Summarize the result
+    try:
+        summarizer = get_summarizer()
+        summarized = summarizer.maybe_summarize(result, ctx)
+        if summarized != result:
+            logger.debug(
+                f"Summarized {tool_name} result from {len(result)} to {len(summarized)} chars"
+            )
+            return {"result": summarized}
+    except Exception as e:
+        logger.warning(f"Summarization failed for {tool_name}: {e}")
+
+    return {}
+
+
 def load_claude_md(project_dir: Path) -> str | None:
     """
     Load CLAUDE.md content from project root if it exists.
@@ -450,6 +574,8 @@ def create_client(
     max_thinking_tokens: int | None = None,
     output_format: dict | None = None,
     agents: dict | None = None,
+    session_id: str | None = None,
+    permission_mode: PermissionMode | None = None,
 ) -> ClaudeSDKClient:
     """
     Create a Claude Agent SDK client with multi-layered security.
@@ -476,6 +602,12 @@ def create_client(
                Format: {"agent-name": {"description": "...", "prompt": "...",
                         "tools": [...], "model": "inherit"}}
                See: https://platform.claude.com/docs/en/agent-sdk/subagents
+        session_id: Optional session ID for permission mode tracking.
+                   If not provided, a default session is used.
+        permission_mode: Optional initial permission mode for the session.
+                        - SAFE: Read-only (blocks write operations)
+                        - ASK: Prompt before writes (default)
+                        - ALLOW_ALL: Auto-execute all tools
 
     Returns:
         Configured ClaudeSDKClient
@@ -509,6 +641,25 @@ def create_client(
         logger.info(f"Git Bash path found: {sdk_env['CLAUDE_CODE_GIT_BASH_PATH']}")
     elif is_windows():
         logger.warning("Git Bash path not detected on Windows!")
+
+    # Initialize permission mode for this session
+    # Generate session ID if not provided
+    if session_id is None:
+        session_id = str(uuid.uuid4())
+
+    # Set session ID in environment for hooks to access
+    os.environ["AGENT_SESSION_ID"] = session_id
+
+    # Set initial permission mode (defaults to ASK)
+    if permission_mode is not None:
+        mode_manager.set_permission_mode(session_id, permission_mode)
+    else:
+        # Default mode is ASK - prompt for write operations
+        mode_manager.set_permission_mode(session_id, PermissionMode.ASK)
+
+    logger.debug(
+        f"Session {session_id[:8]}... initialized with mode: {mode_manager.get_permission_mode(session_id).value}"
+    )
 
     # Check if Linear integration is enabled
     linear_enabled = is_linear_enabled()
@@ -803,7 +954,14 @@ def create_client(
         "mcp_servers": mcp_servers,
         "hooks": {
             "PreToolUse": [
+                # Mode manager enforces permission mode (SAFE blocks writes)
+                HookMatcher(matcher="*", hooks=[mode_manager_hook]),
+                # Bash security validates commands against allowlist
                 HookMatcher(matcher="Bash", hooks=[bash_security_hook]),
+            ],
+            "PostToolUse": [
+                # Summarize large tool results to prevent context bloat
+                HookMatcher(matcher="*", hooks=[tool_result_summarizer_hook]),
             ],
         },
         "max_turns": 1000,
