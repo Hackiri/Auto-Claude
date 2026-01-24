@@ -49,6 +49,17 @@ export function SkillGenerateDialog({
   const { t } = useTranslation(['skills', 'common']);
   const { addSkill } = useSkillsStore();
 
+  // Log when dialog opens to verify new code is running
+  useEffect(() => {
+    if (open) {
+      console.log('='.repeat(60));
+      console.log('[SkillGenerateDialog] VERSION: 2024-01-24-v7');
+      console.log('[SkillGenerateDialog] DIALOG OPENED');
+      console.log('[SkillGenerateDialog] projectId:', projectId);
+      console.log('='.repeat(60));
+    }
+  }, [open, projectId]);
+
   // Form state
   const [prompt, setPrompt] = useState('');
   const [skillName, setSkillName] = useState('');
@@ -74,21 +85,31 @@ export function SkillGenerateDialog({
 
   // Handle generate
   const handleGenerate = async () => {
-    if (isGenerateDisabled) return;
+    console.log('[SkillGenerateDialog] handleGenerate called:', { projectId, skillName, promptLength: prompt.length });
+    if (isGenerateDisabled) {
+      console.log('[SkillGenerateDialog] Generate is disabled, returning');
+      return;
+    }
 
     setIsGenerating(true);
     setError(null);
 
     try {
       // Call IPC to generate skill from prompt
+      // Note: The IPC handler auto-saves the skill to disk, so we don't need to export separately
+      console.log('[SkillGenerateDialog] Calling generateSkillFromPrompt...', { projectId, skillName: skillName.trim() });
+
       const result = await window.electronAPI.generateSkillFromPrompt(
         projectId,
         skillName.trim(),
         prompt.trim()
       );
+      console.log('[SkillGenerateDialog] Result:', result.success, result.error);
 
       if (result.success && result.data) {
-        // Add the generated skill to the store
+        console.log('[SkillGenerateDialog] Success! Skill saved by IPC handler.');
+
+        // Add to store for UI
         addSkill(result.data);
 
         // Notify parent
@@ -99,10 +120,14 @@ export function SkillGenerateDialog({
         // Close dialog
         onOpenChange(false);
       } else {
-        setError(result.error || t('skills:promptGenerate.error'));
+        const errorMsg = result.error || 'Generation failed';
+        console.error('[SkillGenerateDialog] Failed:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('skills:promptGenerate.error'));
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[SkillGenerateDialog] Exception:', err);
+      setError(errorMsg);
     } finally {
       setIsGenerating(false);
     }

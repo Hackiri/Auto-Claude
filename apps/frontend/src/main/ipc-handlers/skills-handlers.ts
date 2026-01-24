@@ -7,10 +7,22 @@
 
 import { ipcMain } from 'electron';
 import type { BrowserWindow } from 'electron';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import matter from 'gray-matter';
 import { IPC_CHANNELS } from '../../shared/constants';
+
+// Debug log file - writes to a persistent file for debugging
+const DEBUG_LOG_PATH = '/tmp/skills-debug.log';
+function debugToFile(message: string) {
+  const timestamp = new Date().toISOString();
+  const logLine = `[${timestamp}] ${message}\n`;
+  try {
+    appendFileSync(DEBUG_LOG_PATH, logLine);
+  } catch (e) {
+    console.error('Failed to write debug log:', e);
+  }
+}
 import type { IPCResult, Skill, SkillContent, SkillExportResult, SkillReadResult, SkillsListResult, SkillGenerationOptions, SkillGenerationResult } from '../../shared/types';
 import { generateSkillsFromProjectIndex } from '../../shared/utils/skillGenerator';
 import { v4 as uuidv4 } from 'uuid';
@@ -82,6 +94,10 @@ export function registerSkillsHandlers(
   agentManager: AgentManager,
   getMainWindow: () => BrowserWindow | null
 ): void {
+  // STARTUP LOG - confirms handlers are registered
+  debugToFile('========== SKILLS HANDLERS REGISTERED v6 ==========');
+  console.log('[Skills Handlers] Registering IPC handlers v6');
+
   // ============================================
   // Skills File Export
   // ============================================
@@ -89,32 +105,88 @@ export function registerSkillsHandlers(
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_INSTALL,
     async (_, projectIdOrPath: string, skillName: string, skillDescription: string, skillInstructions: string): Promise<IPCResult<SkillExportResult>> => {
+      // ALWAYS log for debugging - not behind DEBUG flag
+      // VERSION MARKER: 2024-01-24-v5 - If you don't see this, restart the app!
+      debugToFile('========== SKILLS_INSTALL v5 ==========');
+      debugToFile(`projectIdOrPath: ${projectIdOrPath}`);
+      debugToFile(`skillName: ${skillName}`);
+      debugToFile(`descriptionLength: ${skillDescription?.length}`);
+      debugToFile(`instructionsLength: ${skillInstructions?.length}`);
+
+      console.log('='.repeat(60));
+      console.log('[SKILLS_INSTALL] VERSION: 2024-01-24-v5');
+      console.log('[SKILLS_INSTALL] Request received');
+      console.log('[SKILLS_INSTALL] projectIdOrPath:', projectIdOrPath);
+      console.log('[SKILLS_INSTALL] skillName:', skillName);
+      console.log('[SKILLS_INSTALL] descriptionLength:', skillDescription?.length);
+      console.log('[SKILLS_INSTALL] instructionsLength:', skillInstructions?.length);
+
+      // Log all projects in store for debugging
+      const allProjects = projectStore.getProjects();
+      debugToFile(`Projects in store: ${allProjects.length}`);
+      console.log('[SKILLS_INSTALL] Projects in store:', allProjects.length);
+      allProjects.forEach((p, i) => {
+        debugToFile(`  Project ${i}: id=${p.id}, path=${p.path}`);
+        console.log(`[SKILLS_INSTALL]   Project ${i}: id=${p.id}, path=${p.path}`);
+      });
+      console.log('='.repeat(60));
+
       try {
         // Validate skill name
         const validation = validateSkillName(skillName);
         if (!validation.valid) {
+          console.error('[SKILLS_INSTALL] Invalid skill name:', validation.error);
           return {
             success: false,
             error: validation.error
           };
         }
 
-        // Resolve projectId to project path if needed
+        // Validate instructions
+        if (!skillInstructions || skillInstructions.length === 0) {
+          console.error('[SKILLS_INSTALL] Missing instructions for skill:', skillName);
+          return {
+            success: false,
+            error: 'Skill instructions are required'
+          };
+        }
+
+        // Resolve projectId to project path
         // First try to get project from store (if projectIdOrPath is an ID)
-        // If not found, assume it's already a path
-        let projectDir = projectIdOrPath;
+        let projectDir: string;
         const project = projectStore.getProject(projectIdOrPath);
+        debugToFile(`projectStore.getProject result: ${project ? 'FOUND' : 'NOT FOUND'}`);
+        console.log('[SKILLS_INSTALL] projectStore.getProject result:', project ? 'FOUND' : 'NOT FOUND');
+
         if (project) {
           projectDir = project.path;
+          debugToFile(`Resolved project ID to path: ${projectDir}`);
+          console.log('[SKILLS_INSTALL] Resolved project ID to path:', projectDir);
+        } else if (projectIdOrPath.startsWith('/') || projectIdOrPath.includes(':\\')) {
+          // It looks like an absolute path, use it directly
+          projectDir = projectIdOrPath;
+          debugToFile(`Using as absolute path: ${projectDir}`);
+          console.log('[SKILLS_INSTALL] Using as absolute path:', projectDir);
+        } else {
+          // It's a UUID that wasn't found in the store - this is an error
+          debugToFile(`ERROR: Project not found for ID: ${projectIdOrPath}`);
+          console.error('[SKILLS_INSTALL] Project not found for ID:', projectIdOrPath);
+          console.error('[SKILLS_INSTALL] This is the bug! ProjectId not in store.');
+          return {
+            success: false,
+            error: `Project not found: ${projectIdOrPath}`
+          };
         }
 
         // Get skills directory
         const skillsDir = getSkillsDirectory(projectDir);
+        debugLog('[Skills Install] Skills directory:', skillsDir);
 
         // Create skill subdirectory
         const skillDir = join(skillsDir, skillName);
         if (!existsSync(skillDir)) {
           mkdirSync(skillDir, { recursive: true });
+          debugLog('[Skills Install] Created skill directory:', skillDir);
         }
 
         // Generate SKILL.md content with YAML frontmatter using gray-matter
@@ -126,6 +198,9 @@ export function registerSkillsHandlers(
         // Write SKILL.md file
         const skillPath = join(skillDir, 'SKILL.md');
         writeFileSync(skillPath, content, 'utf-8');
+        debugToFile(`SUCCESS: Wrote skill file to: ${skillPath}`);
+        debugLog('[Skills Install] Wrote skill file:', skillPath);
+        console.log('[SKILLS_INSTALL] SUCCESS: Wrote skill file to:', skillPath);
 
         return {
           success: true,
@@ -135,9 +210,13 @@ export function registerSkillsHandlers(
           }
         };
       } catch (error) {
+        const errMsg = error instanceof Error ? error.message : 'Failed to export skill';
+        debugToFile(`ERROR: ${errMsg}`);
+        debugError('[Skills Install] Error:', error);
+        console.error('[SKILLS_INSTALL] ERROR:', errMsg);
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to export skill'
+          error: errMsg
         };
       }
     }
@@ -226,16 +305,37 @@ export function registerSkillsHandlers(
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_LIST,
     async (_, projectIdOrPath: string): Promise<IPCResult<SkillsListResult>> => {
+      // ALWAYS log for debugging
+      debugToFile('========== SKILLS_LIST v6 ==========');
+      debugToFile(`projectIdOrPath: ${projectIdOrPath}`);
+      console.log('='.repeat(60));
+      console.log('[SKILLS_LIST] Request for:', projectIdOrPath);
+
       try {
-        // Resolve projectId to project path if needed
-        let projectDir = projectIdOrPath;
+        // Resolve projectId to project path
+        let projectDir: string;
         const project = projectStore.getProject(projectIdOrPath);
+        console.log('[SKILLS_LIST] projectStore.getProject result:', project ? 'FOUND' : 'NOT FOUND');
+
         if (project) {
           projectDir = project.path;
+          console.log('[SKILLS_LIST] Resolved project ID to path:', projectDir);
+        } else if (projectIdOrPath.startsWith('/') || projectIdOrPath.includes(':\\')) {
+          // It looks like an absolute path, use it directly
+          projectDir = projectIdOrPath;
+          console.log('[SKILLS_LIST] Using as absolute path:', projectDir);
+        } else {
+          // It's a UUID that wasn't found in the store - this is an error
+          console.error('[SKILLS_LIST] Project not found for ID:', projectIdOrPath);
+          return {
+            success: false,
+            error: `Project not found: ${projectIdOrPath}`
+          };
         }
 
         // Get skills directory
         const skillsDir = getSkillsDirectory(projectDir);
+        debugLog('[Skills List] Skills directory:', skillsDir);
 
         // List all skill directories
         const entries = readdirSync(skillsDir, { withFileTypes: true });
@@ -247,12 +347,16 @@ export function registerSkillsHandlers(
             const skillPath = join(skillsDir, entry.name, 'SKILL.md');
             if (existsSync(skillPath)) {
               skillNames.push(entry.name);
+              debugLog('[Skills List] Found skill:', entry.name);
             }
           }
         }
 
         // Sort alphabetically
         skillNames.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+        debugLog('[Skills List] Found', skillNames.length, 'skills:', skillNames);
+        debugToFile(`SKILLS_LIST found ${skillNames.length} skills: ${skillNames.join(', ')}`);
 
         return {
           success: true,
@@ -262,6 +366,7 @@ export function registerSkillsHandlers(
           }
         };
       } catch (error) {
+        debugError('[Skills List] Error:', error);
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Failed to list skills'
@@ -323,10 +428,21 @@ export function registerSkillsHandlers(
   ipcMain.handle(
     IPC_CHANNELS.SKILLS_GENERATE_FROM_PROMPT,
     async (_, projectDir: string, skillName: string, prompt: string): Promise<IPCResult<Skill>> => {
+      debugToFile('========== SKILLS_GENERATE_FROM_PROMPT v5 ==========');
+      debugToFile(`projectDir: ${projectDir}`);
+      debugToFile(`skillName: ${skillName}`);
+      debugToFile(`promptLength: ${prompt?.length}`);
+      debugLog('[Skills Generate From Prompt] Request:', {
+        projectDir,
+        skillName,
+        promptLength: prompt?.length
+      });
+
       try {
         // Validate skill name
         const validation = validateSkillName(skillName);
         if (!validation.valid) {
+          debugError('[Skills Generate From Prompt] Invalid skill name:', validation.error);
           return {
             success: false,
             error: validation.error
@@ -335,6 +451,7 @@ export function registerSkillsHandlers(
 
         // Validate prompt
         if (!prompt || prompt.trim().length < 10) {
+          debugError('[Skills Generate From Prompt] Prompt too short');
           return {
             success: false,
             error: 'Prompt must be at least 10 characters long'
@@ -342,6 +459,7 @@ export function registerSkillsHandlers(
         }
 
         if (prompt.length > 2000) {
+          debugError('[Skills Generate From Prompt] Prompt too long');
           return {
             success: false,
             error: 'Prompt must be 2000 characters or less'
@@ -352,6 +470,7 @@ export function registerSkillsHandlers(
         // For now, create a structured skill based on the prompt
         // In the future, this could call an AI service to generate more sophisticated instructions
         const instructions = generateSkillInstructionsFromPrompt(skillName, prompt);
+        debugLog('[Skills Generate From Prompt] Generated instructions length:', instructions.length);
 
         // Create the skill object
         const skill: Skill = {
@@ -368,14 +487,76 @@ export function registerSkillsHandlers(
           instructions
         };
 
+        debugToFile(`Created skill: ${skill.name}, instructionsLength: ${skill.instructions.length}`);
+        debugLog('[Skills Generate From Prompt] Created skill:', {
+          id: skill.id,
+          name: skill.name,
+          descriptionLength: skill.description.length,
+          instructionsLength: skill.instructions.length,
+          hasInstructions: !!skill.instructions
+        });
+
+        // AUTO-SAVE: Save the skill directly in the main process
+        // This ensures persistence regardless of what the renderer does
+        try {
+          // Resolve projectId to project path (projectDir is actually projectId from renderer)
+          const projectIdOrPath = projectDir;
+          let resolvedProjectDir: string;
+          const project = projectStore.getProject(projectIdOrPath);
+
+          if (project) {
+            resolvedProjectDir = project.path;
+            debugToFile(`Resolved projectId to path: ${resolvedProjectDir}`);
+          } else if (projectIdOrPath.startsWith('/') || projectIdOrPath.includes(':\\')) {
+            resolvedProjectDir = projectIdOrPath;
+            debugToFile(`Using as absolute path: ${resolvedProjectDir}`);
+          } else {
+            debugToFile(`WARNING: Could not resolve projectId ${projectIdOrPath}, skipping auto-save`);
+            // Still return the skill - renderer might be able to save it
+            return {
+              success: true,
+              data: skill
+            };
+          }
+
+          // Get skills directory and create if needed
+          const skillsDir = getSkillsDirectory(resolvedProjectDir);
+          const skillDir = join(skillsDir, skillName);
+          if (!existsSync(skillDir)) {
+            mkdirSync(skillDir, { recursive: true });
+          }
+
+          // Generate SKILL.md content with YAML frontmatter
+          const content = matter.stringify(instructions, {
+            name: skillName,
+            description: skill.description
+          });
+
+          // Write SKILL.md file
+          const skillPath = join(skillDir, 'SKILL.md');
+          writeFileSync(skillPath, content, 'utf-8');
+          debugToFile(`AUTO-SAVED skill to: ${skillPath}`);
+          console.log('[SKILLS_GENERATE_FROM_PROMPT] AUTO-SAVED skill to:', skillPath);
+
+        } catch (saveError) {
+          // Log but don't fail - the skill was still generated
+          const saveErrMsg = saveError instanceof Error ? saveError.message : 'Unknown save error';
+          debugToFile(`AUTO-SAVE WARNING: ${saveErrMsg}`);
+          console.warn('[SKILLS_GENERATE_FROM_PROMPT] Auto-save warning:', saveErrMsg);
+        }
+
+        debugToFile('SKILLS_GENERATE_FROM_PROMPT returning success');
         return {
           success: true,
           data: skill
         };
       } catch (error) {
+        const errMsg = error instanceof Error ? error.message : 'Failed to generate skill from prompt';
+        debugToFile(`SKILLS_GENERATE_FROM_PROMPT ERROR: ${errMsg}`);
+        debugError('[Skills Generate From Prompt] Error:', error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to generate skill from prompt'
+          error: errMsg
         };
       }
     }
