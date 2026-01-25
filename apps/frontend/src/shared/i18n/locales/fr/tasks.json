@@ -162,6 +162,30 @@
     "selectFile": "Sélectionnez un fichier pour voir son contenu",
     "openInIDE": "Ouvrir dans l'IDE"
   },
+  "mergeHistory": {
+    "title": "Historique des fusions",
+    "noHistory": "Aucun historique de fusion",
+    "noHistoryDescription": "Les fusions apparaîtront ici après avoir fusionné cette tâche",
+    "loading": "Chargement de l'historique des fusions...",
+    "errorLoading": "Échec du chargement de l'historique des fusions",
+    "retry": "Réessayer",
+    "mergedTo": "Fusionné dans {{branch}}",
+    "filesChanged": "{{count}} fichier",
+    "filesChanged_plural": "{{count}} fichiers",
+    "conflicts": "{{count}} conflit",
+    "conflicts_plural": "{{count}} conflits",
+    "source": "Source",
+    "target": "Cible",
+    "started": "Démarré",
+    "completed": "Terminé",
+    "conflictResolution": "Résolution des conflits",
+    "autoResolved": "Résolu automatiquement",
+    "aiResolved": "Résolu par IA",
+    "aiTokensUsed": "Jetons IA utilisés",
+    "filesChangedLabel": "Fichiers modifiés",
+    "error": "Erreur",
+    "notAvailable": "N/D"
+  },
   "metadata": {
     "severity": "sévérité",
     "pullRequest": "Pull Request"
