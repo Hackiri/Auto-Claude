@@ -136,6 +136,21 @@ jobs:
         working-directory: apps/frontend
         run: npm run test
 
+      - name: Run coverage (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: apps/frontend
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./apps/frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Build application
         working-directory: apps/frontend
         run: npm run build
