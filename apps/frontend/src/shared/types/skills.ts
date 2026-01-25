@@ -7,9 +7,9 @@
 // ============================================
 
 /**
- * Skill source types derived from project index
+ * Skill source types derived from project index or AI generation
  */
-export type SkillSource = 'service' | 'database' | 'api' | 'ci';
+export type SkillSource = 'service' | 'database' | 'api' | 'ci' | 'ai';
 
 /**
  * YAML frontmatter metadata for SKILL.md files

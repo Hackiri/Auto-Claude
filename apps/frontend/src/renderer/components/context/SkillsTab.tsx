@@ -192,7 +192,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
 
     setAiGenerating(true);
     setGenerationError(null);
-    setAiProgress({ phase: 'starting', progress: 0, message: t('skills:aiGenerate.starting') });
+    setAiProgress({ phase: 'starting', progress: 0, message: t('skills:aiGenerate.starting', { defaultValue: 'Starting AI analysis...' }) });
 
     window.electronAPI.generateSkillsAI(projectId, {
       model: 'sonnet',
@@ -223,26 +223,28 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
           <div>
             <h2 className="text-lg font-semibold text-foreground">{t('skills:title')}</h2>
             <p className="text-sm text-muted-foreground">
-              {t('skills:description', { defaultValue: 'Claude Code skills for your project' })}
+              {t('skills:description')}
             </p>
           </div>
           <div className="flex gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowGenerateDialog(true)}
-                  disabled={aiGenerating}
-                >
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  {t('skills:generateFromPrompt')}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {t('skills:promptGenerate.description')}
-              </TooltipContent>
-            </Tooltip>
+            {skills.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowGenerateDialog(true)}
+                    disabled={aiGenerating}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    {t('skills:generateFromPrompt')}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t('skills:promptGenerate.description')}
+                </TooltipContent>
+              </Tooltip>
+            )}
             {aiGenerating ? (
               <Button
                 variant="destructive"
@@ -250,22 +252,23 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
                 onClick={handleStopAI}
               >
                 <StopCircle className="h-4 w-4 mr-2" />
-                {t('skills:aiGenerate.stop', { defaultValue: 'Stop' })}
+                {t('skills:aiGenerate.stop')}
               </Button>
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    variant="outline"
                     size="sm"
                     onClick={handleAIGenerate}
                     disabled={generationLoading || aiGenerating}
                   >
                     <Brain className="h-4 w-4 mr-2" />
-                    {t('skills:aiGenerate.button', { defaultValue: 'Analyze & Generate' })}
+                    {t('skills:aiGenerate.button')}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {t('skills:aiGenerate.tooltip', { defaultValue: 'Use AI to analyze project and generate contextual skills' })}
+                  {t('skills:aiGenerate.tooltip')}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -281,7 +284,7 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
                   <Brain className="h-5 w-5 text-primary animate-pulse" />
                   <div className="flex-1">
                     <p className="font-medium text-sm">
-                      {t('skills:aiGenerate.inProgress', { defaultValue: 'Analyzing project architecture...' })}
+                      {t('skills:aiGenerate.inProgress')}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {aiProgress.message || aiProgress.phase}
@@ -321,21 +324,12 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
             <Brain className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground">{t('skills:empty.title')}</h3>
             <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-              {t('skills:empty.aiDescription', { defaultValue: 'AI can analyze your project architecture and generate contextual skills that help Claude work effectively with your codebase.' })}
+              {t('skills:empty.aiDescription')}
             </p>
-            <div className="flex gap-3 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowGenerateDialog(true)}
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                {t('skills:generateFromPrompt')}
-              </Button>
-              <Button onClick={handleAIGenerate} disabled={generationLoading || aiGenerating}>
-                <Brain className="h-4 w-4 mr-2" />
-                {t('skills:aiGenerate.button', { defaultValue: 'Analyze & Generate' })}
-              </Button>
-            </div>
+            <Button onClick={handleAIGenerate} className="mt-4">
+              <Brain className="h-4 w-4 mr-2" />
+              {t('skills:aiGenerate.button')}
+            </Button>
           </div>
         )}
 

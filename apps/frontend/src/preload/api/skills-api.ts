@@ -57,7 +57,7 @@ export interface SkillsAPI {
   /**
    * Load existing skills from .claude/skills/ directory (returns skill names)
    */
-  loadSkills: (projectId: string) => Promise<IPCResult<string[]>>;
+  loadSkills: (projectId: string) => Promise<IPCResult<{ success: boolean; skills?: string[] }>>;
 
   /**
    * Get a single skill's full content by name

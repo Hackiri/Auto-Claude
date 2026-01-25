@@ -468,10 +468,20 @@ export const IPC_CHANNELS = {
   SKILLS_DELETE: 'skills:delete',
   SKILLS_VALIDATE: 'skills:validate',
 
-  // Skills events (main -> renderer)
+  // Skills events (main -> renderer) - template-based
   SKILLS_GENERATION_PROGRESS: 'skills:generationProgress',
   SKILLS_GENERATION_COMPLETE: 'skills:generationComplete',
   SKILLS_GENERATION_ERROR: 'skills:generationError',
+
+  // AI-powered skills generation
+  SKILLS_GENERATE_AI: 'skills:generateAI',
+  SKILLS_GENERATE_AI_STOP: 'skills:generateAIStop',
+
+  // AI skills events (main -> renderer)
+  SKILLS_GENERATE_AI_PROGRESS: 'skills:generateAIProgress',
+  SKILLS_GENERATE_AI_COMPLETE: 'skills:generateAIComplete',
+  SKILLS_GENERATE_AI_ERROR: 'skills:generateAIError',
+  SKILLS_GENERATE_AI_STOPPED: 'skills:generateAIStopped',
 
   // Insights operations
   INSIGHTS_GET_SESSION: 'insights:getSession',

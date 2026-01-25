@@ -6,7 +6,7 @@ import type { CompletablePhase } from '../../shared/constants/phase-protocol';
  * Agent-specific types for process and state management
  */
 
-export type QueueProcessType = 'ideation' | 'roadmap';
+export type QueueProcessType = 'ideation' | 'roadmap' | 'skills';
 
 export interface AgentProcess {
   taskId: string;
@@ -41,6 +41,12 @@ export interface AgentManagerEvents {
 export interface RoadmapConfig {
   model?: string;          // Model shorthand (opus, sonnet, haiku)
   thinkingLevel?: string;  // Thinking level (none, low, medium, high, ultrathink)
+}
+
+export interface SkillsConfig {
+  model?: string;          // Model shorthand (opus, sonnet, haiku)
+  thinkingLevel?: string;  // Thinking level (none, low, medium, high, ultrathink)
+  maxSkills?: number;      // Maximum number of skills to generate
 }
 
 export interface TaskExecutionOptions {

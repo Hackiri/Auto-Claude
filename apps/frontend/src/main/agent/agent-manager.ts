@@ -9,7 +9,8 @@ import { getClaudeProfileManager, initializeClaudeProfileManager } from '../clau
 import {
   SpecCreationMetadata,
   TaskExecutionOptions,
-  RoadmapConfig
+  RoadmapConfig,
+  SkillsConfig
 } from './types';
 import type { IdeationConfig } from '../../shared/types';
 
@@ -352,6 +353,32 @@ export class AgentManager extends EventEmitter {
    */
   isRoadmapRunning(projectId: string): boolean {
     return this.queueManager.isRoadmapRunning(projectId);
+  }
+
+  /**
+   * Start skills AI generation process
+   */
+  startSkillsGeneration(
+    projectId: string,
+    projectPath: string,
+    config?: SkillsConfig,
+    refresh?: boolean
+  ): void {
+    this.queueManager.startSkillsGeneration(projectId, projectPath, config || {}, refresh ?? false);
+  }
+
+  /**
+   * Stop skills generation for a project
+   */
+  stopSkillsGeneration(projectId: string): boolean {
+    return this.queueManager.stopSkillsGeneration(projectId);
+  }
+
+  /**
+   * Check if skills generation is running for a project
+   */
+  isSkillsGenerationRunning(projectId: string): boolean {
+    return this.queueManager.isSkillsGenerationRunning(projectId);
   }
 
   /**

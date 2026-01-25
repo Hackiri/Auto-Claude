@@ -360,7 +360,7 @@ const browserMockAPI: ElectronAPI = {
   }),
   loadSkills: async () => ({
     success: true,
-    data: []
+    data: { success: true, skills: [] }
   }),
   getSkill: async (_projectId: string, skillName: string) => ({
     success: true,

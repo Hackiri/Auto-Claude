@@ -1,5 +1,6 @@
 {
   "title": "Skills",
+  "description": "Claude Code skills for your project",
   "autoGenerate": "Auto-Generate Skills",
   "generateFromPrompt": "Generate from Prompt",
   "enabledCount": "{{count}} enabled",
@@ -55,7 +56,15 @@
   "empty": {
     "title": "No Skills Generated",
     "description": "Click 'Auto-Generate Skills' to create skills from your project index, or use 'Generate from Prompt' to create a custom skill",
+    "aiDescription": "AI can analyze your project architecture and generate contextual skills that help Claude work effectively with your codebase.",
     "action": "Auto-Generate Skills"
+  },
+  "aiGenerate": {
+    "button": "Analyze & Generate",
+    "stop": "Stop",
+    "tooltip": "Use AI to analyze project and generate contextual skills",
+    "inProgress": "Analyzing project architecture...",
+    "starting": "Starting AI analysis..."
   },
   "promptGenerate": {
     "title": "Generate Skill from Prompt",
