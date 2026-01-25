@@ -91,7 +91,8 @@
     "noData": "Aucune donnée",
     "optional": "Optionnel",
     "required": "Requis",
-    "dismiss": "Ignorer"
+    "dismiss": "Ignorer",
+    "important": "Important"
   },
   "selection": {
     "select": "Sélectionner",
@@ -347,9 +348,8 @@
     "updatingBranch": "Mise à jour...",
     "branchUpdated": "Branche mise à jour",
     "branchUpdateFailed": "Échec de la mise à jour de la branche",
-    "loadingMore": "Chargement des PRs...",
-    "scrollForMore": "Défiler pour plus",
     "allPRsLoaded": "Tous les PRs chargés",
+    "maxPRsShown": "Affichage des 100 premières PRs",
     "workflowsAwaitingApproval": "{{count}} workflow en attente d'approbation",
     "workflowsAwaitingApproval_plural": "{{count}} workflows en attente d'approbation",
     "blockedByWorkflows": "Bloqué",
@@ -407,6 +407,58 @@
     "loadingMore": "Chargement...",
     "scrollForMore": "Défiler pour plus",
     "allLoaded": "Toutes les issues chargées"
+  },
+  "usage": {
+    "dataUnavailable": "Données d'utilisation non disponibles",
+    "dataUnavailableDescription": "Le point de terminaison de surveillance d'utilisation pour ce fournisseur n'est pas disponible ou n'est pas pris en charge.",
+    "activeAccount": "Compte actif",
+    "usageAlert": "Alerte d'utilisation",
+    "accountExceedsThreshold": "L'utilisation du compte dépasse le seuil de 90 %",
+    "authentication": "Authentification",
+    "authenticationAriaLabel": "Authentification : {{provider}}",
+    "authenticationDetails": "Détails de l'authentification",
+    "apiProfile": "Profil API",
+    "apiKey": "Clé API",
+    "oauth": "OAuth",
+    "claudeCode": "Claude Code",
+    "claudeCodeSubscription": "Abonnement Claude Code",
+    "subscription": "Abonnement",
+    "provider": "Fournisseur",
+    "providerAnthropic": "Anthropic",
+    "providerZai": "z.ai",
+    "providerZhipu": "ZHIPU AI",
+    "providerUnknown": "Inconnu",
+    "profile": "Profil",
+    "id": "ID",
+    "created": "Créé",
+    "apiEndpoint": "Point de terminaison API",
+    "sessionQuota": "Quota de session",
+    "notAvailable": "N/A",
+    "usageStatusAriaLabel": "Statut d'utilisation",
+    "usageBreakdown": "Répartition de l'utilisation",
+    "used": "utilisé",
+    "loading": "Chargement...",
+    "sessionDefault": "Session",
+    "weeklyDefault": "Hebdomadaire",
+    "resetsInHours": "Réinitialisation dans {{hours}}h {{minutes}}m",
+    "resetsInDays": "Réinitialisation dans {{days}}j {{hours}}h",
+    "window5Hour": "Fenêtre de 5 heures",
+    "window7Day": "Fenêtre de 7 jours",
+    "window5HoursQuota": "Quota de 5 heures",
+    "windowMonthlyToolsQuota": "Quota mensuel d'outils",
+    "otherAccounts": "Autres comptes",
+    "next": "Suivant",
+    "weeklyLimitReached": "Limite hebdomadaire atteinte",
+    "sessionLimitReached": "Limite de session atteinte",
+    "notAuthenticated": "Non authentifié",
+    "needsReauth": "Réauth requise",
+    "reauthRequired": "Ré-authentification requise",
+    "reauthRequiredDescription": "Votre session a expiré. Ré-authentifiez-vous pour voir l'utilisation et continuer à utiliser ce compte.",
+    "reauthButton": "Ré-authentifier",
+    "clickToOpenSettings": "Cliquez pour ouvrir les Paramètres →",
+    "sessionShort": "Utilisation session 5 heures",
+    "weeklyShort": "Utilisation hebdomadaire 7 jours",
+    "swap": "Changer"
   },
   "oauth": {
     "enterCode": "Saisie manuelle du code (secours)",
@@ -508,6 +560,41 @@
     "step3": "Cliquez sur « Authentifier » pour terminer la connexion",
     "footer": "Le compte sera disponible une fois l'authentification terminée."
   },
+  "roadmapGeneration": {
+    "progress": "Progression",
+    "elapsed": "Écoulé : {{time}}",
+    "stillWorking": "Toujours en cours...",
+    "stopping": "Arrêt...",
+    "stop": "Arrêter",
+    "stopTooltip": "Arrêter la génération",
+    "phases": {
+      "analyzing": {
+        "label": "Analyse",
+        "description": "Analyse de la structure et du code du projet..."
+      },
+      "discovering": {
+        "label": "Découverte",
+        "description": "Découverte du public cible et des besoins des utilisateurs..."
+      },
+      "generating": {
+        "label": "Génération",
+        "description": "Génération de la feuille de route des fonctionnalités..."
+      },
+      "complete": {
+        "label": "Terminé",
+        "description": "Génération de la feuille de route terminée !"
+      },
+      "error": {
+        "label": "Erreur",
+        "description": "La génération a échoué"
+      }
+    },
+    "steps": {
+      "analyze": "Analyser",
+      "discover": "Découvrir",
+      "generate": "Générer"
+    }
+  },
   "auth": {
     "failure": {
       "title": "Authentification requise",
@@ -522,5 +609,45 @@
       "technicalDetails": "Détails techniques",
       "goToSettings": "Aller aux paramètres"
     }
+  },
+  "roadmapProgress": {
+    "elapsedTime": "Écoulé",
+    "lastActivity": "Dernière activité",
+    "staleWarning": "Aucune activité depuis un moment",
+    "staleWarningTooltip": "Cette tâche n'a eu aucune activité depuis {{minutes}} minutes",
+    "phases": {
+      "analyzing": {
+        "label": "Analyse",
+        "description": "Analyse de la structure du projet et du code..."
+      },
+      "discovering": {
+        "label": "Découverte",
+        "description": "Découverte du public cible et des besoins utilisateurs..."
+      },
+      "generating": {
+        "label": "Génération",
+        "description": "Génération de la feuille de route..."
+      },
+      "complete": {
+        "label": "Terminé",
+        "description": "Génération de la feuille de route terminée !"
+      },
+      "error": {
+        "label": "Erreur",
+        "description": "La génération a échoué"
+      }
+    },
+    "steps": {
+      "analyze": "Analyser",
+      "discover": "Découvrir",
+      "generate": "Générer"
+    },
+    "processing": "En cours",
+    "processActiveTooltip": "Le processus est en cours d'exécution",
+    "stopGeneration": "Arrêter la génération",
+    "stopping": "Arrêt...",
+    "progress": "Progression",
+    "lastActivityPrefix": "dernière activité",
+    "lastProgressUpdateTooltip": "Dernière mise à jour de progression reçue"
   }
 }
