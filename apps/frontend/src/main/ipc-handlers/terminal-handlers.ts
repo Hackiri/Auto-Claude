@@ -526,13 +526,7 @@ export function registerTerminalHandlers(
     async (): Promise<IPCResult<import('../../shared/types').ClaudeUsageSnapshot | null>> => {
       try {
         const monitor = getUsageMonitor();
-        let usage = monitor.getCurrentUsage();
-
-        // If no cached usage, fetch on-demand
-        if (!usage) {
-          usage = await monitor.fetchUsageOnDemand();
-        }
-
+        const usage = monitor.getCurrentUsage();
         return { success: true, data: usage };
       } catch (error) {
         return {
