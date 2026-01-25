@@ -1574,10 +1574,9 @@ def _resolve_git_conflicts_with_ai(
         except Exception as e:
             print(muted(f"    Warning: Could not process {file_path}: {e}"))
 
-    # V2: Record merge completion in Evolution Tracker for future context
-    # TODO: _record_merge_completion not yet implemented - see line 141
-    # if resolved_files:
-    #     _record_merge_completion(project_dir, spec_name, resolved_files)
+    # Record merge completion in Timeline Tracker for future context
+    if resolved_files:
+        _record_merge_completion(project_dir, spec_name, resolved_files)
 
     # Build result - partial success if some files failed but we got others
     result = {
@@ -1622,6 +1621,70 @@ def _resolve_git_conflicts_with_ai(
         print(muted("    npm install / pnpm install / yarn / uv sync / cargo update"))
 
     return result
+
+
+def _record_merge_completion(
+    project_dir: Path,
+    spec_name: str,
+    resolved_files: list[str],
+) -> None:
+    """
+    Record merge completion in the FileTimelineTracker.
+
+    This is called after files have been successfully merged to track
+    the merge event in the timeline system for audit and rollback purposes.
+
+    Args:
+        project_dir: The project directory
+        spec_name: Name of the spec (used as task_id)
+        resolved_files: List of files that were successfully merged
+    """
+    debug(
+        MODULE,
+        "Recording merge completion",
+        spec_name=spec_name,
+        num_files=len(resolved_files),
+    )
+
+    try:
+        # Initialize FileTimelineTracker
+        timeline_tracker = FileTimelineTracker(project_dir)
+
+        # Get the current HEAD commit (this is the merge commit after the merge is staged)
+        # Note: This is called after files are staged, before final commit in most cases
+        # If no commit exists yet, we'll get the current HEAD
+        head_result = run_git(
+            ["rev-parse", "HEAD"],
+            cwd=project_dir,
+        )
+
+        if head_result.returncode != 0:
+            debug_warning(
+                MODULE,
+                "Could not get HEAD commit for merge recording",
+            )
+            return
+
+        merge_commit = head_result.stdout.strip()
+
+        # Record the merge in the timeline tracker
+        timeline_tracker.on_task_merged(
+            task_id=spec_name,
+            merge_commit=merge_commit,
+        )
+
+        debug_success(
+            MODULE,
+            f"Recorded merge completion for {spec_name}",
+            commit=merge_commit[:8],
+        )
+
+    except Exception as e:
+        # Don't fail the merge if recording fails - just log it
+        debug_error(
+            MODULE,
+            f"Failed to record merge completion: {e}",
+        )
 
 
 # Note: All constants, classes and helper functions are imported from the refactored modules above
