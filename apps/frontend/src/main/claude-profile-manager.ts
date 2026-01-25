@@ -493,19 +493,26 @@ export class ClaudeProfileManager {
     const profile = this.getActiveProfile();
     const env: Record<string, string> = {};
 
-    // All profiles now use explicit CLAUDE_CONFIG_DIR for isolation
-    // This prevents interference with external Claude Code CLI usage
-    if (profile?.configDir) {
-      // Expand ~ to home directory for the environment variable
-      const expandedConfigDir = profile.configDir.startsWith('~')
-        ? profile.configDir.replace(/^~/, homedir())
-        : profile.configDir;
-      env.CLAUDE_CONFIG_DIR = expandedConfigDir;
-      if (process.env.DEBUG === 'true') {
-        console.warn('[ClaudeProfileManager] Using CLAUDE_CONFIG_DIR for profile:', profile.name, expandedConfigDir);
-      }
-    } else {
-      console.warn('[ClaudeProfileManager] Profile has no configDir configured:', profile?.name);
+    // ALWAYS set CLAUDE_CONFIG_DIR, even for profiles without configDir set
+    // This ensures backend reads credentials from the correct location after re-authentication
+    let configDir = profile?.configDir;
+
+    if (!configDir) {
+      // Fallback to default Claude config directory
+      // This matches where authenticateClaudeProfile saves credentials when profile has no configDir
+      configDir = join(homedir(), '.claude');
+      console.warn('[ClaudeProfileManager] Profile has no configDir, using default:', configDir, 'profile:', profile?.name);
+    }
+
+    // Expand ~ to home directory for the environment variable
+    const expandedConfigDir = configDir.startsWith('~')
+      ? configDir.replace(/^~/, homedir())
+      : configDir;
+
+    env.CLAUDE_CONFIG_DIR = expandedConfigDir;
+
+    if (process.env.DEBUG === 'true') {
+      console.warn('[ClaudeProfileManager] Using CLAUDE_CONFIG_DIR for profile:', profile?.name, expandedConfigDir);
     }
 
     return env;
@@ -712,15 +719,20 @@ export class ClaudeProfileManager {
       return {};
     }
 
-    // If no configDir is defined, fall back to default
-    if (!profile.configDir) {
-      return {};
+    // ALWAYS set CLAUDE_CONFIG_DIR, even for profiles without configDir set
+    // This ensures backend reads credentials from the correct location after re-authentication
+    let configDir = profile.configDir;
+
+    if (!configDir) {
+      // Fallback to default Claude config directory
+      configDir = join(homedir(), '.claude');
+      console.warn('[ClaudeProfileManager] getProfileEnv: Profile has no configDir, using default:', configDir, 'profile:', profile.name);
     }
 
     // Expand ~ to home directory for the environment variable
-    const expandedConfigDir = profile.configDir.startsWith('~')
-      ? profile.configDir.replace(/^~/, require('os').homedir())
-      : profile.configDir;
+    const expandedConfigDir = configDir.startsWith('~')
+      ? configDir.replace(/^~/, homedir())
+      : configDir;
 
     if (process.env.DEBUG === 'true') {
       console.warn('[ClaudeProfileManager] getProfileEnv:', {

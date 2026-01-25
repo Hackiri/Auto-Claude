@@ -174,6 +174,18 @@ function parseAndMigrateProfileData(data: Record<string, unknown>): ProfileStore
         });
       }
 
+      // MIGRATION: Ensure all profiles have a configDir
+      // Profiles created before isolation feature may have null/undefined configDir
+      // This ensures CLAUDE_CONFIG_DIR is always passed to backend subprocesses
+      if (!configDir) {
+        // Use isolated directory based on profile ID to avoid collisions
+        const sanitizedName = (p.id || 'default').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        configDir = join(CLAUDE_PROFILES_DIR, sanitizedName);
+        // Track this profile as needing re-authentication
+        newlyMigratedProfileIds.push(p.id);
+        console.warn('[ProfileStorage] Setting missing configDir for profile:', p.name, configDir);
+      }
+
       return {
         ...profileWithoutToken,
         configDir,  // Use migrated configDir
