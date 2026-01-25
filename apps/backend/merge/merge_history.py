@@ -174,6 +174,8 @@ class MergeHistoryTracker:
         Returns:
             True if rollback succeeded, False otherwise
         """
+        from core.git_executable import run_git
+
         debug(MODULE, f"Rolling back merge: {merge_id}")
 
         merge = self.get_merge(merge_id)
@@ -186,26 +188,25 @@ class MergeHistoryTracker:
             return False
 
         try:
-            import subprocess
-
             # Use git revert to create a new commit that undoes the merge
-            result = subprocess.run(
-                ["git", "revert", "-m", "1", merge.merge_commit],
-                cwd=str(project_path),
-                capture_output=True,
-                text=True,
-                check=True,
+            # -m 1 specifies the mainline parent (the branch we merged into)
+            result = run_git(
+                ["revert", "-m", "1", merge.merge_commit],
+                cwd=project_path,
+                timeout=60,
             )
+
+            if result.returncode != 0:
+                logger.error(f"Failed to rollback merge {merge_id}: {result.stderr}")
+                debug_warning(MODULE, f"Rollback failed: {result.stderr}")
+                return False
 
             debug_success(MODULE, f"Merge {merge_id} rolled back successfully")
             return True
 
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to rollback merge {merge_id}: {e.stderr}")
-            debug_warning(MODULE, f"Rollback failed: {e.stderr}")
-            return False
         except Exception as e:
             logger.error(f"Unexpected error during rollback of {merge_id}: {e}")
+            debug_warning(MODULE, f"Rollback error: {e}")
             return False
 
     def _get_merge_file_path(self, merge_id: str) -> Path:
