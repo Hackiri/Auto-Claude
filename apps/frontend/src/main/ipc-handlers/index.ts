@@ -35,6 +35,7 @@ import { registerMcpHandlers } from './mcp-handlers';
 import { registerProfileHandlers } from './profile-handlers';
 import { registerScreenshotHandlers } from './screenshot-handlers';
 import { registerTerminalWorktreeIpcHandlers } from './terminal';
+import { registerMergeHistoryHandlers } from './merge-history-handlers';
 import { notificationService } from '../notification-service';
 
 /**
@@ -126,6 +127,9 @@ export function setupIpcHandlers(
   // Screenshot capture handlers
   registerScreenshotHandlers();
 
+  // Merge History handlers (for viewing merge completion history and rollback)
+  registerMergeHistoryHandlers();
+
   console.warn('[IPC] All handler modules registered successfully');
 }
 
@@ -152,7 +156,8 @@ export {
   registerDebugHandlers,
   registerClaudeCodeHandlers,
   registerMcpHandlers,
-registerProfileHandlers,
+  registerProfileHandlers,
   registerSkillsHandlers,
-  registerScreenshotHandlers
+  registerScreenshotHandlers,
+  registerMergeHistoryHandlers
 };
