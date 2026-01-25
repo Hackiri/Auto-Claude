@@ -446,9 +446,9 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
                 </div>
               )}
 
-              {/* Skills List */}
+              {/* Skills Grid */}
               {filteredSkills.length > 0 && (
-                <div className="space-y-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   {filteredSkills.map((skill) => (
                     <SkillCard
                       key={skill.id}

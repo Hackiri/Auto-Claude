@@ -24,54 +24,49 @@ export function SkillCard({ skill, onToggle, onPreview, onEdit, onExport }: Skil
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Icon className="h-4 w-4" />
-            {skill.name}
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 truncate">
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{skill.name}</span>
           </CardTitle>
-          <Badge variant="outline" className={cn('capitalize text-xs', colorClass)}>
-            {skill.source}
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant="outline" className={cn('capitalize text-xs', colorClass)}>
+              {skill.source}
+            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Switch
+                    checked={skill.enabled}
+                    onCheckedChange={() => onToggle(skill.id)}
+                    aria-label={skill.enabled ? t('skills:card.disable') : t('skills:card.enable')}
+                    className="scale-90"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {skill.enabled ? t('skills:card.disableTooltip') : t('skills:card.enableTooltip')}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
-        <CardDescription className="text-xs line-clamp-2">
+        <CardDescription className="text-xs line-clamp-2 mt-1">
           {skill.description}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Enable/Disable Toggle */}
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          <span className="text-xs text-muted-foreground">
-            {skill.enabled ? t('skills:card.enabled') : t('skills:card.disabled')}
-          </span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <Switch
-                  checked={skill.enabled}
-                  onCheckedChange={() => onToggle(skill.id)}
-                  aria-label={skill.enabled ? t('skills:card.disable') : t('skills:card.enable')}
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              {skill.enabled ? t('skills:card.disableTooltip') : t('skills:card.enableTooltip')}
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
+      <CardContent className="p-4 pt-2">
+        {/* Action Buttons - Icon only */}
+        <div className="flex gap-1.5 justify-end">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
                 onClick={() => onPreview(skill)}
               >
-                <Eye className="h-3 w-3 mr-1.5" />
-                {t('skills:card.preview')}
+                <Eye className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('skills:card.previewTooltip')}</TooltipContent>
@@ -80,13 +75,12 @@ export function SkillCard({ skill, onToggle, onPreview, onEdit, onExport }: Skil
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
                 onClick={() => onEdit(skill)}
               >
-                <Edit className="h-3 w-3 mr-1.5" />
-                {t('skills:card.edit')}
+                <Edit className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{t('skills:card.editTooltip')}</TooltipContent>
@@ -95,14 +89,13 @@ export function SkillCard({ skill, onToggle, onPreview, onEdit, onExport }: Skil
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
                 onClick={() => onExport(skill)}
                 disabled={!skill.enabled}
               >
-                <Download className="h-3 w-3 mr-1.5" />
-                {t('skills:card.export')}
+                <Download className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
