@@ -1,0 +1,28 @@
+# Codecov Configuration
+# See: https://docs.codecov.io/docs/codecov-yaml
+#
+# This config enables:
+# - PR blocking when coverage decreases by >2%
+# - Coverage trend tracking with separate backend/frontend flags
+# - PR comments showing coverage delta
+
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        threshold: 2%  # Block PRs that decrease coverage by >2%
+        informational: false
+    patch:
+      default:
+        threshold: 0%  # New code should be covered
+        informational: false
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
