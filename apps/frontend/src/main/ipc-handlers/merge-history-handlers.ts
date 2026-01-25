@@ -221,9 +221,53 @@ export function registerGetMergeDetails(): void {
 }
 
 /**
+ * Rollback a specific merge
+ */
+export function registerRollbackMerge(): void {
+  ipcMain.handle(
+    IPC_CHANNELS.MERGE_HISTORY_ROLLBACK,
+    async (_event, projectId: string, mergeId: string): Promise<IPCResult<{ message: string }>> => {
+      debugLog('rollbackMerge handler called', { projectId, mergeId });
+
+      const project = projectStore.getProject(projectId);
+      if (!project) {
+        return { success: false, error: 'Project not found' };
+      }
+
+      try {
+        // Get the source path (handles both dev and production)
+        const sourcePath = getEffectiveSourcePath();
+        const scriptPath = path.join(sourcePath, 'apps', 'backend', 'cli', 'merge_history_json.py');
+
+        const result = await executePythonScript(scriptPath, ['rollback', project.path, mergeId]);
+
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error || 'Failed to rollback merge'
+          };
+        }
+
+        return {
+          success: true,
+          data: result.data as { message: string }
+        };
+      } catch (error) {
+        debugLog('Failed to rollback merge:', error instanceof Error ? error.message : error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to rollback merge'
+        };
+      }
+    }
+  );
+}
+
+/**
  * Register all merge history handlers
  */
 export function registerMergeHistoryHandlers(): void {
   registerGetMergeHistory();
   registerGetMergeDetails();
+  registerRollbackMerge();
 }

@@ -8,6 +8,7 @@ Used by frontend IPC handlers to get merge history data.
 Usage:
     python apps/backend/cli/merge_history_json.py list <project_path>
     python apps/backend/cli/merge_history_json.py get <project_path> <merge_id>
+    python apps/backend/cli/merge_history_json.py rollback <project_path> <merge_id>
 """
 
 import argparse
@@ -65,6 +66,49 @@ def cmd_get(args):
     print(json.dumps(result, indent=2))
 
 
+def cmd_rollback(args):
+    """Rollback a specific merge as JSON."""
+    tracker = get_tracker(args.project_path)
+
+    # Verify merge exists
+    merge = tracker.get_merge(args.merge_id)
+    if not merge:
+        result = {
+            "success": False,
+            "error": f"Merge not found: {args.merge_id}"
+        }
+        print(json.dumps(result, indent=2))
+        return
+
+    if not merge.merge_commit:
+        result = {
+            "success": False,
+            "error": "No merge commit found. Cannot rollback."
+        }
+        print(json.dumps(result, indent=2))
+        return
+
+    # Perform rollback
+    project_path = Path(args.project_path)
+    success = tracker.rollback_merge(args.merge_id, project_path)
+
+    if success:
+        result = {
+            "success": True,
+            "data": {
+                "message": "Rollback completed successfully",
+                "merge_id": args.merge_id
+            }
+        }
+    else:
+        result = {
+            "success": False,
+            "error": "Rollback failed"
+        }
+
+    print(json.dumps(result, indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Merge History JSON API",
@@ -88,6 +132,15 @@ def main():
     get_parser.add_argument("project_path", help="Path to the project")
     get_parser.add_argument("merge_id", help="The merge ID to get")
     get_parser.set_defaults(func=cmd_get)
+
+    # rollback
+    rollback_parser = subparsers.add_parser(
+        "rollback",
+        help="Rollback a specific merge"
+    )
+    rollback_parser.add_argument("project_path", help="Path to the project")
+    rollback_parser.add_argument("merge_id", help="The merge ID to rollback")
+    rollback_parser.set_defaults(func=cmd_rollback)
 
     # Parse arguments
     args = parser.parse_args()
