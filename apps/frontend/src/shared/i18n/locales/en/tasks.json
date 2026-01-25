@@ -185,7 +185,8 @@
     "aiTokensUsed": "AI tokens used",
     "filesChangedLabel": "Files Changed",
     "error": "Error",
-    "notAvailable": "N/A"
+    "notAvailable": "N/A",
+    "rollback": "Rollback Merge"
   },
   "metadata": {
     "severity": "severity",

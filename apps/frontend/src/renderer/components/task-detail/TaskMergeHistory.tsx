@@ -12,12 +12,23 @@ import {
   CheckCircle2,
   XCircle,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { cn } from '../../lib/utils';
 import { useProjectStore } from '../../stores/project-store';
 import type { Task } from '../../../shared/types';
@@ -125,6 +136,13 @@ export function TaskMergeHistory({ task }: TaskMergeHistoryProps) {
   // State for expanded merge entries
   const [expandedMerges, setExpandedMerges] = useState<Set<string>>(new Set());
 
+  // State for rollback functionality
+  const [showRollbackDialog, setShowRollbackDialog] = useState(false);
+  const [rollbackMergeId, setRollbackMergeId] = useState<string | null>(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
+  const [rollbackError, setRollbackError] = useState<string | null>(null);
+  const [rollbackSuccess, setRollbackSuccess] = useState<string | null>(null);
+
   // Load merge history from backend
   const loadMergeHistory = useCallback(async () => {
     if (!selectedProject) return;
@@ -177,6 +195,53 @@ export function TaskMergeHistory({ task }: TaskMergeHistoryProps) {
     });
   }, []);
 
+  // Show rollback confirmation dialog
+  const handleShowRollbackDialog = useCallback((mergeId: string) => {
+    setRollbackMergeId(mergeId);
+    setRollbackError(null);
+    setShowRollbackDialog(true);
+  }, []);
+
+  // Execute rollback
+  const handleRollback = useCallback(async () => {
+    if (!rollbackMergeId || !selectedProject) return;
+
+    setIsRollingBack(true);
+    setRollbackError(null);
+    setRollbackSuccess(null);
+
+    try {
+      // Check if the electronAPI method exists
+      if (!window.electronAPI.rollbackMerge) {
+        throw new Error('Rollback API not yet implemented');
+      }
+
+      const result = await window.electronAPI.rollbackMerge(
+        selectedProject.id,
+        rollbackMergeId
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to rollback merge');
+      }
+
+      // Success - show message and reload history
+      setRollbackSuccess('Merge rolled back successfully');
+      setShowRollbackDialog(false);
+      setRollbackMergeId(null);
+
+      // Reload merge history to reflect changes
+      await loadMergeHistory();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setRollbackSuccess(null), 3000);
+    } catch (err) {
+      setRollbackError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsRollingBack(false);
+    }
+  }, [rollbackMergeId, selectedProject, loadMergeHistory]);
+
   // Render loading state
   if (isLoading) {
     return (
@@ -228,18 +293,81 @@ export function TaskMergeHistory({ task }: TaskMergeHistoryProps) {
 
   // Render merge history list
   return (
-    <ScrollArea className="h-full">
-      <div className="p-4 space-y-2">
-        {mergeHistory.map((merge) => (
-          <MergeEntryItem
-            key={merge.merge_id}
-            merge={merge}
-            isExpanded={expandedMerges.has(merge.merge_id)}
-            onToggle={() => toggleMerge(merge.merge_id)}
-          />
-        ))}
-      </div>
-    </ScrollArea>
+    <>
+      <ScrollArea className="h-full">
+        <div className="p-4 space-y-2">
+          {/* Success message */}
+          {rollbackSuccess && (
+            <div className="bg-success/10 border border-success/30 rounded-lg p-3 mb-2">
+              <div className="flex items-center gap-2 text-success">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm font-medium">{rollbackSuccess}</span>
+              </div>
+            </div>
+          )}
+
+          {mergeHistory.map((merge) => (
+            <MergeEntryItem
+              key={merge.merge_id}
+              merge={merge}
+              isExpanded={expandedMerges.has(merge.merge_id)}
+              onToggle={() => toggleMerge(merge.merge_id)}
+              onRollback={() => handleShowRollbackDialog(merge.merge_id)}
+            />
+          ))}
+        </div>
+      </ScrollArea>
+
+      {/* Rollback Confirmation Dialog */}
+      <AlertDialog open={showRollbackDialog} onOpenChange={setShowRollbackDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Rollback Merge
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-sm text-muted-foreground space-y-3">
+                <p>
+                  Are you sure you want to rollback this merge?
+                </p>
+                <p className="text-warning">
+                  This will revert all changes from this merge. The merge history entry will remain for audit purposes.
+                </p>
+                {rollbackError && (
+                  <p className="text-destructive bg-destructive/10 px-3 py-2 rounded-lg text-sm">
+                    {rollbackError}
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRollingBack}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleRollback();
+              }}
+              disabled={isRollingBack}
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
+            >
+              {isRollingBack ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rolling Back...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Rollback Merge
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -248,9 +376,10 @@ interface MergeEntryItemProps {
   merge: MergeHistoryEntry;
   isExpanded: boolean;
   onToggle: () => void;
+  onRollback: () => void;
 }
 
-function MergeEntryItem({ merge, isExpanded, onToggle }: MergeEntryItemProps) {
+function MergeEntryItem({ merge, isExpanded, onToggle, onRollback }: MergeEntryItemProps) {
   const { t } = useTranslation(['tasks']);
   const totalFiles = merge.files_changed.length + merge.files_added.length + merge.files_deleted.length;
 
@@ -380,6 +509,24 @@ function MergeEntryItem({ merge, isExpanded, onToggle }: MergeEntryItemProps) {
               <div className="bg-destructive/10 border border-destructive/30 rounded p-2 text-xs">
                 <div className="font-medium text-destructive mb-1">{t('tasks:mergeHistory.error')}</div>
                 <div className="text-muted-foreground">{merge.error_message}</div>
+              </div>
+            )}
+
+            {/* Rollback button - only show for successful merges */}
+            {merge.success && (
+              <div className="pt-2 border-t border-border/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground hover:text-warning hover:bg-warning/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRollback();
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  {t('tasks:mergeHistory.rollback')}
+                </Button>
               </div>
             )}
           </div>

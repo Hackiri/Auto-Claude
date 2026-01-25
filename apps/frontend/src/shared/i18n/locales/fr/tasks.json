@@ -184,7 +184,8 @@
     "aiTokensUsed": "Jetons IA utilisés",
     "filesChangedLabel": "Fichiers modifiés",
     "error": "Erreur",
-    "notAvailable": "N/D"
+    "notAvailable": "N/D",
+    "rollback": "Annuler la fusion"
   },
   "metadata": {
     "severity": "sévérité",
