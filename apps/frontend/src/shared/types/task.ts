@@ -490,3 +490,41 @@ export interface TaskStartOptions {
   model?: string;
   baseBranch?: string; // Override base branch for worktree creation
 }
+
+// Merge History types (for audit trail and rollback)
+export interface MergeConflictRecord {
+  file_path: string;
+  conflict_type: string;
+  resolution_method: string;
+  base_content: string;
+  task_content: string;
+  main_content: string;
+  resolved_content: string;
+  ai_reasoning?: string;
+  ai_tokens_used: number;
+  resolved_at: string;
+}
+
+export interface MergeHistoryEntry {
+  merge_id: string;
+  task_id: string;
+  spec_name: string;
+  started_at: string;
+  completed_at: string | null;
+  source_worktree: string;
+  source_branch: string;
+  target_branch: string;
+  files_changed: string[];
+  files_added: string[];
+  files_deleted: string[];
+  conflicts_resolved: MergeConflictRecord[];
+  total_conflicts: number;
+  auto_resolved_count: number;
+  ai_resolved_count: number;
+  pre_merge_commit: string;
+  merge_commit: string;
+  success: boolean;
+  error_message: string | null;
+  ai_tokens_used: number;
+  duration_seconds: number;
+}
