@@ -535,6 +535,74 @@ import { findExecutable, getMyToolPaths } from './platform';
 const toolPath = await findExecutable('mytool', getMyToolPaths());
 ```
 
+### Task Management (Claude Code vs Auto Claude)
+
+This project has two task tracking systems that serve different purposes. Understanding when to use each prevents confusion and unnecessary overhead.
+
+#### Auto Claude Subtasks (for autonomous builds)
+
+**When to use:** Running specs through `spec_runner.py` and `run.py`
+
+Auto Claude manages tasks internally via `implementation_plan.json`:
+
+- Persisted across sessions
+- Phase-based with dependencies
+- Recovery mechanisms (attempt history, rollback)
+- Integrations (Linear, Graphiti, Git commits)
+- Verification definitions per subtask
+
+**You don't need to track these with Claude Code tasks** - Auto Claude handles everything internally.
+
+```bash
+# Just run the command - Auto Claude manages subtasks internally
+python run.py --spec 001
+```
+
+#### Claude Code Tasks (for session-level work)
+
+**When to use:** Manual development work in Claude Code sessions
+
+Use Claude Code's `TaskCreate`/`TaskUpdate`/`TaskList` tools for:
+
+- Multi-step manual tasks (not using Auto Claude)
+- Coordinating work across multiple specs
+- Tracking independent tasks in a single session
+- Breaking down complex requests for visibility
+
+**Example - Manual feature development:**
+
+```text
+[Task 1] Analyze authentication requirements
+[Task 2] Implement auth model → blockedBy: [1]
+[Task 3] Add API endpoints → blockedBy: [2]
+[Task 4] Write tests → blockedBy: [3]
+```
+
+**Example - Orchestrating multiple Auto Claude operations:**
+
+```text
+[Task 1] Create spec for notifications feature
+[Task 2] Run build for spec 001 → blockedBy: [1]
+[Task 3] Create spec for email integration
+[Task 4] Run build for spec 002 → blockedBy: [3]
+[Task 5] Test both features together → blockedBy: [2, 4]
+```
+
+#### Decision Guide
+
+| Scenario | Use |
+|----------|-----|
+| Running `python run.py --spec 001` | Auto Claude (automatic) |
+| Creating a spec with `spec_runner.py` | Auto Claude (automatic) |
+| Manual bug fix (not a spec) | Claude Code tasks |
+| Code review / documentation | Claude Code tasks |
+| Multiple unrelated tasks in one session | Claude Code tasks |
+| Coordinating multiple spec builds | Claude Code tasks (outer layer) |
+
+#### Key Principle
+
+**Don't duplicate tracking.** When Auto Claude is running a build, it tracks subtasks internally. Adding Claude Code tasks for the same work creates noise. Use Claude Code tasks only for work that happens *outside* Auto Claude's scope.
+
 ### End-to-End Testing (Electron App)
 
 **IMPORTANT: When bug fixing or implementing new features in the frontend, AI agents can perform automated E2E testing using the Electron MCP server.**

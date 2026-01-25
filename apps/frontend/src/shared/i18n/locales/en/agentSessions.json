@@ -1,0 +1,64 @@
+{
+  "title": "Agent Sessions",
+  "tabs": {
+    "active": "Active",
+    "archived": "Archived",
+    "activeCount": "Active ({{count}})",
+    "archivedCount": "Archived ({{count}})"
+  },
+  "status": {
+    "pending": "Pending",
+    "running": "Running",
+    "paused": "Paused",
+    "completed": "Completed",
+    "failed": "Failed",
+    "archived": "Archived"
+  },
+  "phases": {
+    "idle": "Idle",
+    "planning": "Planning",
+    "coding": "Coding",
+    "qa_review": "QA Review",
+    "qa_fixing": "QA Fixing",
+    "complete": "Complete",
+    "failed": "Failed"
+  },
+  "detail": {
+    "noSelection": "No Session Selected",
+    "noSelectionHint": "Select a session from the list to view details and monitor progress",
+    "phase": "Phase",
+    "progress": "Progress",
+    "startedAt": "Started",
+    "createdAt": "Created",
+    "completedAt": "Completed"
+  },
+  "kanban": {
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "completed": "Completed"
+  },
+  "taskCard": {
+    "files": "{{count}} file(s)",
+    "verification": "Verification",
+    "verificationCommand": "Command",
+    "verificationBrowser": "Browser"
+  },
+  "logs": {
+    "title": "Session Logs",
+    "streaming": "Live",
+    "noLogs": "No logs yet",
+    "noLogsHint": "Logs will appear here when the session starts"
+  },
+  "empty": {
+    "noSessions": "No Active Sessions",
+    "noSessionsHint": "Start a task from the Kanban board to create an agent session",
+    "noArchivedSessions": "No Archived Sessions",
+    "noArchivedSessionsHint": "Completed sessions will appear here after archiving"
+  },
+  "actions": {
+    "archive": "Archive",
+    "viewLogs": "View Logs",
+    "goToTask": "Go to Task",
+    "newSession": "New Session"
+  }
+}

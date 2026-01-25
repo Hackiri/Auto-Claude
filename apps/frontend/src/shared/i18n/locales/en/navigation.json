@@ -5,6 +5,7 @@
   },
   "items": {
     "kanban": "Kanban Board",
+    "agentSessions": "Agent Sessions",
     "terminals": "Agent Terminals",
     "insights": "Insights",
     "roadmap": "Roadmap",
