@@ -595,5 +595,6 @@ export const IPC_CHANNELS = {
   MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback',    // Rollback a specific merge
 
   // QA Validation Dashboard operations
-  TASK_QA_VALIDATION_GET: 'task:qaValidation:get'     // Get QA validation data for a task
+  TASK_QA_VALIDATION_GET: 'task:qaValidation:get',    // Get QA validation data for a task
+  PROJECT_QA_TRENDS_GET: 'project:qaTrends:get'       // Get project-wide QA trends
 } as const;
