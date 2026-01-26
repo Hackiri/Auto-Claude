@@ -145,8 +145,8 @@ from core.auth import (
     validate_token_not_encrypted,
 )
 
-# Import mode manager for permission mode control
-from core.mode_manager import (
+# Import mode manager for permission mode control (re-exported for tests)
+from core.mode_manager import (  # noqa: F401 - re-exported
     PermissionMode,
     mode_manager,
     should_block_tool,

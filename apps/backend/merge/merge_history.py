@@ -26,9 +26,8 @@ else:
     import msvcrt
 
 from datetime import datetime
-from typing import IO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import IO, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .merge_history_models import MergeHistoryEntry
