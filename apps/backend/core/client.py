@@ -150,6 +150,7 @@ from core.mode_manager import (
     PermissionMode,
     mode_manager,
     should_block_tool,
+    should_prompt_for_tool,
 )
 
 # Import summarizer for large tool response handling

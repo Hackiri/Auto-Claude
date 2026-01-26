@@ -13,11 +13,20 @@ This module handles:
 
 from __future__ import annotations
 
-import fcntl
 import json
 import logging
+import sys
 import threading
+
+# fcntl is Unix-only, use msvcrt on Windows for file locking
+_IS_WINDOWS = sys.platform == "win32"
+if not _IS_WINDOWS:
+    import fcntl
+else:
+    import msvcrt
+
 from datetime import datetime
+from typing import IO
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -45,6 +54,40 @@ except ImportError:
 
 
 MODULE = "merge.merge_history"
+
+
+def _lock_file_shared(f: IO) -> None:
+    """Acquire a shared (read) lock on a file, cross-platform."""
+    if _IS_WINDOWS:
+        # Windows: lock first byte for shared access
+        try:
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            pass  # Lock failed, continue anyway
+    else:
+        fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+
+
+def _lock_file_exclusive(f: IO) -> None:
+    """Acquire an exclusive (write) lock on a file, cross-platform."""
+    if _IS_WINDOWS:
+        try:
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            pass  # Lock failed, continue anyway
+    else:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+
+
+def _unlock_file(f: IO) -> None:
+    """Release a lock on a file, cross-platform."""
+    if _IS_WINDOWS:
+        try:
+            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+        except OSError:
+            pass  # Unlock failed, continue anyway
+    else:
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 class MergeHistoryTracker:
@@ -246,11 +289,11 @@ class MergeHistoryTracker:
 
         try:
             with open(self.index_file, encoding="utf-8") as f:
-                fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                _lock_file_shared(f)
                 try:
                     return json.load(f)
                 finally:
-                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                    _unlock_file(f)
         except Exception as e:
             logger.error(f"Failed to load merge index: {e}")
             return {"merges": [], "last_updated": None}
@@ -270,11 +313,11 @@ class MergeHistoryTracker:
             if self.index_file.exists():
                 try:
                     with open(self.index_file, encoding="utf-8") as f:
-                        fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                        _lock_file_shared(f)
                         try:
                             index = json.load(f)
                         finally:
-                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                            _unlock_file(f)
                 except Exception as e:
                     logger.error(f"Failed to load merge index: {e}")
 
@@ -288,10 +331,10 @@ class MergeHistoryTracker:
             # Save index with exclusive lock
             try:
                 with open(self.index_file, "w", encoding="utf-8") as f:
-                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    _lock_file_exclusive(f)
                     try:
                         json.dump(index, f, indent=2)
                     finally:
-                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                        _unlock_file(f)
             except Exception as e:
                 logger.error(f"Failed to update merge index: {e}")
