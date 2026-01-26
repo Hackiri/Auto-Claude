@@ -282,7 +282,7 @@ export function useTaskDetail({ task }: UseTaskDetailOptions) {
   // or in_progress with validation phase (QA is running)
   const shouldLoadQAData = needsReview ||
     task.status === 'done' ||
-    (task.status === 'in_progress' && executionPhase === 'validation') ||
+    (task.status === 'in_progress' && executionPhase === 'qa_review') ||
     task.status === 'ai_review';
 
   useEffect(() => {

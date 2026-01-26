@@ -11,7 +11,8 @@ import type {
   ProjectQATrends,
   QACriterionResult,
   QAIterationRecord,
-  QATrendDataPoint
+  QATrendDataPoint,
+  ElectronAPI
 } from '../../../shared/types';
 
 // Mock debug-logger to prevent console output during tests
@@ -113,7 +114,7 @@ describe('QA Store', () => {
     (window as Window & { electronAPI: unknown }).electronAPI = {
       getQAValidationData: mockGetQAValidationData,
       getProjectQATrends: mockGetProjectQATrends
-    };
+    } as unknown as ElectronAPI;
 
     // Reset mocks
     mockGetQAValidationData.mockReset();

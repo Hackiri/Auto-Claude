@@ -101,6 +101,17 @@ export const taskMock = {
     error: 'Merge rollback not available in browser mode'
   }),
 
+  // QA Validation Dashboard
+  getQAValidationData: async (_projectId: string, _specId: string) => ({
+    success: true,
+    data: null
+  }),
+
+  getProjectQATrends: async (_projectId: string) => ({
+    success: true,
+    data: null
+  }),
+
   // Event Listeners (no-op in browser)
   onTaskProgress: () => () => {},
   onTaskError: () => () => {},
