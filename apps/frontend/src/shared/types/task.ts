@@ -298,6 +298,13 @@ export interface ImplementationPlan {
   planStatus?: string;
   recoveryNote?: string;
   description?: string;
+  // QA signoff status (set when QA approves/rejects)
+  qa_signoff?: {
+    status?: 'approved' | 'rejected' | string;
+  };
+  // Staged changes info (set when worktree merged with --no-commit)
+  stagedInMainProject?: boolean;
+  stagedAt?: string;
 }
 
 export interface Phase {

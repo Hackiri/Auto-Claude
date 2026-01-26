@@ -183,7 +183,17 @@ export const TaskCard = memo(function TaskCard({
     return TASK_STATUS_COLUMNS.filter(status => status !== task.status).map((status) => (
       <DropdownMenuItem
         key={status}
-        onClick={() => onStatusChange(status)}
+        onClick={() => {
+          // Handle async status change with error catching to prevent silent failures
+          // The persistTaskStatus function already shows a toast on error, but we need to
+          // catch the rejection to prevent unhandled promise warnings
+          const result = onStatusChange(status);
+          if (result && typeof (result as Promise<unknown>).catch === 'function') {
+            (result as Promise<unknown>).catch((error) => {
+              console.error('[TaskCard] Status change failed:', error);
+            });
+          }
+        }}
       >
         {t(TASK_STATUS_LABELS[status])}
       </DropdownMenuItem>
