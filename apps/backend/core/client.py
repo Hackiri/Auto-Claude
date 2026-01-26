@@ -144,24 +144,23 @@ from core.auth import (
     require_auth_token,
     validate_token_not_encrypted,
 )
-from linear_updater import is_linear_enabled
-from prompts_pkg.project_context import detect_project_capabilities, load_project_index
-from security import bash_security_hook
-
-# Import summarizer for large tool response handling
-from core.summarizer import (
-    get_summarizer,
-    SummarizationContext,
-    needs_summarization,
-)
 
 # Import mode manager for permission mode control
 from core.mode_manager import (
-    mode_manager,
     PermissionMode,
+    mode_manager,
     should_block_tool,
-    should_prompt_for_tool,
 )
+
+# Import summarizer for large tool response handling
+from core.summarizer import (
+    SummarizationContext,
+    get_summarizer,
+    needs_summarization,
+)
+from linear_updater import is_linear_enabled
+from prompts_pkg.project_context import detect_project_capabilities, load_project_index
+from security import bash_security_hook
 
 
 def _validate_custom_mcp_server(server: dict) -> bool:
@@ -475,7 +474,7 @@ async def mode_manager_hook(
         return {
             "decision": "block",
             "reason": f"Tool '{tool_name}' blocked: Session is in {current_mode.value} mode (read-only). "
-                     f"Use SHIFT+TAB to cycle to 'ask' or 'allow-all' mode to enable writes.",
+            f"Use SHIFT+TAB to cycle to 'ask' or 'allow-all' mode to enable writes.",
         }
 
     # Note: In ASK mode, the SDK handles user prompting
@@ -527,7 +526,9 @@ async def tool_result_summarizer_hook(
     tool_input = input_data.get("tool_input", {})
     ctx = SummarizationContext(
         tool_name=tool_name,
-        path=tool_input.get("file_path") or tool_input.get("path") or tool_input.get("pattern"),
+        path=tool_input.get("file_path")
+        or tool_input.get("path")
+        or tool_input.get("pattern"),
         input_params=tool_input,
         model_intent=tool_input.get("description"),  # If agent provided intent
     )

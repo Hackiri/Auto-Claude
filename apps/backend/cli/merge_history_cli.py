@@ -60,13 +60,19 @@ def cmd_list_merges(args):
     for merge in merges:
         status = "✓" if merge.success else "✗"
         duration = f"{merge.duration_seconds:.1f}s" if merge.duration_seconds else "N/A"
-        conflicts = f"{merge.total_conflicts} conflicts" if merge.total_conflicts else "no conflicts"
+        conflicts = (
+            f"{merge.total_conflicts} conflicts"
+            if merge.total_conflicts
+            else "no conflicts"
+        )
 
         print(f"{status} [{merge.merge_id}] {merge.task_id}")
         print(f"   Spec: {merge.spec_name}")
         print(f"   Started: {merge.started_at.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"   Duration: {duration}, {conflicts}")
-        print(f"   Files: {len(merge.files_changed)} changed, {len(merge.files_added)} added, {len(merge.files_deleted)} deleted")
+        print(
+            f"   Files: {len(merge.files_changed)} changed, {len(merge.files_added)} added, {len(merge.files_deleted)} deleted"
+        )
         if merge.merge_commit:
             print(f"   Commit: {merge.merge_commit[:8]}")
         if not merge.success and merge.error_message:
@@ -133,7 +139,9 @@ def cmd_show_merge(args):
             print(f"      Resolution: {conflict.resolution_method}")
             if conflict.ai_reasoning:
                 print(f"      AI Reasoning: {conflict.ai_reasoning[:100]}...")
-            print(f"      Resolved at: {conflict.resolved_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(
+                f"      Resolved at: {conflict.resolved_at.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
 
     # AI usage
     if merge.ai_tokens_used > 0:
@@ -141,7 +149,7 @@ def cmd_show_merge(args):
 
     # Error info
     if not merge.success and merge.error_message:
-        print(f"\n--- Error ---")
+        print("\n--- Error ---")
         print(f"{merge.error_message}")
 
 
@@ -180,8 +188,8 @@ def cmd_rollback_merge(args):
 
     if success:
         print("\n✓ Rollback completed successfully!")
-        print(f"  A new revert commit has been created.")
-        print(f"  Run 'git log' to see the changes.")
+        print("  A new revert commit has been created.")
+        print("  Run 'git log' to see the changes.")
     else:
         print("\n✗ Rollback failed!")
         print("  Check the error messages above.")
@@ -197,29 +205,24 @@ def main():
 
     # list-merges
     list_parser = subparsers.add_parser(
-        "list-merges",
-        help="List all merge history entries"
+        "list-merges", help="List all merge history entries"
     )
     list_parser.set_defaults(func=cmd_list_merges)
 
     # show-merge
     show_parser = subparsers.add_parser(
-        "show-merge",
-        help="Show detailed information about a specific merge"
+        "show-merge", help="Show detailed information about a specific merge"
     )
     show_parser.add_argument("merge_id", help="The merge ID to show")
     show_parser.set_defaults(func=cmd_show_merge)
 
     # rollback-merge
     rollback_parser = subparsers.add_parser(
-        "rollback-merge",
-        help="Rollback a specific merge"
+        "rollback-merge", help="Rollback a specific merge"
     )
     rollback_parser.add_argument("merge_id", help="The merge ID to rollback")
     rollback_parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Skip confirmation prompt"
+        "--force", action="store_true", help="Skip confirmation prompt"
     )
     rollback_parser.set_defaults(func=cmd_rollback_merge)
 

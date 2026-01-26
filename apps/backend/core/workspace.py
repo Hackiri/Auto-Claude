@@ -1636,12 +1636,18 @@ def _record_merge_completion(
         spec_name: Name of the spec (used as task_id)
         resolved_files: List of files that were successfully merged
     """
-    debug(MODULE, "Recording merge completion", spec_name=spec_name, num_files=len(resolved_files))
+    debug(
+        MODULE,
+        "Recording merge completion",
+        spec_name=spec_name,
+        num_files=len(resolved_files),
+    )
 
     try:
+        from datetime import datetime
+
         from merge.merge_history import MergeHistoryTracker
         from merge.merge_history_models import MergeHistoryEntry
-        from datetime import datetime
 
         # Get storage path
         storage_path = project_dir / ".auto-claude"
@@ -1656,11 +1662,15 @@ def _record_merge_completion(
 
         # Get pre-merge commit (HEAD~1)
         pre_merge_result = run_git(["rev-parse", "HEAD~1"], cwd=project_dir)
-        pre_merge_commit = pre_merge_result.stdout.strip() if pre_merge_result.returncode == 0 else ""
+        pre_merge_commit = (
+            pre_merge_result.stdout.strip() if pre_merge_result.returncode == 0 else ""
+        )
 
         # Get current branch
         branch_result = run_git(["branch", "--show-current"], cwd=project_dir)
-        target_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else "main"
+        target_branch = (
+            branch_result.stdout.strip() if branch_result.returncode == 0 else "main"
+        )
 
         # Create merge history entry
         now = datetime.now()
@@ -1685,7 +1695,7 @@ def _record_merge_completion(
             success=True,
             error_message=None,
             ai_tokens_used=0,  # Could track if data available
-            duration_seconds=0.0  # Could track if start time recorded
+            duration_seconds=0.0,  # Could track if start time recorded
         )
 
         # Record the merge in new system
@@ -1700,6 +1710,7 @@ def _record_merge_completion(
     except Exception as e:
         debug_warning(MODULE, f"Failed to record merge completion: {e}")
         import traceback
+
         traceback.print_exc()
         # Don't fail the merge if recording fails
 

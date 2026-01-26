@@ -64,7 +64,9 @@ class MergeHistoryTracker:
         Args:
             storage_path: Root directory for storage (e.g., .auto-claude/)
         """
-        debug(MODULE, "Initializing MergeHistoryTracker", storage_path=str(storage_path))
+        debug(
+            MODULE, "Initializing MergeHistoryTracker", storage_path=str(storage_path)
+        )
 
         self.storage_path = Path(storage_path).resolve()
         self.history_dir = self.storage_path / "merge_history"
@@ -140,7 +142,6 @@ class MergeHistoryTracker:
         Returns:
             List of merge history entries
         """
-        from .merge_history_models import MergeHistoryEntry
 
         merges = []
         index = self._load_index()

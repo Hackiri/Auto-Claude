@@ -8,20 +8,21 @@ Inspired by Craft Agents OSS session storage patterns.
 """
 
 import json
+import logging
 import os
 import tempfile
 import uuid
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Any, Dict
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class TodoState(Enum):
     """Session workflow states for inbox management."""
+
     TODO = "todo"
     IN_PROGRESS = "in-progress"
     NEEDS_REVIEW = "needs-review"
@@ -49,6 +50,7 @@ class SessionHeader:
         last_read_message_id: ID of last read message
         metadata: Optional additional metadata
     """
+
     id: str
     name: str
     todo_state: TodoState = TodoState.TODO
@@ -58,21 +60,21 @@ class SessionHeader:
     flagged: bool = False
     created_at: str = ""
     updated_at: str = ""
-    last_read_message_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_read_message_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert to dict for JSON serialization."""
         d = asdict(self)
-        d['todo_state'] = self.todo_state.value
+        d["todo_state"] = self.todo_state.value
         return d
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'SessionHeader':
+    def from_dict(cls, data: dict) -> "SessionHeader":
         """Create from dict, handling enum conversion."""
-        if 'todo_state' in data:
+        if "todo_state" in data:
             data = data.copy()
-            data['todo_state'] = TodoState(data['todo_state'])
+            data["todo_state"] = TodoState(data["todo_state"])
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 
@@ -89,19 +91,20 @@ class StoredMessage:
         tool_use: Optional tool use data
         metadata: Optional additional data
     """
+
     id: str
     role: str
     content: str
     timestamp: str
-    tool_use: Optional[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    tool_use: dict[str, Any] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert to dict for JSON serialization."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'StoredMessage':
+    def from_dict(cls, data: dict) -> "StoredMessage":
         """Create from dict."""
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
@@ -116,7 +119,7 @@ def now_iso() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
-def compute_preview(messages: List[StoredMessage], max_length: int = 100) -> str:
+def compute_preview(messages: list[StoredMessage], max_length: int = 100) -> str:
     """
     Compute preview text from messages.
 
@@ -131,10 +134,10 @@ def compute_preview(messages: List[StoredMessage], max_length: int = 100) -> str
     """
     # Find last assistant or user message
     for msg in reversed(messages):
-        if msg.role in ('assistant', 'user'):
+        if msg.role in ("assistant", "user"):
             content = msg.content
             if len(content) > max_length:
-                return content[:max_length - 3] + "..."
+                return content[: max_length - 3] + "..."
             return content
     return ""
 
@@ -178,11 +181,7 @@ class SessionStorage:
         """Check if session file exists."""
         return os.path.exists(self.path)
 
-    def save_atomic(
-        self,
-        header: SessionHeader,
-        messages: List[StoredMessage]
-    ) -> None:
+    def save_atomic(self, header: SessionHeader, messages: list[StoredMessage]) -> None:
         """
         Atomic write: temp file + rename prevents corruption.
 
@@ -205,17 +204,14 @@ class SessionStorage:
         # Write to temp file first
         try:
             with tempfile.NamedTemporaryFile(
-                mode='w',
-                dir=dir_path or '.',
-                delete=False,
-                suffix='.jsonl.tmp'
+                mode="w", dir=dir_path or ".", delete=False, suffix=".jsonl.tmp"
             ) as f:
                 # Line 1: Header with pre-computed metadata
-                f.write(json.dumps(header.to_dict()) + '\n')
+                f.write(json.dumps(header.to_dict()) + "\n")
 
                 # Lines 2+: Messages
                 for msg in messages:
-                    f.write(json.dumps(msg.to_dict()) + '\n')
+                    f.write(json.dumps(msg.to_dict()) + "\n")
 
                 temp_path = f.name
 
@@ -225,14 +221,14 @@ class SessionStorage:
 
         except Exception as e:
             # Clean up temp file on error
-            if 'temp_path' in locals() and os.path.exists(temp_path):
+            if "temp_path" in locals() and os.path.exists(temp_path):
                 try:
                     os.remove(temp_path)
                 except Exception:
                     pass
             raise e
 
-    def load_header(self) -> Optional[SessionHeader]:
+    def load_header(self) -> SessionHeader | None:
         """
         Fast header read without parsing all messages.
 
@@ -240,7 +236,7 @@ class SessionStorage:
             SessionHeader or None if file doesn't exist/is corrupt
         """
         try:
-            with open(self.path, 'r', encoding='utf-8') as f:
+            with open(self.path, encoding="utf-8") as f:
                 line = f.readline()
                 if not line:
                     return None
@@ -254,7 +250,7 @@ class SessionStorage:
             logger.error(f"Error loading header from {self.path}: {e}")
             return None
 
-    def load_messages_resilient(self) -> List[StoredMessage]:
+    def load_messages_resilient(self) -> list[StoredMessage]:
         """
         Load all messages, skipping corrupted lines.
 
@@ -263,7 +259,7 @@ class SessionStorage:
         """
         messages = []
         try:
-            with open(self.path, 'r', encoding='utf-8') as f:
+            with open(self.path, encoding="utf-8") as f:
                 # Skip header
                 f.readline()
 
@@ -274,7 +270,9 @@ class SessionStorage:
                     try:
                         messages.append(StoredMessage.from_dict(json.loads(line)))
                     except json.JSONDecodeError as e:
-                        logger.warning(f"Corrupt message at line {line_num} in {self.path}: {e}")
+                        logger.warning(
+                            f"Corrupt message at line {line_num} in {self.path}: {e}"
+                        )
                         continue
                     except Exception as e:
                         logger.warning(f"Error parsing message at line {line_num}: {e}")
@@ -287,7 +285,7 @@ class SessionStorage:
 
         return messages
 
-    def load_full(self) -> tuple[Optional[SessionHeader], List[StoredMessage]]:
+    def load_full(self) -> tuple[SessionHeader | None, list[StoredMessage]]:
         """
         Load both header and messages.
 
@@ -307,8 +305,8 @@ class SessionStorage:
             message: Message to append
         """
         try:
-            with open(self.path, 'a', encoding='utf-8') as f:
-                f.write(json.dumps(message.to_dict()) + '\n')
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(message.to_dict()) + "\n")
         except Exception as e:
             logger.error(f"Error appending message to {self.path}: {e}")
             raise
@@ -367,11 +365,7 @@ class SessionManager:
         """
         return SessionStorage(self._session_path(session_id))
 
-    def create_session(
-        self,
-        name: str,
-        session_id: Optional[str] = None
-    ) -> str:
+    def create_session(self, name: str, session_id: str | None = None) -> str:
         """
         Create a new session.
 
@@ -386,10 +380,7 @@ class SessionManager:
             session_id = generate_id()
 
         header = SessionHeader(
-            id=session_id,
-            name=name,
-            created_at=now_iso(),
-            updated_at=now_iso()
+            id=session_id, name=name, created_at=now_iso(), updated_at=now_iso()
         )
 
         storage = self.get_session(session_id)
@@ -399,9 +390,8 @@ class SessionManager:
         return session_id
 
     def list_sessions(
-        self,
-        filter_state: Optional[TodoState] = None
-    ) -> List[SessionHeader]:
+        self, filter_state: TodoState | None = None
+    ) -> list[SessionHeader]:
         """
         List all sessions (reads only headers for speed).
 
@@ -415,7 +405,7 @@ class SessionManager:
 
         try:
             for filename in os.listdir(self.sessions_dir):
-                if not filename.endswith('.jsonl'):
+                if not filename.endswith(".jsonl"):
                     continue
 
                 storage = SessionStorage(os.path.join(self.sessions_dir, filename))

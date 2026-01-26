@@ -17,7 +17,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from merge.merge_history import MergeHistoryTracker
 from merge.merge_history_models import MergeConflictRecord, MergeHistoryEntry
 
@@ -69,7 +68,10 @@ class TestMergeHistoryTracker:
         # Use resolve() on both sides since macOS resolves /var -> /private/var
         assert tracker.storage_path == temp_storage.resolve()
         assert tracker.history_dir == (temp_storage / "merge_history").resolve()
-        assert tracker.index_file == (temp_storage / "merge_history" / "index.json").resolve()
+        assert (
+            tracker.index_file
+            == (temp_storage / "merge_history" / "index.json").resolve()
+        )
         assert tracker.history_dir.exists()
 
     def test_record_merge_creates_file(self, tracker, sample_entry):
@@ -263,7 +265,9 @@ class TestMergeHistoryTracker:
             mock_result.stderr = "error: could not revert"
             mock_run_git.return_value = mock_result
 
-            result = tracker.rollback_merge(sample_entry.merge_id, Path("/fake/project"))
+            result = tracker.rollback_merge(
+                sample_entry.merge_id, Path("/fake/project")
+            )
 
             assert result is False
 
@@ -299,7 +303,10 @@ class TestMergeHistoryTracker:
         assert retrieved is not None
         assert len(retrieved.conflicts_resolved) == 1
         assert retrieved.conflicts_resolved[0].file_path == "test.py"
-        assert retrieved.conflicts_resolved[0].ai_reasoning == "AI decided to use task version"
+        assert (
+            retrieved.conflicts_resolved[0].ai_reasoning
+            == "AI decided to use task version"
+        )
 
     def test_index_not_duplicated(self, tracker, sample_entry):
         """Recording the same merge twice doesn't duplicate index entries."""

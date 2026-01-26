@@ -38,10 +38,7 @@ def cmd_list(args):
     merges = tracker.get_all_merges()
 
     # Convert to JSON-serializable format
-    result = {
-        "success": True,
-        "data": [merge.to_dict() for merge in merges]
-    }
+    result = {"success": True, "data": [merge.to_dict() for merge in merges]}
 
     print(json.dumps(result, indent=2))
 
@@ -53,15 +50,9 @@ def cmd_get(args):
     merge = tracker.get_merge(args.merge_id)
 
     if not merge:
-        result = {
-            "success": False,
-            "error": f"Merge not found: {args.merge_id}"
-        }
+        result = {"success": False, "error": f"Merge not found: {args.merge_id}"}
     else:
-        result = {
-            "success": True,
-            "data": merge.to_dict()
-        }
+        result = {"success": True, "data": merge.to_dict()}
 
     print(json.dumps(result, indent=2))
 
@@ -73,18 +64,12 @@ def cmd_rollback(args):
     # Verify merge exists
     merge = tracker.get_merge(args.merge_id)
     if not merge:
-        result = {
-            "success": False,
-            "error": f"Merge not found: {args.merge_id}"
-        }
+        result = {"success": False, "error": f"Merge not found: {args.merge_id}"}
         print(json.dumps(result, indent=2))
         return
 
     if not merge.merge_commit:
-        result = {
-            "success": False,
-            "error": "No merge commit found. Cannot rollback."
-        }
+        result = {"success": False, "error": "No merge commit found. Cannot rollback."}
         print(json.dumps(result, indent=2))
         return
 
@@ -97,14 +82,11 @@ def cmd_rollback(args):
             "success": True,
             "data": {
                 "message": "Rollback completed successfully",
-                "merge_id": args.merge_id
-            }
+                "merge_id": args.merge_id,
+            },
         }
     else:
-        result = {
-            "success": False,
-            "error": "Rollback failed"
-        }
+        result = {"success": False, "error": "Rollback failed"}
 
     print(json.dumps(result, indent=2))
 
@@ -117,26 +99,19 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # list
-    list_parser = subparsers.add_parser(
-        "list",
-        help="List all merge history entries"
-    )
+    list_parser = subparsers.add_parser("list", help="List all merge history entries")
     list_parser.add_argument("project_path", help="Path to the project")
     list_parser.set_defaults(func=cmd_list)
 
     # get
-    get_parser = subparsers.add_parser(
-        "get",
-        help="Get a specific merge by ID"
-    )
+    get_parser = subparsers.add_parser("get", help="Get a specific merge by ID")
     get_parser.add_argument("project_path", help="Path to the project")
     get_parser.add_argument("merge_id", help="The merge ID to get")
     get_parser.set_defaults(func=cmd_get)
 
     # rollback
     rollback_parser = subparsers.add_parser(
-        "rollback",
-        help="Rollback a specific merge"
+        "rollback", help="Rollback a specific merge"
     )
     rollback_parser.add_argument("project_path", help="Path to the project")
     rollback_parser.add_argument("merge_id", help="The merge ID to rollback")
@@ -153,10 +128,7 @@ def main():
     try:
         args.func(args)
     except Exception as e:
-        result = {
-            "success": False,
-            "error": str(e)
-        }
+        result = {"success": False, "error": str(e)}
         print(json.dumps(result, indent=2))
         sys.exit(1)
 

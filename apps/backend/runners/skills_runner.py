@@ -15,7 +15,6 @@ Usage:
 import asyncio
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 # Add auto-claude to path
@@ -38,7 +37,7 @@ if env_file.exists():
 
 from client import create_client
 from phase_config import get_thinking_budget, resolve_model_id
-from ui import print_status, print_header
+from ui import print_header, print_status
 
 
 class SkillsGenerator:
@@ -53,7 +52,11 @@ class SkillsGenerator:
         max_skills: int = 8,
     ):
         self.project_dir = Path(project_dir).resolve()
-        self.output_dir = Path(output_dir) if output_dir else self.project_dir / ".auto-claude" / "skills"
+        self.output_dir = (
+            Path(output_dir)
+            if output_dir
+            else self.project_dir / ".auto-claude" / "skills"
+        )
         self.model = model
         self.thinking_level = thinking_level
         self.thinking_budget = get_thinking_budget(thinking_level)
@@ -107,7 +110,7 @@ class SkillsGenerator:
 
         # Validate JSON
         try:
-            with open(output_file, "r", encoding="utf-8") as f:
+            with open(output_file, encoding="utf-8") as f:
                 skills_data = json.load(f)
 
             skills = skills_data.get("skills", [])
@@ -165,16 +168,21 @@ class SkillsGenerator:
                             if block_type == "TextBlock" and hasattr(block, "text"):
                                 response_text += block.text
                                 print(block.text, end="", flush=True)
-                            elif block_type == "ToolUseBlock" and hasattr(block, "name"):
+                            elif block_type == "ToolUseBlock" and hasattr(
+                                block, "name"
+                            ):
                                 tool_count += 1
                                 # Calculate progress based on tool usage
                                 # Assume ~10 tool calls for a typical generation
                                 progress = min(
                                     max_progress,
-                                    base_progress + (tool_count * 6)  # ~6% per tool use
+                                    base_progress
+                                    + (tool_count * 6),  # ~6% per tool use
                                 )
                                 print(f"\n[Tool: {block.name}]", flush=True)
-                                print(f"SKILLS_GENERATION_PROGRESS:generating:{progress}")
+                                print(
+                                    f"SKILLS_GENERATION_PROGRESS:generating:{progress}"
+                                )
 
                 print()
                 print("SKILLS_GENERATION_PROGRESS:finalizing:95")

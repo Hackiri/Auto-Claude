@@ -128,7 +128,9 @@ class MergeHistoryEntry:
             "task_id": self.task_id,
             "spec_name": self.spec_name,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
             "source_worktree": self.source_worktree,
             "source_branch": self.source_branch,
             "target_branch": self.target_branch,
@@ -165,7 +167,8 @@ class MergeHistoryEntry:
             files_added=data.get("files_added", []),
             files_deleted=data.get("files_deleted", []),
             conflicts_resolved=[
-                MergeConflictRecord.from_dict(c) for c in data.get("conflicts_resolved", [])
+                MergeConflictRecord.from_dict(c)
+                for c in data.get("conflicts_resolved", [])
             ],
             total_conflicts=data.get("total_conflicts", 0),
             auto_resolved_count=data.get("auto_resolved_count", 0),

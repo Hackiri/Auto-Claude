@@ -7,10 +7,11 @@ user-controlled autonomy levels (Explore/Ask/Execute).
 Inspired by Craft Agents OSS mode-manager.ts and mode-types.ts
 """
 
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Set, Callable, Optional, List, Any
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class PermissionMode(Enum):
     ASK: Prompts before making edits (default)
     ALLOW_ALL (Execute): Automatic execution, no prompts
     """
+
     SAFE = "safe"
     ASK = "ask"
     ALLOW_ALL = "allow-all"
@@ -32,7 +34,7 @@ class PermissionMode(Enum):
 PERMISSION_MODE_ORDER = [
     PermissionMode.SAFE,
     PermissionMode.ASK,
-    PermissionMode.ALLOW_ALL
+    PermissionMode.ALLOW_ALL,
 ]
 
 
@@ -73,10 +75,11 @@ class ModeState:
         on_state_change: Optional callback when state changes
         metadata: Optional additional state data
     """
+
     session_id: str
     permission_mode: PermissionMode = PermissionMode.ASK
-    on_state_change: Optional[Callable[['ModeState'], None]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    on_state_change: Callable[["ModeState"], None] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ModeManager:
@@ -106,9 +109,9 @@ class ModeManager:
     """
 
     def __init__(self):
-        self._states: Dict[str, ModeState] = {}
-        self._callbacks: Dict[str, Callable[[ModeState], None]] = {}
-        self._subscribers: Dict[str, Set[Callable[[], None]]] = {}
+        self._states: dict[str, ModeState] = {}
+        self._callbacks: dict[str, Callable[[ModeState], None]] = {}
+        self._subscribers: dict[str, set[Callable[[], None]]] = {}
 
     def get_state(self, session_id: str) -> ModeState:
         """
@@ -123,7 +126,7 @@ class ModeManager:
         if session_id not in self._states:
             self._states[session_id] = ModeState(
                 session_id=session_id,
-                permission_mode=PermissionMode.ASK  # Default
+                permission_mode=PermissionMode.ASK,  # Default
             )
             logger.debug(f"Created new mode state for session {session_id}")
         return self._states[session_id]
@@ -154,15 +157,12 @@ class ModeManager:
 
         if old_mode != mode:
             logger.info(
-                f"Session {session_id} mode changed: "
-                f"{old_mode.value} -> {mode.value}"
+                f"Session {session_id} mode changed: {old_mode.value} -> {mode.value}"
             )
             self._notify_change(session_id, state)
 
     def cycle_permission_mode(
-        self,
-        session_id: str,
-        enabled_modes: Optional[List[PermissionMode]] = None
+        self, session_id: str, enabled_modes: list[PermissionMode] | None = None
     ) -> PermissionMode:
         """
         Cycle to the next permission mode (for SHIFT+TAB shortcut).
@@ -174,7 +174,11 @@ class ModeManager:
         Returns:
             The new permission mode
         """
-        modes = enabled_modes if enabled_modes and len(enabled_modes) >= 2 else PERMISSION_MODE_ORDER
+        modes = (
+            enabled_modes
+            if enabled_modes and len(enabled_modes) >= 2
+            else PERMISSION_MODE_ORDER
+        )
         current = self.get_state(session_id).permission_mode
 
         try:
@@ -190,9 +194,7 @@ class ModeManager:
         return next_mode
 
     def register_callback(
-        self,
-        session_id: str,
-        callback: Callable[[ModeState], None]
+        self, session_id: str, callback: Callable[[ModeState], None]
     ) -> Callable[[], None]:
         """
         Register a callback for state changes (agent sync).
@@ -213,9 +215,7 @@ class ModeManager:
         return unregister
 
     def subscribe(
-        self,
-        session_id: str,
-        subscriber: Callable[[], None]
+        self, session_id: str, subscriber: Callable[[], None]
     ) -> Callable[[], None]:
         """
         Subscribe to state changes (React/UI).
@@ -268,7 +268,7 @@ class ModeManager:
         self._subscribers.pop(session_id, None)
         logger.debug(f"Cleaned up mode state for session {session_id}")
 
-    def get_all_sessions(self) -> List[str]:
+    def get_all_sessions(self) -> list[str]:
         """Get list of all active session IDs."""
         return list(self._states.keys())
 
@@ -291,20 +291,31 @@ def is_write_operation(tool_name: str) -> bool:
     """
     write_tools = {
         # File operations
-        'write_file', 'edit_file', 'delete_file', 'create_file',
-        'write', 'edit', 'delete', 'create',
-        'file_write', 'file_edit', 'file_delete', 'file_create',
-
+        "write_file",
+        "edit_file",
+        "delete_file",
+        "create_file",
+        "write",
+        "edit",
+        "delete",
+        "create",
+        "file_write",
+        "file_edit",
+        "file_delete",
+        "file_create",
         # Bash operations that modify
-        'bash', 'shell', 'execute', 'run_command',
-
+        "bash",
+        "shell",
+        "execute",
+        "run_command",
         # Git operations that modify
-        'git_commit', 'git_push', 'git_checkout',
-
+        "git_commit",
+        "git_push",
+        "git_checkout",
         # MCP tools that modify
-        'mcp__filesystem__write_file',
-        'mcp__filesystem__create_directory',
-        'mcp__filesystem__delete_file',
+        "mcp__filesystem__write_file",
+        "mcp__filesystem__create_directory",
+        "mcp__filesystem__delete_file",
     }
 
     tool_lower = tool_name.lower()
@@ -312,9 +323,7 @@ def is_write_operation(tool_name: str) -> bool:
 
 
 def should_prompt_for_tool(
-    tool_name: str,
-    mode: PermissionMode,
-    is_destructive: bool = False
+    tool_name: str, mode: PermissionMode, is_destructive: bool = False
 ) -> bool:
     """
     Determine if a tool should prompt for user confirmation.

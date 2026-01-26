@@ -57,6 +57,9 @@ from .profile import (
     reset_profile_cache,
 )
 
+# AST-based validator utilities
+from .shell_validators import clear_pattern_cache
+
 # Tool input validation
 from .tool_input_validator import (
     get_safe_tool_input,
@@ -87,9 +90,6 @@ from .validator import (
     validate_shell_c_command,
     validate_zsh_command,
 )
-
-# AST-based validator utilities
-from .shell_validators import clear_pattern_cache
 
 __all__ = [
     # Main API

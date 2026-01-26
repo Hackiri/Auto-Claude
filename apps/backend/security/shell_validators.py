@@ -19,23 +19,23 @@ Now enhanced with AST-based validation from bash_validator.py for:
 import os
 import shlex
 from pathlib import Path
-from typing import Optional
 
+from core.bash_validator import (
+    BASHLEX_AVAILABLE,
+    CompiledPattern,
+    check_control_characters,
+    compile_patterns,
+)
+
+# Import AST-based bash validator
+from core.bash_validator import (
+    validate_bash_command as ast_validate_bash_command,
+)
 from project_analyzer import is_command_allowed
 
 from .parser import _cross_platform_basename, extract_commands, split_command_segments
 from .profile import get_security_profile
 from .validation_models import ValidationResult
-
-# Import AST-based bash validator
-from core.bash_validator import (
-    validate_bash_command as ast_validate_bash_command,
-    compile_patterns,
-    check_control_characters,
-    BashValidationResult,
-    CompiledPattern,
-    BASHLEX_AVAILABLE,
-)
 
 # Shell interpreters that can execute nested commands
 SHELL_INTERPRETERS = {"bash", "sh", "zsh"}
@@ -74,7 +74,7 @@ def _get_compiled_patterns_for_project(project_dir: str) -> list[CompiledPattern
         return []
 
 
-def clear_pattern_cache(project_dir: Optional[str] = None) -> None:
+def clear_pattern_cache(project_dir: str | None = None) -> None:
     """
     Clear the compiled pattern cache.
 
@@ -217,6 +217,11 @@ def validate_shell_c_command(command_string: str) -> ValidationResult:
         # The script itself would need to be in allowed commands
         return True, ""
 
+    # Handle empty commands early - they're harmless (e.g., bash -c "")
+    # This check must come before AST validation since empty strings fail parsing
+    if not inner_command.strip():
+        return True, ""
+
     # Apply AST validation to the inner command as well
     if BASHLEX_AVAILABLE:
         ast_valid, ast_error = _validate_with_ast(inner_command, project_dir)
@@ -233,10 +238,7 @@ def validate_shell_c_command(command_string: str) -> ValidationResult:
     inner_command_names = extract_commands(inner_command)
 
     if not inner_command_names:
-        # Could not parse - be permissive for empty commands
-        # (e.g., bash -c "" is harmless)
-        if not inner_command.strip():
-            return True, ""
+        # Could not parse - fail safe for non-empty commands
         return False, f"Could not parse commands inside shell -c: {inner_command}"
 
     # Validate each command name against the security profile

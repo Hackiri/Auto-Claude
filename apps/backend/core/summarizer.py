@@ -8,9 +8,8 @@ Inspired by Craft Agents OSS summarize.ts
 """
 
 import asyncio
-from dataclasses import dataclass
-from typing import Optional
 import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +35,12 @@ class SummarizationContext:
         model_intent: The AI's stated goal (most specific context)
         user_request: The user's original request (fallback context)
     """
+
     tool_name: str
-    path: Optional[str] = None
-    input_params: Optional[dict] = None
-    model_intent: Optional[str] = None
-    user_request: Optional[str] = None
+    path: str | None = None
+    input_params: dict | None = None
+    model_intent: str | None = None
+    user_request: str | None = None
 
 
 def estimate_tokens(text: str) -> int:
@@ -87,7 +87,7 @@ def truncate_response(response: str, max_chars: int = MAX_TRUNCATION_CHARS) -> s
     if len(response) <= max_chars:
         return response
 
-    return response[:max_chars] + '\n\n[Result truncated due to size]'
+    return response[:max_chars] + "\n\n[Result truncated due to size]"
 
 
 def _build_summarization_prompt(response: str, context: SummarizationContext) -> str:
@@ -112,31 +112,39 @@ def _build_summarization_prompt(response: str, context: SummarizationContext) ->
 
     if context.model_intent:
         # Truncate intent to last 500 chars to fit in context
-        intent = context.model_intent[-500:] if len(context.model_intent) > 500 else context.model_intent
+        intent = (
+            context.model_intent[-500:]
+            if len(context.model_intent) > 500
+            else context.model_intent
+        )
         prompt_parts.append(f"Goal: {intent}")
     elif context.user_request:
-        request = context.user_request[-300:] if len(context.user_request) > 300 else context.user_request
+        request = (
+            context.user_request[-300:]
+            if len(context.user_request) > 300
+            else context.user_request
+        )
         prompt_parts.append(f"User Request: {request}")
 
-    prompt_parts.extend([
-        "",
-        "Guidelines:",
-        "- Focus on information directly relevant to the stated goal",
-        "- Preserve important data, identifiers, and error messages",
-        "- Omit verbose output, logs, and repetitive content",
-        "- Keep the summary concise but complete for the task",
-        "",
-        "Result to summarize:",
-        response
-    ])
+    prompt_parts.extend(
+        [
+            "",
+            "Guidelines:",
+            "- Focus on information directly relevant to the stated goal",
+            "- Preserve important data, identifiers, and error messages",
+            "- Omit verbose output, logs, and repetitive content",
+            "- Keep the summary concise but complete for the task",
+            "",
+            "Result to summarize:",
+            response,
+        ]
+    )
 
-    return '\n'.join(prompt_parts)
+    return "\n".join(prompt_parts)
 
 
 async def summarize_large_result(
-    response: str,
-    context: SummarizationContext,
-    force: bool = False
+    response: str, context: SummarizationContext, force: bool = False
 ) -> str:
     """
     Summarize a large tool result using Claude Haiku.
@@ -161,7 +169,9 @@ async def summarize_large_result(
 
     # Truncate for Haiku input if needed
     max_input_chars = MAX_SUMMARIZATION_INPUT * 4
-    truncated_input = response[:max_input_chars] if len(response) > max_input_chars else response
+    truncated_input = (
+        response[:max_input_chars] if len(response) > max_input_chars else response
+    )
 
     try:
         # Lazy import to avoid circular dependencies and startup cost
@@ -173,10 +183,7 @@ async def summarize_large_result(
         result = client.messages.create(
             model=SUMMARIZATION_MODEL,
             max_tokens=MAX_SUMMARY_TOKENS,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
+            messages=[{"role": "user", "content": prompt}],
         )
 
         # Extract text from response
@@ -195,14 +202,14 @@ async def summarize_large_result(
         logger.warning("anthropic package not available, falling back to truncation")
         return truncate_response(response)
     except Exception as e:
-        logger.warning(f"Summarization failed ({type(e).__name__}: {e}), falling back to truncation")
+        logger.warning(
+            f"Summarization failed ({type(e).__name__}: {e}), falling back to truncation"
+        )
         return truncate_response(response)
 
 
 def summarize_large_result_sync(
-    response: str,
-    context: SummarizationContext,
-    force: bool = False
+    response: str, context: SummarizationContext, force: bool = False
 ) -> str:
     """
     Synchronous wrapper for summarize_large_result.
@@ -224,10 +231,10 @@ def summarize_large_result_sync(
         if loop.is_running():
             # We're in an async context, need to use a new loop
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(
-                    asyncio.run,
-                    summarize_large_result(response, context, force)
+                    asyncio.run, summarize_large_result(response, context, force)
                 )
                 return future.result(timeout=30)
         else:
@@ -256,6 +263,7 @@ class ResponseSummarizer:
         if self._client is None:
             try:
                 import anthropic
+
                 self._client = anthropic.Anthropic()
             except ImportError:
                 pass
@@ -266,10 +274,7 @@ class ResponseSummarizer:
         self._client = None
 
     def maybe_summarize(
-        self,
-        response: str,
-        context: SummarizationContext,
-        force: bool = False
+        self, response: str, context: SummarizationContext, force: bool = False
     ) -> str:
         """
         Summarize if needed, with client reuse.
@@ -291,14 +296,16 @@ class ResponseSummarizer:
 
         # Truncate for input
         max_input_chars = MAX_SUMMARIZATION_INPUT * 4
-        truncated_input = response[:max_input_chars] if len(response) > max_input_chars else response
+        truncated_input = (
+            response[:max_input_chars] if len(response) > max_input_chars else response
+        )
 
         try:
             prompt = _build_summarization_prompt(truncated_input, context)
             result = client.messages.create(
                 model=SUMMARIZATION_MODEL,
                 max_tokens=MAX_SUMMARY_TOKENS,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             if result.content and len(result.content) > 0:
@@ -312,7 +319,7 @@ class ResponseSummarizer:
 
 
 # Global instance for convenience
-_default_summarizer: Optional[ResponseSummarizer] = None
+_default_summarizer: ResponseSummarizer | None = None
 
 
 def get_summarizer() -> ResponseSummarizer:

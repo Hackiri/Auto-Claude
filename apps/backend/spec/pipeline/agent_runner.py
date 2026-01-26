@@ -6,6 +6,7 @@ Handles the execution of AI agents for the spec creation pipeline.
 """
 
 from pathlib import Path
+from typing import Any
 
 # Configure safe encoding before any output (fixes Windows encoding errors)
 from ui.capabilities import configure_safe_encoding
@@ -243,7 +244,7 @@ class AgentRunner:
             return False, str(e)
 
     @staticmethod
-    def _extract_tool_input_display(inp: dict) -> str | None:
+    def _extract_tool_input_display(inp: dict[str, Any]) -> str | None:
         """Extract meaningful tool input for display.
 
         Args:
@@ -258,17 +259,17 @@ class AgentRunner:
         if "pattern" in inp:
             return f"pattern: {inp['pattern']}"
         elif "file_path" in inp:
-            fp = inp["file_path"]
+            fp = str(inp["file_path"])
             if len(fp) > 50:
                 fp = "..." + fp[-47:]
             return fp
         elif "command" in inp:
-            cmd = inp["command"]
+            cmd = str(inp["command"])
             if len(cmd) > 50:
                 cmd = cmd[:47] + "..."
             return cmd
         elif "path" in inp:
-            return inp["path"]
+            return str(inp["path"])
 
         return None
 
