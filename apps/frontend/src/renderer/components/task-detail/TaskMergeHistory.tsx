@@ -31,53 +31,10 @@ import {
 } from '../ui/alert-dialog';
 import { cn } from '../../lib/utils';
 import { useProjectStore } from '../../stores/project-store';
-import type { Task } from '../../../shared/types';
+import type { Task, MergeHistoryEntry, MergeConflictRecord } from '../../../shared/types';
 
 interface TaskMergeHistoryProps {
   task: Task;
-}
-
-/**
- * Merge history entry structure (matches backend MergeHistoryEntry)
- */
-interface MergeHistoryEntry {
-  merge_id: string;
-  task_id: string;
-  spec_name: string;
-  started_at: string;
-  completed_at: string | null;
-  source_worktree: string;
-  source_branch: string;
-  target_branch: string;
-  files_changed: string[];
-  files_added: string[];
-  files_deleted: string[];
-  conflicts_resolved: MergeConflictRecord[];
-  total_conflicts: number;
-  auto_resolved_count: number;
-  ai_resolved_count: number;
-  pre_merge_commit: string;
-  merge_commit: string;
-  success: boolean;
-  error_message: string | null;
-  ai_tokens_used: number;
-  duration_seconds: number;
-}
-
-/**
- * Conflict record structure
- */
-interface MergeConflictRecord {
-  file_path: string;
-  conflict_type: string;
-  resolution_method: string;
-  base_content: string;
-  task_content: string;
-  main_content: string;
-  resolved_content: string;
-  ai_reasoning: string | null;
-  ai_tokens_used: number;
-  resolved_at: string;
 }
 
 // Format date to relative time (e.g., "2 hours ago")

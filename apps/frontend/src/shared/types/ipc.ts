@@ -769,6 +769,10 @@ export interface ElectronAPI {
   watchTaskLogs: (projectId: string, specId: string) => Promise<IPCResult>;
   unwatchTaskLogs: (specId: string) => Promise<IPCResult>;
 
+  // Merge History operations
+  getMergeHistory: (projectId: string) => Promise<IPCResult<import('./task').MergeHistoryEntry[]>>;
+  rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
   // Task logs event listeners
   onTaskLogsChanged: (
     callback: (specId: string, logs: TaskLogs) => void

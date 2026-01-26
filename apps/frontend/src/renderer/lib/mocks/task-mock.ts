@@ -90,6 +90,17 @@ export const taskMock = {
 
   unwatchTaskLogs: async () => ({ success: true }),
 
+  // Merge history operations
+  getMergeHistory: async () => ({
+    success: true,
+    data: []
+  }),
+
+  rollbackMerge: async () => ({
+    success: false,
+    error: 'Merge rollback not available in browser mode'
+  }),
+
   // Event Listeners (no-op in browser)
   onTaskProgress: () => () => {},
   onTaskError: () => () => {},
