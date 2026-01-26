@@ -28,7 +28,8 @@ import {
   AlertTriangle,
   Pencil,
   X,
-  GitPullRequest
+  GitPullRequest,
+  GitMerge
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { calculateProgress } from '../../lib/utils';
@@ -42,6 +43,7 @@ import { TaskSubtasks } from './TaskSubtasks';
 import { TaskLogs } from './TaskLogs';
 import { TaskFiles } from './TaskFiles';
 import { TaskReview } from './TaskReview';
+import { TaskMergeHistory } from './TaskMergeHistory';
 import type { Task, WorktreeCreatePROptions } from '../../../shared/types';
 
 interface TaskDetailModalProps {
@@ -483,6 +485,13 @@ function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals,
                       {t('tasks:files.tab')}
                     </TabsTrigger>
                   )}
+                  <TabsTrigger
+                    value="merge-history"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm"
+                  >
+                    <GitMerge className="h-4 w-4 mr-1.5 inline-block" />
+                    Merge History
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab */}
@@ -567,6 +576,11 @@ function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals,
                     <TaskFiles task={task} />
                   </TabsContent>
                 )}
+
+                {/* Merge History Tab */}
+                <TabsContent value="merge-history" className="flex-1 min-h-0 overflow-hidden mt-0">
+                  <TaskMergeHistory task={task} />
+                </TabsContent>
               </Tabs>
             </div>
 

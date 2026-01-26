@@ -163,6 +163,31 @@
     "selectFile": "Select a file to view its contents",
     "openInIDE": "Open in IDE"
   },
+  "mergeHistory": {
+    "title": "Merge History",
+    "noHistory": "No merge history",
+    "noHistoryDescription": "Merges will appear here after you merge this task",
+    "loading": "Loading merge history...",
+    "errorLoading": "Failed to load merge history",
+    "retry": "Retry",
+    "mergedTo": "Merged to {{branch}}",
+    "filesChanged": "{{count}} file",
+    "filesChanged_plural": "{{count}} files",
+    "conflicts": "{{count}} conflict",
+    "conflicts_plural": "{{count}} conflicts",
+    "source": "Source",
+    "target": "Target",
+    "started": "Started",
+    "completed": "Completed",
+    "conflictResolution": "Conflict Resolution",
+    "autoResolved": "Auto-resolved",
+    "aiResolved": "AI-resolved",
+    "aiTokensUsed": "AI tokens used",
+    "filesChangedLabel": "Files Changed",
+    "error": "Error",
+    "notAvailable": "N/A",
+    "rollback": "Rollback Merge"
+  },
   "metadata": {
     "severity": "severity",
     "pullRequest": "Pull Request"

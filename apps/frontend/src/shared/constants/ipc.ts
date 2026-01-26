@@ -585,5 +585,10 @@ export const IPC_CHANNELS = {
   // Queue routing events (main -> renderer)
   QUEUE_PROFILE_SWAPPED: 'queue:profileSwapped',      // Task switched to different profile
   QUEUE_SESSION_CAPTURED: 'queue:sessionCaptured',    // Session ID captured from running task
-  QUEUE_BLOCKED_NO_PROFILES: 'queue:blockedNoProfiles' // All profiles unavailable
+  QUEUE_BLOCKED_NO_PROFILES: 'queue:blockedNoProfiles', // All profiles unavailable
+
+  // Merge History operations
+  MERGE_HISTORY_GET: 'mergeHistory:get',              // Get all merge history entries
+  MERGE_HISTORY_GET_DETAILS: 'mergeHistory:getDetails', // Get details for a specific merge
+  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback'     // Rollback a specific merge
 } as const;
