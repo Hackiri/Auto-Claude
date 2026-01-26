@@ -154,6 +154,12 @@ export interface TaskDraft {
   images: ImageAttachment[];
   referencedFiles: ReferencedFile[];
   requireReviewBeforeCoding?: boolean;
+  // Ralph Loop settings
+  enableRalphLoop?: boolean;
+  ralphLoopMaxCoderIterations?: number;
+  ralphLoopMaxQaIterations?: number;
+  ralphLoopRetryStrategy?: 'conservative' | 'aggressive' | 'adaptive';
+  ralphLoopOvernightMode?: boolean;
   savedAt: Date;
 }
 
@@ -224,6 +230,15 @@ export interface TaskMetadata {
 
   // Review settings
   requireReviewBeforeCoding?: boolean;  // Require human review of spec/plan before coding starts
+
+  // Ralph Loop settings
+  ralphLoop?: {
+    enabled?: boolean;
+    maxCoderIterations?: number;
+    maxQaIterations?: number;
+    retryStrategy?: 'conservative' | 'aggressive' | 'adaptive';
+    overnightMode?: boolean;
+  };
 
   // Agent configuration (from agent profile or manual selection)
   model?: ModelType;  // Claude model to use (haiku, sonnet, opus) - used when not auto profile

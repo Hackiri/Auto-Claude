@@ -86,6 +86,18 @@ interface TaskFormFieldsProps {
   requireReviewBeforeCoding: boolean;
   onRequireReviewChange: (require: boolean) => void;
 
+  // Ralph Loop
+  enableRalphLoop?: boolean;
+  onEnableRalphLoopChange?: (enabled: boolean) => void;
+  ralphLoopMaxCoderIterations?: number;
+  onRalphLoopMaxCoderIterationsChange?: (value: number) => void;
+  ralphLoopMaxQaIterations?: number;
+  onRalphLoopMaxQaIterationsChange?: (value: number) => void;
+  ralphLoopRetryStrategy?: 'conservative' | 'aggressive' | 'adaptive';
+  onRalphLoopRetryStrategyChange?: (value: 'conservative' | 'aggressive' | 'adaptive') => void;
+  ralphLoopOvernightMode?: boolean;
+  onRalphLoopOvernightModeChange?: (enabled: boolean) => void;
+
   // Form state
   disabled?: boolean;
   error?: string | null;
@@ -135,6 +147,16 @@ export function TaskFormFields({
   onImagesChange,
   requireReviewBeforeCoding,
   onRequireReviewChange,
+  enableRalphLoop,
+  onEnableRalphLoopChange,
+  ralphLoopMaxCoderIterations,
+  onRalphLoopMaxCoderIterationsChange,
+  ralphLoopMaxQaIterations,
+  onRalphLoopMaxQaIterationsChange,
+  ralphLoopRetryStrategy,
+  onRalphLoopRetryStrategyChange,
+  ralphLoopOvernightMode,
+  onRalphLoopOvernightModeChange,
   disabled = false,
   error,
   onError,
@@ -531,6 +553,112 @@ export function TaskFormFields({
               {t('tasks:form.requireReviewDescription')}
             </p>
           </div>
+        </div>
+
+        {/* Ralph Loop Toggle */}
+        <div className="space-y-3 p-4 rounded-lg border border-border bg-muted/30">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id={`${prefix}enable-ralph-loop`}
+              checked={enableRalphLoop}
+              onCheckedChange={(checked) => onEnableRalphLoopChange?.(checked === true)}
+              disabled={disabled}
+              className="mt-0.5"
+            />
+            <div className="flex-1 space-y-1">
+              <Label
+                htmlFor={`${prefix}enable-ralph-loop`}
+                className="text-sm font-medium text-foreground cursor-pointer"
+              >
+                {t('tasks:form.enableRalphLoopLabel')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('tasks:form.enableRalphLoopDescription')}
+              </p>
+            </div>
+          </div>
+
+          {/* Ralph Loop Options (shown when enabled) */}
+          {enableRalphLoop && (
+            <div className="ml-7 space-y-4 pt-3 border-t border-border/50">
+              {/* Iteration Limits */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor={`${prefix}ralph-max-coder`} className="text-xs font-medium">
+                    {t('tasks:form.ralphLoop.maxCoderIterations')}
+                  </Label>
+                  <Input
+                    id={`${prefix}ralph-max-coder`}
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={ralphLoopMaxCoderIterations ?? 5}
+                    onChange={(e) => onRalphLoopMaxCoderIterationsChange?.(parseInt(e.target.value) || 5)}
+                    disabled={disabled}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor={`${prefix}ralph-max-qa`} className="text-xs font-medium">
+                    {t('tasks:form.ralphLoop.maxQaIterations')}
+                  </Label>
+                  <Input
+                    id={`${prefix}ralph-max-qa`}
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={ralphLoopMaxQaIterations ?? 3}
+                    onChange={(e) => onRalphLoopMaxQaIterationsChange?.(parseInt(e.target.value) || 3)}
+                    disabled={disabled}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Retry Strategy */}
+              <div className="space-y-1.5">
+                <Label htmlFor={`${prefix}ralph-strategy`} className="text-xs font-medium">
+                  {t('tasks:form.ralphLoop.retryStrategy')}
+                </Label>
+                <select
+                  id={`${prefix}ralph-strategy`}
+                  value={ralphLoopRetryStrategy ?? 'adaptive'}
+                  onChange={(e) => onRalphLoopRetryStrategyChange?.(e.target.value as 'conservative' | 'aggressive' | 'adaptive')}
+                  disabled={disabled}
+                  className="w-full h-8 px-2 text-sm rounded-md border border-input bg-background"
+                >
+                  <option value="conservative">{t('tasks:form.ralphLoop.strategies.conservative')}</option>
+                  <option value="adaptive">{t('tasks:form.ralphLoop.strategies.adaptive')}</option>
+                  <option value="aggressive">{t('tasks:form.ralphLoop.strategies.aggressive')}</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  {t('tasks:form.ralphLoop.strategyHint')}
+                </p>
+              </div>
+
+              {/* Overnight Mode */}
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id={`${prefix}ralph-overnight`}
+                  checked={ralphLoopOvernightMode}
+                  onCheckedChange={(checked) => onRalphLoopOvernightModeChange?.(checked === true)}
+                  disabled={disabled}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 space-y-0.5">
+                  <Label
+                    htmlFor={`${prefix}ralph-overnight`}
+                    className="text-xs font-medium cursor-pointer"
+                  >
+                    {t('tasks:form.ralphLoop.overnightMode')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('tasks:form.ralphLoop.overnightModeHint')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Error Display */}

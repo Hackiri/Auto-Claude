@@ -265,6 +265,21 @@
     "classificationOptional": "Classification (optional)",
     "requireReviewLabel": "Require human review before coding",
     "requireReviewDescription": "When enabled, you'll be prompted to review the spec and implementation plan before the coding phase begins. This allows you to approve, request changes, or provide feedback.",
+    "enableRalphLoopLabel": "Enable Ralph Loop",
+    "enableRalphLoopDescription": "Use iterative AI loop technique for autonomous overnight builds with intelligent retry strategies.",
+    "ralphLoop": {
+      "maxCoderIterations": "Max Coder Iterations",
+      "maxQaIterations": "Max QA Iterations",
+      "retryStrategy": "Retry Strategy",
+      "strategyHint": "Controls how aggressively the AI retries failed operations.",
+      "strategies": {
+        "conservative": "Conservative - Fewer retries, fail fast",
+        "adaptive": "Adaptive - Adjust based on error type (Recommended)",
+        "aggressive": "Aggressive - Maximum retries"
+      },
+      "overnightMode": "Overnight Mode",
+      "overnightModeHint": "Optimized for unattended overnight execution with extended timeouts."
+    },
     "errors": {
       "descriptionRequired": "Please provide a description",
       "maxImagesReached": "Maximum of 5 images allowed",

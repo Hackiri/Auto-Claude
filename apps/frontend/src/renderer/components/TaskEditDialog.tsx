@@ -120,6 +120,23 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
     task.metadata?.requireReviewBeforeCoding ?? false
   );
 
+  // Ralph Loop settings
+  const [enableRalphLoop, setEnableRalphLoop] = useState(
+    task.metadata?.ralphLoop?.enabled ?? false
+  );
+  const [ralphLoopMaxCoderIterations, setRalphLoopMaxCoderIterations] = useState(
+    task.metadata?.ralphLoop?.maxCoderIterations ?? 5
+  );
+  const [ralphLoopMaxQaIterations, setRalphLoopMaxQaIterations] = useState(
+    task.metadata?.ralphLoop?.maxQaIterations ?? 3
+  );
+  const [ralphLoopRetryStrategy, setRalphLoopRetryStrategy] = useState<'conservative' | 'aggressive' | 'adaptive'>(
+    task.metadata?.ralphLoop?.retryStrategy ?? 'adaptive'
+  );
+  const [ralphLoopOvernightMode, setRalphLoopOvernightMode] = useState(
+    task.metadata?.ralphLoop?.overnightMode ?? false
+  );
+
   // Reset form when task changes or dialog opens
   useEffect(() => {
     if (open) {
@@ -160,6 +177,11 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
 
       setImages(task.metadata?.attachedImages || []);
       setRequireReviewBeforeCoding(task.metadata?.requireReviewBeforeCoding ?? false);
+      setEnableRalphLoop(task.metadata?.ralphLoop?.enabled ?? false);
+      setRalphLoopMaxCoderIterations(task.metadata?.ralphLoop?.maxCoderIterations ?? 5);
+      setRalphLoopMaxQaIterations(task.metadata?.ralphLoop?.maxQaIterations ?? 3);
+      setRalphLoopRetryStrategy(task.metadata?.ralphLoop?.retryStrategy ?? 'adaptive');
+      setRalphLoopOvernightMode(task.metadata?.ralphLoop?.overnightMode ?? false);
       setError(null);
 
       // Auto-expand classification if it has content
@@ -204,6 +226,11 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
       model !== (task.metadata?.model || '') ||
       thinkingLevel !== (task.metadata?.thinkingLevel || '') ||
       requireReviewBeforeCoding !== (task.metadata?.requireReviewBeforeCoding ?? false) ||
+      enableRalphLoop !== (task.metadata?.ralphLoop?.enabled ?? false) ||
+      ralphLoopMaxCoderIterations !== (task.metadata?.ralphLoop?.maxCoderIterations ?? 5) ||
+      ralphLoopMaxQaIterations !== (task.metadata?.ralphLoop?.maxQaIterations ?? 3) ||
+      ralphLoopRetryStrategy !== (task.metadata?.ralphLoop?.retryStrategy ?? 'adaptive') ||
+      ralphLoopOvernightMode !== (task.metadata?.ralphLoop?.overnightMode ?? false) ||
       JSON.stringify(images) !== JSON.stringify(task.metadata?.attachedImages || []) ||
       JSON.stringify(phaseModels) !== JSON.stringify(task.metadata?.phaseModels || DEFAULT_PHASE_MODELS) ||
       JSON.stringify(phaseThinking) !== JSON.stringify(task.metadata?.phaseThinking || DEFAULT_PHASE_THINKING);
@@ -232,6 +259,13 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
     // Always set attachedImages to persist removal when all images are deleted
     metadataUpdates.attachedImages = images.length > 0 ? images : [];
     metadataUpdates.requireReviewBeforeCoding = requireReviewBeforeCoding;
+    metadataUpdates.ralphLoop = {
+      enabled: enableRalphLoop,
+      maxCoderIterations: ralphLoopMaxCoderIterations,
+      maxQaIterations: ralphLoopMaxQaIterations,
+      retryStrategy: ralphLoopRetryStrategy,
+      overnightMode: ralphLoopOvernightMode,
+    };
 
     const success = await persistUpdateTask(task.id, {
       title: trimmedTitle,
@@ -311,6 +345,16 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
         onImagesChange={setImages}
         requireReviewBeforeCoding={requireReviewBeforeCoding}
         onRequireReviewChange={setRequireReviewBeforeCoding}
+        enableRalphLoop={enableRalphLoop}
+        onEnableRalphLoopChange={setEnableRalphLoop}
+        ralphLoopMaxCoderIterations={ralphLoopMaxCoderIterations}
+        onRalphLoopMaxCoderIterationsChange={setRalphLoopMaxCoderIterations}
+        ralphLoopMaxQaIterations={ralphLoopMaxQaIterations}
+        onRalphLoopMaxQaIterationsChange={setRalphLoopMaxQaIterations}
+        ralphLoopRetryStrategy={ralphLoopRetryStrategy}
+        onRalphLoopRetryStrategyChange={setRalphLoopRetryStrategy}
+        ralphLoopOvernightMode={ralphLoopOvernightMode}
+        onRalphLoopOvernightModeChange={setRalphLoopOvernightMode}
         disabled={isSaving}
         error={error}
         onError={setError}

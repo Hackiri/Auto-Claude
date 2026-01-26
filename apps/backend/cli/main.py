@@ -489,6 +489,7 @@ def _run_cli() -> None:
         skip_qa=args.skip_qa,
         force_bypass_approval=args.force,
         base_branch=args.base_branch,
+        ralph_loop=args.ralph_loop,
     )
 
 
