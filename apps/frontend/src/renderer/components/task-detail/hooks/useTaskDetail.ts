@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useProjectStore } from '../../../stores/project-store';
 import { checkTaskRunning, isIncompleteHumanReview, getTaskProgress, useTaskStore, loadTasks } from '../../../stores/task-store';
-import type { Task, TaskLogs, TaskLogPhase, WorktreeStatus, WorktreeDiff, MergeConflict, MergeStats, GitConflictInfo, ImageAttachment } from '../../../../shared/types';
+import type { Task, TaskLogs, TaskLogPhase, WorktreeStatus, WorktreeDiff, MergeConflict, MergeStats, GitConflictInfo, ImageAttachment, TaskQAValidationData } from '../../../../shared/types';
 
 /**
  * Validates task subtasks structure to prevent infinite loops during resume.
@@ -77,6 +77,9 @@ export function useTaskDetail({ task }: UseTaskDetailOptions) {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [expandedPhases, setExpandedPhases] = useState<Set<TaskLogPhase>>(new Set());
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const [qaData, setQAData] = useState<TaskQAValidationData | null>(null);
+  const [isLoadingQAData, setIsLoadingQAData] = useState(false);
+  const [qaDataError, setQADataError] = useState<string | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -273,6 +276,65 @@ export function useTaskDetail({ task }: UseTaskDetailOptions) {
       return next;
     });
   }, []);
+
+  // Load QA validation data when task is selected and has relevant status
+  // QA data is relevant for: human_review (QA completed), done (finished with QA history),
+  // or in_progress with validation phase (QA is running)
+  const shouldLoadQAData = needsReview ||
+    task.status === 'done' ||
+    (task.status === 'in_progress' && executionPhase === 'validation') ||
+    task.status === 'ai_review';
+
+  useEffect(() => {
+    if (!selectedProject || !shouldLoadQAData) {
+      // Clear QA data when task doesn't need it
+      setQAData(null);
+      setQADataError(null);
+      return;
+    }
+
+    const loadQAValidationData = async () => {
+      setIsLoadingQAData(true);
+      setQADataError(null);
+      try {
+        const result = await window.electronAPI.getQAValidationData(selectedProject.id, task.specId);
+        if (result.success && result.data) {
+          setQAData(result.data);
+        } else if (result.success && !result.data) {
+          // No QA data exists yet - this is normal for tasks that haven't run QA
+          setQAData(null);
+        } else {
+          setQADataError(result.error || 'Failed to load QA validation data');
+        }
+      } catch (err) {
+        setQADataError(err instanceof Error ? err.message : 'Unknown error loading QA data');
+      } finally {
+        setIsLoadingQAData(false);
+      }
+    };
+
+    loadQAValidationData();
+  }, [selectedProject, task.specId, task.id, shouldLoadQAData]);
+
+  // Callback to manually reload QA data (for refresh button in UI)
+  const loadQAData = useCallback(async () => {
+    if (!selectedProject) return;
+
+    setIsLoadingQAData(true);
+    setQADataError(null);
+    try {
+      const result = await window.electronAPI.getQAValidationData(selectedProject.id, task.specId);
+      if (result.success && result.data) {
+        setQAData(result.data);
+      } else if (!result.success) {
+        setQADataError(result.error || 'Failed to load QA validation data');
+      }
+    } catch (err) {
+      setQADataError(err instanceof Error ? err.message : 'Unknown error loading QA data');
+    } finally {
+      setIsLoadingQAData(false);
+    }
+  }, [selectedProject, task.specId]);
 
   // Add a feedback image
   const addFeedbackImage = useCallback((image: ImageAttachment) => {
@@ -526,6 +588,9 @@ export function useTaskDetail({ task }: UseTaskDetailOptions) {
     showPRDialog,
     isCreatingPR,
     isLoadingPlan,
+    qaData,
+    isLoadingQAData,
+    qaDataError,
 
     // Setters
     setFeedback,
@@ -560,6 +625,9 @@ export function useTaskDetail({ task }: UseTaskDetailOptions) {
     setShowConflictDialog,
     setShowPRDialog,
     setIsCreatingPR,
+    setQAData,
+    setIsLoadingQAData,
+    setQADataError,
 
     // Handlers
     handleLogsScroll,
@@ -571,5 +639,6 @@ export function useTaskDetail({ task }: UseTaskDetailOptions) {
     clearFeedbackImages,
     handleReviewAgain,
     reloadPlanForIncompleteTask,
+    loadQAData,
   };
 }
