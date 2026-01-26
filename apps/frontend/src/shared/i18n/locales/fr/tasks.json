@@ -361,6 +361,7 @@
     "description": "Ajoutez des références visuelles comme des captures d'écran ou des conceptions pour aider l'IA à comprendre vos exigences."
   },
   "qa": {
+    "tab": "QA",
     "dashboard": {
       "title": "Résultats de validation QA",
       "subtitle": "Résumé de la validation d'assurance qualité",

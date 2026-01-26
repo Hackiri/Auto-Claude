@@ -44,6 +44,7 @@ import { TaskLogs } from './TaskLogs';
 import { TaskFiles } from './TaskFiles';
 import { TaskReview } from './TaskReview';
 import { TaskMergeHistory } from './TaskMergeHistory';
+import { TaskQADashboard } from './TaskQADashboard';
 import type { Task, WorktreeCreatePROptions } from '../../../shared/types';
 
 interface TaskDetailModalProps {
@@ -77,12 +78,30 @@ const isFilesTabEnabled = () => {
   return flag === null || flag === 'true'; // Enabled by default
 };
 
+// Determine if QA tab should be shown based on task status and QA data
+const shouldShowQATab = (task: Task): boolean => {
+  // Show if task is in AI review phase
+  if (task.status === 'ai_review') return true;
+
+  // Show if task is in human review due to QA rejection
+  if (task.status === 'human_review' && task.reviewReason === 'qa_rejected') return true;
+
+  // Show if task is done and has QA validation history
+  if (task.status === 'done' && task.qaValidationData?.iterations?.length) return true;
+
+  // Show if task has any QA validation data (for other statuses)
+  if (task.qaValidationData?.iterations?.length) return true;
+
+  return false;
+};
+
 // Separate component to use hooks only when task exists
 function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals, onOpenInbuiltTerminal }: { open: boolean; task: Task; onOpenChange: (open: boolean) => void; onSwitchToTerminals?: () => void; onOpenInbuiltTerminal?: (id: string, cwd: string) => void }) {
   const { t } = useTranslation(['tasks']);
   const { toast } = useToast();
   const state = useTaskDetail({ task });
   const showFilesTab = isFilesTabEnabled();
+  const showQATab = shouldShowQATab(task);
   const progressPercent = calculateProgress(task.subtasks);
   const completedSubtasks = task.subtasks.filter(s => s.status === 'completed').length;
   const totalSubtasks = task.subtasks.length;
@@ -485,6 +504,14 @@ function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals,
                       {t('tasks:files.tab')}
                     </TabsTrigger>
                   )}
+                  {showQATab && (
+                    <TabsTrigger
+                      value="qa"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm"
+                    >
+                      {t('tasks:qa.tab')}
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger
                     value="merge-history"
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm"
@@ -574,6 +601,18 @@ function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals,
                 {showFilesTab && (
                   <TabsContent value="files" className="flex-1 min-h-0 overflow-hidden mt-0">
                     <TaskFiles task={task} />
+                  </TabsContent>
+                )}
+
+                {/* QA Tab */}
+                {showQATab && (
+                  <TabsContent value="qa" className="flex-1 min-h-0 overflow-hidden mt-0">
+                    <TaskQADashboard
+                      criteria={task.qaValidationData?.currentCriteriaResults ?? []}
+                      iterations={task.qaValidationData?.iterations ?? []}
+                      trendData={null}
+                      summary={task.qaValidationData?.summary ?? null}
+                    />
                   </TabsContent>
                 )}
 
