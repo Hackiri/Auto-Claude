@@ -65,6 +65,21 @@ vi.mock('./credential-utils', () => ({
   clearKeychainCache: vi.fn()
 }));
 
+// Mock token-refresh to avoid real token refresh operations
+// Return 'mock-decrypted-token' to match the credential-utils mock for backward compatibility tests
+vi.mock('./token-refresh', () => ({
+  reactiveTokenRefresh: vi.fn(async () => ({
+    token: 'mock-decrypted-token',
+    wasRefreshed: false,
+    error: null
+  })),
+  ensureValidToken: vi.fn(async () => ({
+    token: 'mock-decrypted-token',
+    wasRefreshed: false,
+    error: null
+  }))
+}));
+
 // Mock global fetch
 global.fetch = vi.fn(() =>
   Promise.resolve({
