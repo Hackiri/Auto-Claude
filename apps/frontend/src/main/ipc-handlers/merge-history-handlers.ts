@@ -148,8 +148,9 @@ export function registerGetMergeHistory(): void {
 
       try {
         // Get the source path (handles both dev and production)
+        // Note: sourcePath already points to the backend root (e.g., Resources/backend or apps/backend)
         const sourcePath = getEffectiveSourcePath();
-        const scriptPath = path.join(sourcePath, 'apps', 'backend', 'cli', 'merge_history_json.py');
+        const scriptPath = path.join(sourcePath, 'cli', 'merge_history_json.py');
 
         const result = await executePythonScript(scriptPath, ['list', project.path]);
 
@@ -193,8 +194,9 @@ export function registerGetMergeDetails(): void {
 
       try {
         // Get the source path (handles both dev and production)
+        // Note: sourcePath already points to the backend root (e.g., Resources/backend or apps/backend)
         const sourcePath = getEffectiveSourcePath();
-        const scriptPath = path.join(sourcePath, 'apps', 'backend', 'cli', 'merge_history_json.py');
+        const scriptPath = path.join(sourcePath, 'cli', 'merge_history_json.py');
 
         const result = await executePythonScript(scriptPath, ['get', project.path, mergeId]);
 
@@ -236,8 +238,9 @@ export function registerRollbackMerge(): void {
 
       try {
         // Get the source path (handles both dev and production)
+        // Note: sourcePath already points to the backend root (e.g., Resources/backend or apps/backend)
         const sourcePath = getEffectiveSourcePath();
-        const scriptPath = path.join(sourcePath, 'apps', 'backend', 'cli', 'merge_history_json.py');
+        const scriptPath = path.join(sourcePath, 'cli', 'merge_history_json.py');
 
         const result = await executePythonScript(scriptPath, ['rollback', project.path, mergeId]);
 
