@@ -32,6 +32,7 @@ AI_MERGE_SYSTEM_PROMPT = _workspace_module.AI_MERGE_SYSTEM_PROMPT
 _build_merge_prompt = _workspace_module._build_merge_prompt
 _check_git_conflicts = _workspace_module._check_git_conflicts
 _rebase_spec_branch = _workspace_module._rebase_spec_branch
+_record_merge_completion = _workspace_module._record_merge_completion
 
 # Models and Enums
 # Display Functions
@@ -115,6 +116,7 @@ __all__ = [
     "_build_merge_prompt",  # Internal prompt builder (ACS-194)
     "_check_git_conflicts",  # Internal git conflict detection (ACS-224)
     "_rebase_spec_branch",  # Internal rebase function (ACS-224)
+    "_record_merge_completion",  # Record merge completion for tracking
     # Models
     "WorkspaceMode",
     "WorkspaceChoice",

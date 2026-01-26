@@ -18,8 +18,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from merge_history import MergeHistoryTracker
-from merge_history_models import MergeConflictRecord, MergeHistoryEntry
+from merge.merge_history import MergeHistoryTracker
+from merge.merge_history_models import MergeConflictRecord, MergeHistoryEntry
 
 
 class TestMergeHistoryTracker:
@@ -66,9 +66,10 @@ class TestMergeHistoryTracker:
         """Tracker initializes with correct directory structure."""
         tracker = MergeHistoryTracker(temp_storage)
 
+        # Use resolve() on both sides since macOS resolves /var -> /private/var
         assert tracker.storage_path == temp_storage.resolve()
-        assert tracker.history_dir == temp_storage / "merge_history"
-        assert tracker.index_file == temp_storage / "merge_history" / "index.json"
+        assert tracker.history_dir == (temp_storage / "merge_history").resolve()
+        assert tracker.index_file == (temp_storage / "merge_history" / "index.json").resolve()
         assert tracker.history_dir.exists()
 
     def test_record_merge_creates_file(self, tracker, sample_entry):
@@ -213,7 +214,7 @@ class TestMergeHistoryTracker:
         """rollback_merge successfully reverts a merge."""
         tracker.record_merge(sample_entry)
 
-        with patch("merge_history.run_git") as mock_run_git:
+        with patch("core.git_executable.run_git") as mock_run_git:
             # Mock successful git revert
             mock_result = MagicMock()
             mock_result.returncode = 0
@@ -254,7 +255,7 @@ class TestMergeHistoryTracker:
         """rollback_merge handles git command errors gracefully."""
         tracker.record_merge(sample_entry)
 
-        with patch("merge_history.run_git") as mock_run_git:
+        with patch("core.git_executable.run_git") as mock_run_git:
             # Mock failed git revert
             mock_result = MagicMock()
             mock_result.returncode = 1

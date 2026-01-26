@@ -36,10 +36,12 @@ class TestMergeTrackingIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             project_dir = Path(tmpdir)
 
-            # Initialize git repo
-            run_git(["init"], cwd=project_dir)
+            # Initialize git repo with 'main' as default branch
+            run_git(["init", "-b", "main"], cwd=project_dir)
             run_git(["config", "user.name", "Test User"], cwd=project_dir)
             run_git(["config", "user.email", "test@example.com"], cwd=project_dir)
+            # Disable GPG signing for test commits
+            run_git(["config", "commit.gpgsign", "false"], cwd=project_dir)
 
             # Create initial commit
             test_file = project_dir / "test.txt"
@@ -168,26 +170,42 @@ class TestMergeTrackingIntegration:
         assert "files_changed" in data
         assert data["merge_id"] == entry.merge_id
 
-    def test_rollback_integration(self, temp_project, tracker):
+    def test_rollback_integration(self, temp_project):
         """
         Test rollback functionality with a real git repository.
 
         This tests the integration between MergeHistoryTracker and git operations.
         """
+        # Create tracker with the temp project's .auto-claude directory
+        tracker = MergeHistoryTracker(temp_project / ".auto-claude")
+
         # Create a new branch and commit
-        run_git(["checkout", "-b", "feature"], cwd=temp_project)
+        result = run_git(["checkout", "-b", "feature"], cwd=temp_project)
+        assert result.returncode == 0, f"checkout failed: {result.stderr}"
+
         feature_file = temp_project / "feature.txt"
         feature_file.write_text("feature content")
-        run_git(["add", "."], cwd=temp_project)
-        run_git(["commit", "-m", "Add feature"], cwd=temp_project)
+
+        result = run_git(["add", "."], cwd=temp_project)
+        assert result.returncode == 0, f"add failed: {result.stderr}"
+
+        result = run_git(["commit", "-m", "Add feature"], cwd=temp_project)
+        assert result.returncode == 0, f"commit failed: {result.stderr}"
 
         # Merge back to main
-        run_git(["checkout", "main"], cwd=temp_project)
-        merge_result = run_git(["merge", "feature", "--no-ff", "-m", "Merge feature"], cwd=temp_project)
+        result = run_git(["checkout", "main"], cwd=temp_project)
+        assert result.returncode == 0, f"checkout main failed: {result.stderr}"
+
+        result = run_git(["merge", "feature", "--no-ff", "-m", "Merge feature"], cwd=temp_project)
+        assert result.returncode == 0, f"merge failed: {result.stderr}"
 
         # Get the merge commit
         result = run_git(["rev-parse", "HEAD"], cwd=temp_project)
+        assert result.returncode == 0, f"rev-parse failed: {result.stderr}"
         merge_commit = result.stdout.strip()
+
+        # Verify we have a valid commit hash
+        assert len(merge_commit) == 40, f"Invalid merge commit hash: '{merge_commit}', stderr: {result.stderr}"
 
         # Record the merge
         now = datetime.now()
@@ -201,12 +219,17 @@ class TestMergeTrackingIntegration:
         )
         tracker.record_merge(entry)
 
+        # Verify the merge was recorded with correct commit hash
+        retrieved = tracker.get_merge(entry.merge_id)
+        assert retrieved is not None
+        assert retrieved.merge_commit == merge_commit
+
         # Verify feature.txt exists
         assert feature_file.exists()
 
-        # Perform rollback
-        success = tracker.rollback_merge(entry.merge_id, temp_project)
-        assert success is True
+        # Perform rollback using the resolved temp_project path
+        success = tracker.rollback_merge(entry.merge_id, temp_project.resolve())
+        assert success is True, f"Rollback failed for merge commit {merge_commit}"
 
         # Verify rollback created a revert commit
         log_result = run_git(["log", "--oneline", "-1"], cwd=temp_project)

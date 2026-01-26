@@ -13,8 +13,10 @@ This module handles:
 
 from __future__ import annotations
 
+import fcntl
 import json
 import logging
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -23,6 +25,9 @@ if TYPE_CHECKING:
     from .merge_history_models import MergeHistoryEntry
 
 logger = logging.getLogger(__name__)
+
+# Thread lock for index file operations
+_index_lock = threading.Lock()
 
 # Import debug utilities
 try:
@@ -240,7 +245,11 @@ class MergeHistoryTracker:
 
         try:
             with open(self.index_file, encoding="utf-8") as f:
-                return json.load(f)
+                fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                try:
+                    return json.load(f)
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
         except Exception as e:
             logger.error(f"Failed to load merge index: {e}")
             return {"merges": [], "last_updated": None}
@@ -249,21 +258,39 @@ class MergeHistoryTracker:
         """
         Update the merge index with a new entry.
 
+        Uses both thread lock and file lock to prevent concurrent access issues.
+
         Args:
             entry: The merge history entry to add to index
         """
-        index = self._load_index()
+        with _index_lock:
+            # Load current index
+            index = {"merges": [], "last_updated": None}
+            if self.index_file.exists():
+                try:
+                    with open(self.index_file, encoding="utf-8") as f:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                        try:
+                            index = json.load(f)
+                        finally:
+                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                except Exception as e:
+                    logger.error(f"Failed to load merge index: {e}")
 
-        # Add merge ID if not already present
-        if entry.merge_id not in index.get("merges", []):
-            index.setdefault("merges", []).append(entry.merge_id)
+            # Add merge ID if not already present
+            if entry.merge_id not in index.get("merges", []):
+                index.setdefault("merges", []).append(entry.merge_id)
 
-        # Update timestamp
-        index["last_updated"] = datetime.now().isoformat()
+            # Update timestamp
+            index["last_updated"] = datetime.now().isoformat()
 
-        # Save index
-        try:
-            with open(self.index_file, "w", encoding="utf-8") as f:
-                json.dump(index, f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to update merge index: {e}")
+            # Save index with exclusive lock
+            try:
+                with open(self.index_file, "w", encoding="utf-8") as f:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    try:
+                        json.dump(index, f, indent=2)
+                    finally:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            except Exception as e:
+                logger.error(f"Failed to update merge index: {e}")
