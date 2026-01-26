@@ -360,5 +360,131 @@
   "referenceImages": {
     "title": "Reference Images (optional)",
     "description": "Add visual references like screenshots or designs to help the AI understand your requirements."
+  },
+  "qa": {
+    "dashboard": {
+      "title": "QA Validation Results",
+      "subtitle": "Quality assurance validation summary",
+      "noData": "No QA data available",
+      "noDataDescription": "QA results will appear here after validation runs",
+      "loading": "Loading QA results...",
+      "errorLoading": "Failed to load QA results",
+      "retry": "Retry",
+      "lastRun": "Last run",
+      "totalRuns": "Total runs",
+      "viewDetails": "View Details",
+      "viewReport": "View Full Report",
+      "collapseAll": "Collapse All",
+      "expandAll": "Expand All"
+    },
+    "status": {
+      "passed": "Passed",
+      "failed": "Failed",
+      "pending": "Pending",
+      "skipped": "Skipped",
+      "running": "Running",
+      "notRun": "Not Run"
+    },
+    "criteria": {
+      "title": "Acceptance Criteria",
+      "passed": "Passed",
+      "failed": "Failed",
+      "pending": "Pending",
+      "total": "Total",
+      "passRate": "Pass rate",
+      "noCriteria": "No acceptance criteria defined",
+      "viewAll": "View all criteria",
+      "criterion": "Criterion",
+      "result": "Result",
+      "details": "Details",
+      "evidence": "Evidence",
+      "noEvidence": "No evidence provided"
+    },
+    "history": {
+      "title": "Validation History",
+      "iteration": "Iteration",
+      "iterationLabel": "Iteration {{number}}",
+      "timestamp": "Timestamp",
+      "duration": "Duration",
+      "result": "Result",
+      "noHistory": "No validation history",
+      "noHistoryDescription": "Past validation runs will appear here",
+      "viewIteration": "View iteration details",
+      "compareIterations": "Compare iterations",
+      "latestIteration": "Latest",
+      "previousIterations": "Previous iterations"
+    },
+    "trends": {
+      "title": "Trends",
+      "passRate": "Pass Rate",
+      "passRateOverTime": "Pass rate over time",
+      "criteriaProgress": "Criteria Progress",
+      "iterationsToPass": "Iterations to pass",
+      "averageIterations": "Average iterations",
+      "improvement": "Improvement",
+      "regression": "Regression",
+      "stable": "Stable",
+      "noTrendData": "Not enough data for trends",
+      "chartLabel": "QA pass rate trend"
+    },
+    "issues": {
+      "title": "Issues",
+      "issue": "Issue",
+      "severity": "Severity",
+      "description": "Description",
+      "location": "Location",
+      "suggestion": "Suggestion",
+      "noIssues": "No issues found",
+      "issueCount": "{{count}} issue",
+      "issueCount_plural": "{{count}} issues",
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "fixed": "Fixed",
+      "unfixed": "Unfixed"
+    },
+    "summary": {
+      "title": "Summary",
+      "overallStatus": "Overall Status",
+      "criteriaPassed": "Criteria passed",
+      "criteriaFailed": "Criteria failed",
+      "issuesFound": "Issues found",
+      "fixAttempts": "Fix attempts",
+      "recommendation": "Recommendation",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "needsReview": "Needs Review"
+    },
+    "actions": {
+      "runQA": "Run QA",
+      "rerunQA": "Re-run QA",
+      "approveTask": "Approve Task",
+      "rejectTask": "Reject Task",
+      "requestFixes": "Request Fixes",
+      "viewReport": "View Report",
+      "downloadReport": "Download Report",
+      "copyReport": "Copy Report"
+    },
+    "filters": {
+      "all": "All",
+      "passedOnly": "Passed Only",
+      "failedOnly": "Failed Only",
+      "byIteration": "By Iteration",
+      "bySeverity": "By Severity"
+    },
+    "report": {
+      "title": "QA Report",
+      "generatedAt": "Generated at",
+      "taskName": "Task",
+      "specId": "Spec ID",
+      "sections": {
+        "overview": "Overview",
+        "criteria": "Acceptance Criteria",
+        "issues": "Issues",
+        "history": "History",
+        "recommendations": "Recommendations"
+      }
+    }
   }
 }
