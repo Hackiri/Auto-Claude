@@ -592,5 +592,9 @@ export const IPC_CHANNELS = {
   // Merge History operations
   MERGE_HISTORY_GET: 'mergeHistory:get',              // Get all merge history entries
   MERGE_HISTORY_GET_DETAILS: 'mergeHistory:getDetails', // Get details for a specific merge
-  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback'     // Rollback a specific merge
+  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback',    // Rollback a specific merge
+
+  // Decision Audit Trail operations
+  TASK_DECISIONS_GET: 'task:decisionsGet',            // Load decisions from spec directory
+  TASK_DECISIONS_ANNOTATE: 'task:decisionsAnnotate'   // Annotate a decision (mark good/bad pattern)
 } as const;
