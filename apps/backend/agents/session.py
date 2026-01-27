@@ -65,6 +65,7 @@ async def post_session_processing(
     linear_enabled: bool = False,
     status_manager: StatusManager | None = None,
     source_spec_dir: Path | None = None,
+    response_text: str | None = None,
 ) -> bool:
     """
     Process session results and update memory automatically.
@@ -82,6 +83,7 @@ async def post_session_processing(
         linear_enabled: Whether Linear integration is enabled
         status_manager: Optional status manager for ccstatusline
         source_spec_dir: Original spec directory (for syncing back from worktree)
+        response_text: Optional agent response text for decision extraction
 
     Returns:
         True if subtask was completed successfully
@@ -113,6 +115,38 @@ async def post_session_processing(
 
     print_key_value("Subtask status", subtask_status)
     print_key_value("New commits", str(new_commits))
+
+    # Extract decisions from response text (comprehensive capture)
+    # This runs in post-session processing to ensure reliable capture
+    # even if inline extraction during streaming was interrupted
+    if response_text and is_decision_extraction_enabled():
+        try:
+            decision_logger = get_decision_logger(spec_dir)
+            decision_logger.set_phase("post_session")
+            decision_logger.set_subtask(subtask_id)
+
+            decisions = await extract_decisions_from_response(
+                response_text=response_text,
+                subtask_id=subtask_id,
+                phase="post_session",
+                project_dir=project_dir,
+            )
+
+            if decisions and decision_logger.storage:
+                for decision in decisions:
+                    decision_logger.storage.add_entry(decision)
+
+                print_status(
+                    f"Post-session: extracted {len(decisions)} decision(s)",
+                    "info",
+                )
+                logger.info(
+                    f"Post-session decision extraction: {len(decisions)} decisions "
+                    f"for subtask {subtask_id}"
+                )
+        except Exception as e:
+            # Decision extraction failure should never block session processing
+            logger.debug(f"Post-session decision extraction failed (non-blocking): {e}")
 
     if subtask_status == "completed":
         # Success! Record the attempt and good commit
