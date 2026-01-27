@@ -101,6 +101,19 @@ export const taskMock = {
     error: 'Merge rollback not available in browser mode'
   }),
 
+  // Decision Audit Trail operations
+  getDecisions: async (_taskId: string) => ({
+    success: true as const,
+    data: [] as import('../../../shared/types/decisions').DecisionEntry[]
+  }),
+
+  annotateDecision: async (
+    _taskId: string,
+    _request: import('../../../shared/types/decisions').DecisionAnnotationRequest
+  ) => ({
+    success: true as const
+  }),
+
   // Event Listeners (no-op in browser)
   onTaskProgress: () => () => {},
   onTaskError: () => () => {},
