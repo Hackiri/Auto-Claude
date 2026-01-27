@@ -1301,14 +1301,16 @@ class WorktreeManager:
         when multiple remotes exist (e.g., origin + upstream).
         """
         try:
+            git_executable = get_git_executable()
             result = subprocess.run(
-                ["git", "remote", "get-url", "origin"],
+                [git_executable, "remote", "get-url", "origin"],
                 cwd=repo_path,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
                 timeout=10,
+                env=get_isolated_git_env(),
             )
             if result.returncode == 0:
                 return result.stdout.strip()
