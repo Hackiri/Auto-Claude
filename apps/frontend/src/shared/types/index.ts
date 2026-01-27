@@ -19,6 +19,7 @@ export * from './app-update';
 export * from './cli';
 export * from './skills';
 export * from './agent-session';
+export * from './decisions';
 
 // IPC types (must be last to use types from other modules)
 export * from './ipc';
