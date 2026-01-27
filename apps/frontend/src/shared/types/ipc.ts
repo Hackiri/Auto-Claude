@@ -46,6 +46,7 @@ import type {
   TaskLogStreamChunk,
   ImageAttachment
 } from './task';
+import type { DecisionEntry, DecisionAnnotationRequest } from './decisions';
 import type {
   TerminalCreateOptions,
   TerminalSession,
@@ -772,6 +773,10 @@ export interface ElectronAPI {
   // Merge History operations
   getMergeHistory: (projectId: string) => Promise<IPCResult<import('./task').MergeHistoryEntry[]>>;
   rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
+  // Decision Audit Trail operations
+  getDecisions: (taskId: string) => Promise<IPCResult<DecisionEntry[]>>;
+  annotateDecision: (taskId: string, request: DecisionAnnotationRequest) => Promise<IPCResult>;
 
   // Task logs event listeners
   onTaskLogsChanged: (

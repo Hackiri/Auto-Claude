@@ -3,7 +3,7 @@ import { IPC_CHANNELS, getSpecsDir } from '../../../shared/constants';
 import type { IPCResult, DecisionEntry, DecisionAuditTrail, DecisionAnnotationRequest } from '../../../shared/types';
 import path from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { projectStore } from '../../project-store';
+import { findTaskAndProject } from './shared';
 
 /**
  * Register decision audit trail handlers
@@ -16,14 +16,15 @@ export function registerDecisionHandlers(): void {
    */
   ipcMain.handle(
     IPC_CHANNELS.TASK_DECISIONS_GET,
-    async (_, projectId: string, specId: string): Promise<IPCResult<DecisionAuditTrail | null>> => {
+    async (_, taskId: string): Promise<IPCResult<DecisionAuditTrail | null>> => {
       try {
-        const project = projectStore.getProject(projectId);
-        if (!project) {
-          return { success: false, error: 'Project not found' };
+        const { task, project } = findTaskAndProject(taskId);
+        if (!task || !project) {
+          return { success: false, error: 'Task not found' };
         }
 
         const specsRelPath = getSpecsDir(project.autoBuildPath);
+        const specId = task.specId || task.id;
         const specDir = path.join(project.path, specsRelPath, specId);
 
         if (!existsSync(specDir)) {
@@ -73,17 +74,17 @@ export function registerDecisionHandlers(): void {
     IPC_CHANNELS.TASK_DECISIONS_ANNOTATE,
     async (
       _,
-      projectId: string,
-      specId: string,
+      taskId: string,
       request: DecisionAnnotationRequest
     ): Promise<IPCResult<DecisionEntry>> => {
       try {
-        const project = projectStore.getProject(projectId);
-        if (!project) {
-          return { success: false, error: 'Project not found' };
+        const { task, project } = findTaskAndProject(taskId);
+        if (!task || !project) {
+          return { success: false, error: 'Task not found' };
         }
 
         const specsRelPath = getSpecsDir(project.autoBuildPath);
+        const specId = task.specId || task.id;
         const specDir = path.join(project.path, specsRelPath, specId);
 
         if (!existsSync(specDir)) {
@@ -123,7 +124,6 @@ export function registerDecisionHandlers(): void {
         writeFileSync(decisionsPath, JSON.stringify(auditTrail, null, 2));
 
         // TODO: If save_to_memory is true, save to Graphiti as pattern/gotcha
-        // This will be implemented when Graphiti integration is added
         if (request.save_to_memory) {
           console.log(
             '[Decision Handler] save_to_memory requested - Graphiti integration not yet implemented'

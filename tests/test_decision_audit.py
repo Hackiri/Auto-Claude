@@ -938,7 +938,7 @@ class TestDecisionAuditLogger:
         )
 
         assert entry.decision_type == "error_recovery"
-        assert "timeout" in entry.context_used[0].content.lower()
+        assert "timed out" in entry.context_used[0].content.lower()
 
     def test_set_phase_and_subtask(self, tmp_path):
         """Logged decisions should inherit current phase and subtask."""
