@@ -190,7 +190,15 @@ export const useDecisionStore = create<DecisionState>((set, get) => ({
   }
 }));
 
-// Helper functions
+// ============================================
+// IPC Helper Functions
+// ============================================
+// These functions use Electron IPC to communicate with the main process.
+// The communication is handled via ipcRenderer through the preload bridge
+// (window.electronAPI), which provides type-safe access to IPC channels:
+// - TASK_DECISIONS_GET: Load decisions from spec directory
+// - TASK_DECISIONS_ANNOTATE: Annotate a decision (mark as good/bad pattern)
+// ============================================
 
 /**
  * Load decisions for a task/spec

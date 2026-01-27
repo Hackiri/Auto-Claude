@@ -15,7 +15,9 @@ import type {
   WorktreeCreatePROptions,
   WorktreeCreatePRResult,
   ImageAttachment,
-  MergeHistoryEntry
+  MergeHistoryEntry,
+  DecisionEntry,
+  DecisionAnnotationRequest
 } from '../../shared/types';
 
 export interface TaskAPI {
@@ -89,6 +91,10 @@ export interface TaskAPI {
   // Merge History
   getMergeHistory: (projectId: string) => Promise<IPCResult<MergeHistoryEntry[]>>;
   rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
+  // Decision Audit Trail
+  getDecisions: (taskId: string) => Promise<IPCResult<DecisionEntry[]>>;
+  annotateDecision: (taskId: string, request: DecisionAnnotationRequest) => Promise<IPCResult>;
 }
 
 export const createTaskAPI = (): TaskAPI => ({
@@ -320,5 +326,12 @@ export const createTaskAPI = (): TaskAPI => ({
     ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_GET, projectId),
 
   rollbackMerge: (projectId: string, mergeId: string): Promise<IPCResult<{ message: string }>> =>
-    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId)
+    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId),
+
+  // Decision Audit Trail
+  getDecisions: (taskId: string): Promise<IPCResult<DecisionEntry[]>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TASK_DECISIONS_GET, taskId),
+
+  annotateDecision: (taskId: string, request: DecisionAnnotationRequest): Promise<IPCResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TASK_DECISIONS_ANNOTATE, taskId, request)
 });
