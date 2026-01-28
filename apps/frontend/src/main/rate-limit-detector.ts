@@ -474,7 +474,7 @@ export function getActiveProfileId(): string {
  */
 export interface SDKRateLimitInfo {
   /** Source of the rate limit (which feature hit it) */
-  source: 'changelog' | 'task' | 'roadmap' | 'ideation' | 'title-generator' | 'other';
+  source: 'changelog' | 'task' | 'roadmap' | 'ideation' | 'title-generator' | 'skills' | 'other';
   /** Project ID if applicable */
   projectId?: string;
   /** Task ID if applicable */

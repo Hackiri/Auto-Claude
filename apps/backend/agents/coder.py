@@ -3,6 +3,13 @@ Coder Agent Module
 ==================
 
 Main autonomous agent loop that runs the coder agent to implement subtasks.
+
+Supports Ralph Wiggum iterative loop mode for autonomous overnight builds.
+When ralph_config is provided and enabled, the agent runs with:
+- Configurable max iterations (safety net)
+- Completion promise evaluation after each iteration
+- Intelligent retry strategies with approach variation
+- Consecutive failure tracking to prevent infinite loops
 """
 
 import asyncio
@@ -37,6 +44,16 @@ from prompt_generator import (
     load_subtask_context,
 )
 from prompts import is_first_run
+from ralph_loop.config import RalphLoopConfig, get_max_iterations, is_ralph_loop_enabled
+from ralph_loop.promises import (
+    evaluate_all_promises as evaluate_promises,  # Alias for subtask completion checks
+)
+from ralph_loop.promises import (
+    get_default_promises,
+    load_promises_from_plan,
+)
+from ralph_loop.reporter import generate_ralph_report
+from ralph_loop.strategy import RetryStrategy
 from recovery import RecoveryManager
 from security.constants import PROJECT_DIR_ENV_VAR
 from task_logger import (
@@ -56,8 +73,18 @@ from ui import (
     print_status,
 )
 
-from .base import AUTO_CONTINUE_DELAY_SECONDS, HUMAN_INTERVENTION_FILE
+from .base import (
+    AUTO_CONTINUE_DELAY_SECONDS,
+    HUMAN_INTERVENTION_FILE,
+    RALPH_CONSECUTIVE_FAILURE_LIMIT,
+    RALPH_MAX_CODER_ITERATIONS,
+)
 from .memory_manager import debug_memory_system_status, get_graphiti_context
+from .parallel_runner import (
+    get_parallelizable_subtasks,
+    run_parallel_phase,
+    should_use_parallel_execution,
+)
 from .session import post_session_processing, run_agent_session
 from .utils import (
     find_phase_for_subtask,
@@ -77,12 +104,20 @@ async def run_autonomous_agent(
     max_iterations: int | None = None,
     verbose: bool = False,
     source_spec_dir: Path | None = None,
+    ralph_config: RalphLoopConfig | None = None,
 ) -> None:
     """
     Run the autonomous agent loop with automatic memory management.
 
     The agent can use subagents (via Task tool) for parallel execution if needed.
     This is decided by the agent itself based on the task complexity.
+
+    When ralph_config is provided and enabled, the agent runs in Ralph Wiggum
+    iterative loop mode with:
+    - Extended max iterations for overnight autonomous runs
+    - Completion promise evaluation after each iteration
+    - Intelligent retry strategies with approach variation
+    - Consecutive failure tracking to prevent infinite loops
 
     Args:
         project_dir: Root directory for the project
@@ -91,10 +126,62 @@ async def run_autonomous_agent(
         max_iterations: Maximum number of iterations (None for unlimited)
         verbose: Whether to show detailed output
         source_spec_dir: Original spec directory in main project (for syncing from worktree)
+        ralph_config: Optional Ralph loop configuration for iterative autonomous mode
     """
     # Set environment variable for security hooks to find the correct project directory
     # This is needed because os.getcwd() may return the wrong directory in worktree mode
     os.environ[PROJECT_DIR_ENV_VAR] = str(project_dir.resolve())
+
+    # =============================================================================
+    # RALPH LOOP INITIALIZATION
+    # =============================================================================
+    # Determine if we're running in Ralph Wiggum iterative loop mode
+    ralph_loop_enabled = ralph_config is not None and is_ralph_loop_enabled(
+        ralph_config
+    )
+
+    # Initialize Ralph loop state tracking
+    ralph_consecutive_failures = 0
+    ralph_retry_strategy: RetryStrategy | None = None
+    ralph_completion_promises = []
+
+    if ralph_loop_enabled:
+        logger.info("Ralph Wiggum iterative loop mode enabled")
+        print_status("Ralph Wiggum iterative loop mode: ENABLED", "success")
+
+        # Get configuration values with defaults
+        ralph_max_iterations = get_max_iterations(ralph_config, "coder")
+        ralph_retry_strategy_type = ralph_config.get("retry_strategy", "adaptive")
+        ralph_overnight_mode = ralph_config.get("overnight_mode", False)
+
+        # Initialize retry strategy
+        ralph_retry_strategy = RetryStrategy(strategy_type=ralph_retry_strategy_type)
+
+        # Load completion promises from plan, or use defaults
+        ralph_completion_promises = load_promises_from_plan(spec_dir)
+        if not ralph_completion_promises:
+            ralph_completion_promises = get_default_promises()
+
+        # Print Ralph loop configuration
+        print_key_value("Max iterations", str(ralph_max_iterations))
+        print_key_value("Retry strategy", ralph_retry_strategy_type)
+        print_key_value("Completion promises", str(len(ralph_completion_promises)))
+        if ralph_overnight_mode:
+            print_key_value("Overnight mode", "ENABLED")
+        print()
+
+        # Override max_iterations with Ralph loop's max if not explicitly set
+        if max_iterations is None:
+            max_iterations = ralph_max_iterations
+        else:
+            # Use the minimum of explicit max_iterations and Ralph's max
+            max_iterations = min(max_iterations, ralph_max_iterations)
+    else:
+        # Not in Ralph mode - use default safety limits if no max set
+        if max_iterations is None:
+            ralph_max_iterations = RALPH_MAX_CODER_ITERATIONS  # Safety default
+        else:
+            ralph_max_iterations = max_iterations
 
     # Initialize recovery manager (handles memory persistence)
     recovery_manager = RecoveryManager(spec_dir, project_dir)
@@ -370,6 +457,49 @@ async def run_autonomous_agent(
                     print("No pending subtasks found - build may be complete!")
                     break
 
+            # Check for parallel execution opportunities
+            # If the current phase is parallel_safe and has multiple pending subtasks,
+            # we can run them concurrently using sub-agents
+            plan = load_implementation_plan(spec_dir)
+            if plan and should_use_parallel_execution(spec_dir, plan):
+                phase = find_phase_for_subtask(plan, subtask_id) if subtask_id else None
+                if phase and phase.get("parallel_safe", False):
+                    parallelizable = await get_parallelizable_subtasks(spec_dir, plan)
+                    if len(parallelizable) >= 2:
+                        print_status(
+                            f"Found {len(parallelizable)} parallelizable subtasks",
+                            "success",
+                        )
+
+                        # Run parallel execution
+                        parallel_results = await run_parallel_phase(
+                            project_dir=project_dir,
+                            spec_dir=spec_dir,
+                            plan=plan,
+                            phase=phase,
+                            model=phase_model,
+                            session_num=iteration,
+                            recovery_manager=recovery_manager,
+                        )
+
+                        if parallel_results:
+                            # Update subtask counts after parallel execution
+                            subtasks = count_subtasks_detailed(spec_dir)
+                            status_manager.update_subtasks(
+                                completed=subtasks["completed"],
+                                total=subtasks["total"],
+                                in_progress=0,
+                            )
+
+                            # Sync changes to source spec dir
+                            if sync_spec_to_source(spec_dir, source_spec_dir):
+                                print_status("Parallel results synced", "success")
+
+                            # Skip to next iteration to pick up remaining work
+                            iteration += parallel_results.total_subtasks - 1
+                            await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+                            continue
+
             # Get attempt count for recovery context
             attempt_count = recovery_manager.get_attempt_count(subtask_id)
             recovery_hints = (
@@ -505,8 +635,58 @@ async def run_autonomous_agent(
             if sync_spec_to_source(spec_dir, source_spec_dir):
                 print_status("Implementation plan synced to main project", "success")
 
+        # =============================================================================
+        # RALPH LOOP COMPLETION PROMISE EVALUATION (AFTER SUBTASK COMPLETION)
+        # =============================================================================
+        # When Ralph loop is enabled, evaluate completion promises after each subtask
+        # completion. This allows early exit when all success criteria are met.
+        # Uses evaluate_promises() to check all promises against current project state.
+        if ralph_loop_enabled and ralph_completion_promises:
+            # Evaluate all completion promises after each subtask completes
+            all_promises_met, promise_results = evaluate_promises(
+                ralph_completion_promises,
+                spec_dir,
+                project_dir,
+            )
+
+            # Log promise evaluation results
+            passed_count = sum(1 for r in promise_results if r.passed)
+            total_count = len(promise_results)
+            logger.info(
+                f"Ralph loop: {passed_count}/{total_count} completion promises passed"
+            )
+
+            if all_promises_met:
+                print()
+                print_status(
+                    f"All completion promises met ({passed_count}/{total_count})",
+                    "success",
+                )
+                # Override status to complete if all promises met
+                status = "complete"
+                # Reset consecutive failures on success
+                ralph_consecutive_failures = 0
+            else:
+                # Show which promises are not yet met
+                failed_promises = [r for r in promise_results if not r.passed]
+                if failed_promises and not ralph_config.get("overnight_mode", False):
+                    print()
+                    print_status(
+                        f"Completion promises: {passed_count}/{total_count} met",
+                        "progress",
+                    )
+                    for result in failed_promises[:3]:  # Show first 3 unmet promises
+                        print(
+                            f"  {icon(Icons.PENDING)} {result.promise.name}: {result.message}"
+                        )
+
         # Handle session status
         if status == "complete":
+            # Reset consecutive failures on completion (Ralph loop)
+            if ralph_loop_enabled:
+                ralph_consecutive_failures = 0
+                logger.info("Ralph loop: Build complete, all promises met")
+
             # Don't emit COMPLETE here - subtasks are done but QA hasn't run yet
             # QA loop will emit COMPLETE after actual approval
             print_build_complete_banner(spec_dir)
@@ -526,6 +706,9 @@ async def run_autonomous_agent(
             break
 
         elif status == "continue":
+            # Reset consecutive failures on progress (Ralph loop)
+            if ralph_loop_enabled:
+                ralph_consecutive_failures = 0
             print(
                 muted(
                     f"\nAgent will auto-continue in {AUTO_CONTINUE_DELAY_SECONDS}s..."
@@ -557,14 +740,102 @@ async def run_autonomous_agent(
         elif status == "error":
             emit_phase(ExecutionPhase.FAILED, "Session encountered an error")
             print_status("Session encountered an error", "error")
-            print(muted("Will retry with a fresh session..."))
+
+            # =============================================================================
+            # RALPH LOOP CONSECUTIVE FAILURE TRACKING
+            # =============================================================================
+            if ralph_loop_enabled:
+                ralph_consecutive_failures += 1
+                logger.warning(
+                    f"Ralph loop: consecutive failure {ralph_consecutive_failures}/{RALPH_CONSECUTIVE_FAILURE_LIMIT}"
+                )
+
+                # Check if we've hit the consecutive failure limit
+                if ralph_consecutive_failures >= RALPH_CONSECUTIVE_FAILURE_LIMIT:
+                    print_status(
+                        f"Max consecutive failures reached ({RALPH_CONSECUTIVE_FAILURE_LIMIT})",
+                        "error",
+                    )
+                    print(
+                        muted(
+                            "Stopping Ralph loop due to repeated failures without progress"
+                        )
+                    )
+                    emit_phase(
+                        ExecutionPhase.FAILED,
+                        "Ralph loop: max consecutive failures reached",
+                    )
+                    status_manager.update(state=BuildState.ERROR)
+                    break
+
+                # Use retry strategy to get varied approach suggestion
+                if ralph_retry_strategy:
+                    decision = ralph_retry_strategy.should_retry(
+                        attempt_count=ralph_consecutive_failures,
+                        error=response if response else None,
+                        consecutive_failures=ralph_consecutive_failures,
+                    )
+
+                    if decision.should_retry and decision.approach:
+                        print()
+                        print_status(
+                            f"Ralph loop: Trying different approach - {decision.approach.category.value}",
+                            "info",
+                        )
+                        print(muted(f"  {decision.approach.description}"))
+                        if decision.delay_seconds > AUTO_CONTINUE_DELAY_SECONDS:
+                            print(
+                                muted(
+                                    f"  Waiting {decision.delay_seconds:.1f}s before retry..."
+                                )
+                            )
+                            await asyncio.sleep(decision.delay_seconds)
+                        else:
+                            await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+                    else:
+                        print(muted("Will retry with a fresh session..."))
+                        await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+                else:
+                    print(muted("Will retry with a fresh session..."))
+                    await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+            else:
+                print(muted("Will retry with a fresh session..."))
+                await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+
             status_manager.update(state=BuildState.ERROR)
-            await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
 
         # Small delay between sessions
         if max_iterations is None or iteration < max_iterations:
             print("\nPreparing next session...\n")
             await asyncio.sleep(1)
+
+    # =============================================================================
+    # RALPH LOOP REPORT GENERATION
+    # =============================================================================
+    # Generate Ralph loop report at the end of the run when Ralph mode is enabled.
+    # This provides a comprehensive summary of the overnight run for review.
+    if ralph_loop_enabled:
+        completed, total = count_subtasks(spec_dir)
+
+        # Determine final status based on how the loop ended
+        if completed == total:
+            ralph_final_status = "completed"
+        elif max_iterations and iteration >= max_iterations:
+            ralph_final_status = "max_iterations"
+        elif ralph_consecutive_failures >= RALPH_CONSECUTIVE_FAILURE_LIMIT:
+            ralph_final_status = "failed"
+        else:
+            ralph_final_status = "interrupted"
+
+        # Generate the report
+        report_path = generate_ralph_report(
+            spec_dir=spec_dir,
+            final_status=ralph_final_status,
+            subtasks_completed=completed,
+            subtasks_total=total,
+        )
+        logger.info(f"Ralph loop report generated: {report_path}")
+        print_status(f"Ralph loop report saved: {report_path.name}", "success")
 
     # Final summary
     content = [

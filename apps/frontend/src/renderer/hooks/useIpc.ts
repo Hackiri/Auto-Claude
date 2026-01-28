@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { unstable_batchedUpdates } from 'react-dom';
 import { useTaskStore } from '../stores/task-store';
+import { useAgentSessionsStore } from '../stores/agent-sessions-store';
 import { useRoadmapStore } from '../stores/roadmap-store';
 import { useRateLimitStore } from '../stores/rate-limit-store';
 import { useAuthFailureStore } from '../stores/auth-failure-store';
 import { useProjectStore } from '../stores/project-store';
-import type { ImplementationPlan, TaskStatus, RoadmapGenerationStatus, Roadmap, ExecutionProgress, RateLimitInfo, SDKRateLimitInfo, AuthFailureInfo } from '../../shared/types';
+import type { ImplementationPlan, TaskStatus, RoadmapGenerationStatus, Roadmap, ExecutionProgress, RateLimitInfo, SDKRateLimitInfo, AuthFailureInfo, TaskLogEntry } from '../../shared/types';
 
 /**
  * Batched update queue for IPC events.
@@ -28,6 +29,10 @@ interface StoreActions {
   updateExecutionProgress: (taskId: string, progress: ExecutionProgress) => void;
   updateTaskFromPlan: (taskId: string, plan: ImplementationPlan) => void;
   batchAppendLogs: (taskId: string, logs: string[]) => void;
+  // Agent sessions store actions
+  updateSessionFromPlan: (sessionId: string, plan: ImplementationPlan) => void;
+  updateSessionPhase: (sessionId: string, phase: ExecutionProgress['phase'], progress: number) => void;
+  appendSessionLogs: (sessionId: string, logs: TaskLogEntry[]) => void;
 }
 
 /**
@@ -63,6 +68,8 @@ function flushBatch(): void {
       // Apply updates in order: plan first (has most data), then status, then progress, then logs
       if (updates.plan) {
         actions.updateTaskFromPlan(taskId, updates.plan);
+        // Also update agent sessions store
+        actions.updateSessionFromPlan(taskId, updates.plan);
         totalUpdates++;
       }
       if (updates.status) {
@@ -71,11 +78,27 @@ function flushBatch(): void {
       }
       if (updates.progress) {
         actions.updateExecutionProgress(taskId, updates.progress);
+        // Also update agent sessions store with phase info
+        if (updates.progress.phase) {
+          actions.updateSessionPhase(
+            taskId,
+            updates.progress.phase,
+            updates.progress.phaseProgress || 0
+          );
+        }
         totalUpdates++;
       }
       // Batch append all logs at once (instead of one state update per log line)
       if (updates.logs && updates.logs.length > 0) {
         actions.batchAppendLogs(taskId, updates.logs);
+        // Also append to session logs (convert strings to TaskLogEntry format)
+        const logEntries: TaskLogEntry[] = updates.logs.map((log) => ({
+          timestamp: new Date().toISOString(),
+          type: 'text' as const,
+          content: log,
+          phase: 'coding' as const
+        }));
+        actions.appendSessionLogs(taskId, logEntries);
         totalLogs += updates.logs.length;
         totalUpdates++;
       }
@@ -164,9 +187,22 @@ export function useIpcListeners(): void {
   const batchAppendLogs = useTaskStore((state) => state.batchAppendLogs);
   const setError = useTaskStore((state) => state.setError);
 
+  // Agent sessions store actions
+  const updateSessionFromPlan = useAgentSessionsStore((state) => state.updateSessionFromPlan);
+  const updateSessionPhase = useAgentSessionsStore((state) => state.updateSessionPhase);
+  const appendSessionLogs = useAgentSessionsStore((state) => state.appendLogs);
+
   // Update module-level store actions reference for batch flushing
   // This ensures flushBatch() always has access to current action implementations
-  storeActionsRef = { updateTaskStatus, updateExecutionProgress, updateTaskFromPlan, batchAppendLogs };
+  storeActionsRef = {
+    updateTaskStatus,
+    updateExecutionProgress,
+    updateTaskFromPlan,
+    batchAppendLogs,
+    updateSessionFromPlan,
+    updateSessionPhase,
+    appendSessionLogs
+  };
 
   useEffect(() => {
     // Set up listeners with batched updates
@@ -369,7 +405,7 @@ export function useIpcListeners(): void {
       cleanupSDKRateLimit();
       cleanupAuthFailure();
     };
-  }, [updateTaskFromPlan, updateTaskStatus, updateExecutionProgress, appendLog, batchAppendLogs, setError]);
+  }, [updateTaskFromPlan, updateTaskStatus, updateExecutionProgress, appendLog, batchAppendLogs, setError, updateSessionFromPlan, updateSessionPhase, appendSessionLogs]);
 }
 
 /**

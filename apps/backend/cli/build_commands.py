@@ -61,6 +61,7 @@ def handle_build_command(
     skip_qa: bool,
     force_bypass_approval: bool,
     base_branch: str | None = None,
+    ralph_loop: bool = False,
 ) -> None:
     """
     Handle the main build command.
@@ -77,6 +78,7 @@ def handle_build_command(
         skip_qa: Skip automatic QA validation
         force_bypass_approval: Force bypass approval check
         base_branch: Base branch for worktree creation (default: current branch)
+        ralph_loop: Enable Ralph Wiggum iterative loop mode
     """
     # Lazy imports to avoid loading heavy modules
     from agent import run_autonomous_agent, sync_spec_to_source
@@ -89,8 +91,12 @@ def handle_build_command(
     from phase_config import get_phase_model
     from prompts_pkg.prompts import get_base_branch_from_metadata
     from qa_loop import run_qa_validation_loop, should_run_qa
+    from ralph_loop.config import is_ralph_loop_enabled, load_ralph_config
 
     from .utils import print_banner, validate_environment
+
+    # Load Ralph loop configuration (merges task_metadata.json + CLI flag)
+    ralph_config = load_ralph_config(spec_dir, cli_enabled=ralph_loop)
 
     # Get the resolved model for the planning phase (first phase of build)
     # This respects task_metadata.json phase configuration from the UI
@@ -115,6 +121,12 @@ def handle_build_command(
         print(f"Max iterations: {max_iterations}")
     else:
         print("Max iterations: Unlimited (runs until all subtasks complete)")
+
+    # Show Ralph loop status if enabled
+    if is_ralph_loop_enabled(ralph_config):
+        print(f"Ralph loop: {highlight('ENABLED')} (iterative overnight mode)")
+        if ralph_config.get("overnight_mode"):
+            print("  Overnight mode: Active (reduced logging)")
 
     print()
 
@@ -240,6 +252,7 @@ def handle_build_command(
                 max_iterations=max_iterations,
                 verbose=verbose,
                 source_spec_dir=source_spec_dir,  # For syncing progress back to main project
+                ralph_config=ralph_config,  # Ralph loop configuration
             )
         )
         debug_success("run.py", "Agent execution completed")
@@ -261,6 +274,7 @@ def handle_build_command(
                         spec_dir=spec_dir,
                         model=model,
                         verbose=verbose,
+                        ralph_config=ralph_config,  # Ralph loop configuration
                     )
                 )
 
@@ -314,6 +328,7 @@ def handle_build_command(
             model=model,
             max_iterations=max_iterations,
             verbose=verbose,
+            ralph_config=ralph_config,
         )
     except Exception as e:
         print(f"\nFatal error: {e}")
@@ -332,6 +347,7 @@ def _handle_build_interrupt(
     model: str,
     max_iterations: int | None,
     verbose: bool,
+    ralph_config: dict | None = None,
 ) -> None:
     """
     Handle keyboard interrupt during build.
@@ -344,6 +360,7 @@ def _handle_build_interrupt(
         model: Model being used
         max_iterations: Maximum iterations
         verbose: Verbose mode flag
+        ralph_config: Ralph loop configuration (optional)
     """
     from agent import run_autonomous_agent
 
@@ -450,6 +467,7 @@ def _handle_build_interrupt(
                     model=model,
                     max_iterations=max_iterations,
                     verbose=verbose,
+                    ralph_config=ralph_config,
                 )
             )
             # Build completed or was interrupted again - exit

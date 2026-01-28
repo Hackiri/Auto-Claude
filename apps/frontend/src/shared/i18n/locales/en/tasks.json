@@ -163,6 +163,31 @@
     "selectFile": "Select a file to view its contents",
     "openInIDE": "Open in IDE"
   },
+  "mergeHistory": {
+    "title": "Merge History",
+    "noHistory": "No merge history",
+    "noHistoryDescription": "Merges will appear here after you merge this task",
+    "loading": "Loading merge history...",
+    "errorLoading": "Failed to load merge history",
+    "retry": "Retry",
+    "mergedTo": "Merged to {{branch}}",
+    "filesChanged": "{{count}} file",
+    "filesChanged_plural": "{{count}} files",
+    "conflicts": "{{count}} conflict",
+    "conflicts_plural": "{{count}} conflicts",
+    "source": "Source",
+    "target": "Target",
+    "started": "Started",
+    "completed": "Completed",
+    "conflictResolution": "Conflict Resolution",
+    "autoResolved": "Auto-resolved",
+    "aiResolved": "AI-resolved",
+    "aiTokensUsed": "AI tokens used",
+    "filesChangedLabel": "Files Changed",
+    "error": "Error",
+    "notAvailable": "N/A",
+    "rollback": "Rollback Merge"
+  },
   "metadata": {
     "severity": "severity",
     "pullRequest": "Pull Request"
@@ -240,6 +265,21 @@
     "classificationOptional": "Classification (optional)",
     "requireReviewLabel": "Require human review before coding",
     "requireReviewDescription": "When enabled, you'll be prompted to review the spec and implementation plan before the coding phase begins. This allows you to approve, request changes, or provide feedback.",
+    "enableRalphLoopLabel": "Enable Ralph Loop",
+    "enableRalphLoopDescription": "Use iterative AI loop technique for autonomous overnight builds with intelligent retry strategies.",
+    "ralphLoop": {
+      "maxCoderIterations": "Max Coder Iterations",
+      "maxQaIterations": "Max QA Iterations",
+      "retryStrategy": "Retry Strategy",
+      "strategyHint": "Controls how aggressively the AI retries failed operations.",
+      "strategies": {
+        "conservative": "Conservative - Fewer retries, fail fast",
+        "adaptive": "Adaptive - Adjust based on error type (Recommended)",
+        "aggressive": "Aggressive - Maximum retries"
+      },
+      "overnightMode": "Overnight Mode",
+      "overnightModeHint": "Optimized for unattended overnight execution with extended timeouts."
+    },
     "errors": {
       "descriptionRequired": "Please provide a description",
       "maxImagesReached": "Maximum of 5 images allowed",

@@ -66,6 +66,16 @@ Public API:
 # Graphiti integration
 # Codebase map
 from .codebase_map import load_codebase_map, update_codebase_map
+
+# Conversation sessions (JSONL-based message storage)
+from .conversation_sessions import (
+    ConversationSessionManager,
+    get_conversation_header,
+    get_conversations_dir,
+    load_conversation_messages,
+    save_conversation_message,
+    update_conversation_header,
+)
 from .graphiti_helpers import is_graphiti_memory_enabled
 
 # Directory management
@@ -95,6 +105,13 @@ __all__ = [
     # Session insights
     "save_session_insights",
     "load_all_insights",
+    # Conversation sessions (JSONL-based message storage)
+    "ConversationSessionManager",
+    "get_conversations_dir",
+    "save_conversation_message",
+    "load_conversation_messages",
+    "get_conversation_header",
+    "update_conversation_header",
     # Codebase map
     "update_codebase_map",
     "load_codebase_map",

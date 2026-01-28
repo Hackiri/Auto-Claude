@@ -299,6 +299,41 @@ export class UsageMonitor extends EventEmitter {
   }
 
   /**
+   * Fetch usage on-demand (for UI requests when proactive monitoring is disabled)
+   * This is called by the IPC handler when the UI requests usage data.
+   */
+  async fetchUsageOnDemand(): Promise<ClaudeUsageSnapshot | null> {
+    try {
+      const profileManager = getClaudeProfileManager();
+      const activeProfile = profileManager.getActiveProfile();
+
+      if (!activeProfile) {
+        console.warn('[UsageMonitor] No active profile for on-demand fetch');
+        return null;
+      }
+
+      // Fetch usage without triggering proactive swap logic
+      const decryptedToken = profileManager.getProfileToken(activeProfile.id);
+      const usage = await this.fetchUsage(activeProfile.id, decryptedToken ?? undefined);
+
+      if (usage) {
+        // Update current usage cache
+        this.currentUsage = usage;
+
+        // Emit usage update for UI
+        this.emit('usage-updated', usage);
+
+        console.warn('[UsageMonitor] On-demand fetch successful');
+      }
+
+      return usage;
+    } catch (error) {
+      console.error('[UsageMonitor] On-demand fetch failed:', error);
+      return null;
+    }
+  }
+
+  /**
    * Clear the usage cache for a specific profile.
    * Called after re-authentication to ensure fresh usage data is fetched.
    *
@@ -1843,16 +1878,15 @@ export class UsageMonitor extends EventEmitter {
    * Fetch usage via CLI /usage command (fallback)
    * Note: This is a fallback method. The API method is preferred.
    * CLI-based fetching would require spawning a Claude process and parsing output,
-   * which is complex. For now, we rely on the API method.
+   * which is complex and unreliable. For now, we rely on the API method.
    */
   private async fetchUsageViaCLI(
     _profileId: string,
     _profileName: string
   ): Promise<ClaudeUsageSnapshot | null> {
-    // CLI-based usage fetching is not implemented yet.
-    // The API method should handle most cases. If we need CLI fallback,
-    // we would need to spawn a Claude process with /usage command and parse the output.
-    this.debugLog('[UsageMonitor] CLI fallback not implemented, API method should be used');
+    // CLI fallback is disabled - the API method is the preferred and reliable approach
+    // Spawning Claude CLI for usage queries is complex (requires interactive stdin/stdout)
+    // and unreliable in test environments and headless systems
     return null;
   }
 

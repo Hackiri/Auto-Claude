@@ -360,7 +360,72 @@ const browserMockAPI: ElectronAPI = {
   openLogsFolder: async () => ({ success: false, error: 'Not available in browser mode' }),
   copyDebugInfo: async () => ({ success: false, error: 'Not available in browser mode' }),
   getRecentErrors: async () => [],
-  listLogFiles: async () => []
+  listLogFiles: async () => [],
+
+  // Skills Operations
+  generateSkills: async () => ({
+    success: true,
+    data: {
+      success: true,
+      skills: []
+    }
+  }),
+  generateSkillFromPrompt: async (_projectId: string, skillName: string, prompt: string) => ({
+    success: true,
+    data: {
+      id: `skill-${Date.now()}`,
+      name: skillName,
+      description: prompt.substring(0, 150),
+      enabled: true,
+      source: 'service' as const,
+      metadata: {
+        generatedFrom: 'prompt',
+        prompt: prompt.substring(0, 500),
+        generatedAt: new Date().toISOString()
+      },
+      instructions: `# ${skillName}\n\n${prompt}`
+    }
+  }),
+  loadSkills: async () => ({
+    success: true,
+    data: { success: true, skills: [] }
+  }),
+  getSkill: async (_projectId: string, skillName: string) => ({
+    success: true,
+    data: {
+      success: true,
+      content: {
+        metadata: {
+          name: skillName,
+          description: `Mock skill: ${skillName}`
+        },
+        instructions: `# ${skillName}\n\nThis is a mock skill.`
+      }
+    }
+  }),
+  exportSkills: async () => ({
+    success: true,
+    data: undefined
+  }),
+  exportSkill: async () => ({
+    success: true,
+    data: {
+      success: true,
+      path: '/mock/skills/mock-skill.md'
+    }
+  }),
+
+  // AI-Powered Skills Generation
+  generateSkillsAI: (_projectId: string, _config?: unknown, _refresh?: boolean) => {
+    console.warn('[Browser Mock] generateSkillsAI called');
+  },
+  stopSkillsAI: async () => ({
+    success: true
+  }),
+  onSkillsAIProgress: () => () => {},
+  onSkillsAIComplete: () => () => {},
+  onSkillsAIError: () => () => {},
+  onSkillsAIStopped: () => () => {}
 };
 
 /**

@@ -43,6 +43,7 @@ export function readSettingsFile(): Record<string, unknown> | undefined {
   }
 }
 
+
 /**
  * Write settings to disk.
  *

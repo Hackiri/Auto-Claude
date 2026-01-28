@@ -26,6 +26,10 @@ pywin32>=306; sys_platform == "win32"
 # Google AI (optional - for Gemini LLM and embeddings)
 google-generativeai>=0.8.0
 
+# AST-based bash command validation
+# Used by core/bash_validator.py for security validation
+bashlex>=0.18
+
 # Pydantic for structured output schemas
 pydantic>=2.0.0
 

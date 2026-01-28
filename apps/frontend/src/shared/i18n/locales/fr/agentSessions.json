@@ -1,0 +1,64 @@
+{
+  "title": "Sessions d'Agent",
+  "tabs": {
+    "active": "Actives",
+    "archived": "Archivees",
+    "activeCount": "Actives ({{count}})",
+    "archivedCount": "Archivees ({{count}})"
+  },
+  "status": {
+    "pending": "En attente",
+    "running": "En cours",
+    "paused": "En pause",
+    "completed": "Termine",
+    "failed": "Echoue",
+    "archived": "Archive"
+  },
+  "phases": {
+    "idle": "Inactif",
+    "planning": "Planification",
+    "coding": "Codage",
+    "qa_review": "Revision QA",
+    "qa_fixing": "Correction QA",
+    "complete": "Termine",
+    "failed": "Echoue"
+  },
+  "detail": {
+    "noSelection": "Aucune Session Selectionnee",
+    "noSelectionHint": "Selectionnez une session dans la liste pour voir les details et suivre la progression",
+    "phase": "Phase",
+    "progress": "Progression",
+    "startedAt": "Demarre",
+    "createdAt": "Cree",
+    "completedAt": "Termine"
+  },
+  "kanban": {
+    "pending": "En attente",
+    "inProgress": "En cours",
+    "completed": "Termine"
+  },
+  "taskCard": {
+    "files": "{{count}} fichier(s)",
+    "verification": "Verification",
+    "verificationCommand": "Commande",
+    "verificationBrowser": "Navigateur"
+  },
+  "logs": {
+    "title": "Journaux de Session",
+    "streaming": "En direct",
+    "noLogs": "Pas encore de journaux",
+    "noLogsHint": "Les journaux apparaitront ici lorsque la session demarrera"
+  },
+  "empty": {
+    "noSessions": "Aucune Session Active",
+    "noSessionsHint": "Demarrez une tache depuis le tableau Kanban pour creer une session d'agent",
+    "noArchivedSessions": "Aucune Session Archivee",
+    "noArchivedSessionsHint": "Les sessions terminees apparaitront ici apres archivage"
+  },
+  "actions": {
+    "archive": "Archiver",
+    "viewLogs": "Voir les journaux",
+    "goToTask": "Aller a la tache",
+    "newSession": "Nouvelle Session"
+  }
+}

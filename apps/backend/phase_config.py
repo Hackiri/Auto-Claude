@@ -317,3 +317,101 @@ def get_spec_phase_thinking_budget(phase_name: str) -> int | None:
     """
     thinking_level = SPEC_PHASE_THINKING_LEVELS.get(phase_name, "medium")
     return get_thinking_budget(thinking_level)
+
+
+# Ralph loop configuration type
+class RalphLoopConfigFields(TypedDict, total=False):
+    """Ralph loop configuration fields in task_metadata.json."""
+
+    enabled: bool
+    max_coder_iterations: int
+    max_qa_iterations: int
+    completion_promise_timeout: int
+    retry_strategy: str
+    overnight_mode: bool
+
+
+# Default Ralph loop configuration
+DEFAULT_RALPH_LOOP_CONFIG: RalphLoopConfigFields = {
+    "enabled": False,
+    "max_coder_iterations": 100,
+    "max_qa_iterations": 50,
+    "completion_promise_timeout": 300,
+    "retry_strategy": "adaptive",
+    "overnight_mode": False,
+}
+
+
+def load_ralph_loop_config(
+    spec_dir: Path,
+    cli_enabled: bool | None = None,
+    cli_max_iterations: int | None = None,
+    cli_overnight: bool | None = None,
+) -> RalphLoopConfigFields:
+    """
+    Load Ralph loop configuration from task_metadata.json with CLI overrides.
+
+    This function is a convenience wrapper that loads Ralph loop configuration
+    from task_metadata.json's "ralphLoop" field, with CLI argument overrides.
+
+    Priority:
+    1. CLI arguments (if provided)
+    2. task_metadata.json ralphLoop settings
+    3. Default configuration
+
+    Args:
+        spec_dir: Path to the spec directory
+        cli_enabled: --ralph-loop flag from CLI (optional)
+        cli_max_iterations: --ralph-max-iterations from CLI (optional)
+        cli_overnight: --overnight flag from CLI (optional)
+
+    Returns:
+        Merged Ralph loop configuration with all settings resolved
+    """
+    # Start with defaults
+    config: RalphLoopConfigFields = DEFAULT_RALPH_LOOP_CONFIG.copy()
+
+    # Load task metadata
+    metadata = load_task_metadata(spec_dir)
+
+    if metadata:
+        # Look for ralphLoop key in metadata
+        # Type ignore because ralphLoop is not in TaskMetadataConfig
+        ralph_config = metadata.get("ralphLoop")  # type: ignore[typeddict-item]
+        if ralph_config and isinstance(ralph_config, dict):
+            # Merge validated fields from metadata
+            if "enabled" in ralph_config:
+                config["enabled"] = bool(ralph_config["enabled"])
+            if "max_coder_iterations" in ralph_config:
+                value = ralph_config["max_coder_iterations"]
+                if isinstance(value, int) and value > 0:
+                    config["max_coder_iterations"] = value
+            if "max_qa_iterations" in ralph_config:
+                value = ralph_config["max_qa_iterations"]
+                if isinstance(value, int) and value > 0:
+                    config["max_qa_iterations"] = value
+            if "completion_promise_timeout" in ralph_config:
+                value = ralph_config["completion_promise_timeout"]
+                if isinstance(value, int) and value > 0:
+                    config["completion_promise_timeout"] = value
+            if "retry_strategy" in ralph_config:
+                value = ralph_config["retry_strategy"]
+                if value in {"conservative", "aggressive", "adaptive"}:
+                    config["retry_strategy"] = value
+            if "overnight_mode" in ralph_config:
+                config["overnight_mode"] = bool(ralph_config["overnight_mode"])
+
+    # CLI arguments take precedence
+    if cli_enabled is not None:
+        config["enabled"] = cli_enabled
+
+    if cli_max_iterations is not None and cli_max_iterations > 0:
+        config["max_coder_iterations"] = cli_max_iterations
+
+    if cli_overnight is not None:
+        config["overnight_mode"] = cli_overnight
+        # Overnight mode implies ralph loop is enabled
+        if cli_overnight:
+            config["enabled"] = True
+
+    return config

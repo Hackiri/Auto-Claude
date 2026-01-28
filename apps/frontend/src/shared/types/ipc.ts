@@ -136,6 +136,18 @@ import type {
   GitLabNewCommitsCheck
 } from './integrations';
 import type { APIProfile, ProfilesFile, TestConnectionResult, DiscoverModelsResult } from './profile';
+import type {
+  Skill,
+  SkillGenerationOptions,
+  SkillGenerationResult,
+  SkillExportResult,
+  SkillReadResult
+} from './skills';
+import type {
+  SkillsAIConfig,
+  SkillsProgressData,
+  GeneratedSkill
+} from '../../preload/api/skills-api';
 
 // Electron API exposed via contextBridge
 // Tab state interface (persisted in main process)
@@ -759,6 +771,10 @@ export interface ElectronAPI {
   watchTaskLogs: (projectId: string, specId: string) => Promise<IPCResult>;
   unwatchTaskLogs: (specId: string) => Promise<IPCResult>;
 
+  // Merge History operations
+  getMergeHistory: (projectId: string) => Promise<IPCResult<import('./task').MergeHistoryEntry[]>>;
+  rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
   // Task logs event listeners
   onTaskLogsChanged: (
     callback: (specId: string, logs: TaskLogs) => void
@@ -861,6 +877,21 @@ export interface ElectronAPI {
   // MCP Server health check operations
   checkMcpHealth: (server: CustomMcpServer) => Promise<IPCResult<McpHealthCheckResult>>;
   testMcpConnection: (server: CustomMcpServer) => Promise<IPCResult<McpTestConnectionResult>>;
+// Skills operations
+  generateSkills: (projectId: string, options?: SkillGenerationOptions) => Promise<IPCResult<SkillGenerationResult>>;
+  generateSkillFromPrompt: (projectId: string, skillName: string, prompt: string) => Promise<IPCResult<Skill>>;
+  loadSkills: (projectId: string) => Promise<IPCResult<{ success: boolean; skills?: string[] }>>;
+  getSkill: (projectId: string, skillName: string) => Promise<IPCResult<SkillReadResult>>;
+  exportSkills: (projectId: string, skills: Skill[]) => Promise<IPCResult<void>>;
+  exportSkill: (projectId: string, skill: Skill) => Promise<IPCResult<SkillExportResult>>;
+
+  // AI-Powered Skills Generation
+  generateSkillsAI: (projectId: string, config?: SkillsAIConfig, refresh?: boolean) => void;
+  stopSkillsAI: (projectId: string) => Promise<IPCResult>;
+  onSkillsAIProgress: (callback: (projectId: string, status: SkillsProgressData) => void) => () => void;
+  onSkillsAIComplete: (callback: (projectId: string, skills: GeneratedSkill[]) => void) => () => void;
+  onSkillsAIError: (callback: (projectId: string, error: string) => void) => () => void;
+  onSkillsAIStopped: (callback: (projectId: string) => void) => () => void;
 
   // Screenshot capture operations
   getSources: () => Promise<IPCResult<ScreenshotSource[]> & { devMode?: boolean }>;

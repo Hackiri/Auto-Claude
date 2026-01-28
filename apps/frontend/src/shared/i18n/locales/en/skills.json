@@ -1,0 +1,86 @@
+{
+  "title": "Skills",
+  "description": "Claude Code skills for your project",
+  "autoGenerate": "Auto-Generate Skills",
+  "generateFromPrompt": "Generate from Prompt",
+  "enabledCount": "{{count}} enabled",
+  "card": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "enableTooltip": "Enable this skill for export",
+    "disableTooltip": "Disable this skill",
+    "preview": "Preview",
+    "previewTooltip": "Preview SKILL.md content",
+    "edit": "Edit",
+    "editTooltip": "Edit skill metadata",
+    "export": "Export",
+    "exportTooltip": "Export to .claude/skills/",
+    "exportDisabledTooltip": "Enable skill to export"
+  },
+  "preview": {
+    "title": "Preview SKILL.md",
+    "frontmatter": "Frontmatter",
+    "instructions": "Instructions",
+    "close": "Close"
+  },
+  "edit": {
+    "title": "Edit Skill Metadata",
+    "name": "Name",
+    "description": "Description",
+    "namePlaceholder": "skill-name",
+    "descriptionPlaceholder": "Describe when and what this skill does",
+    "characterCount": "{{count}} / {{max}} characters",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "nameTooLong": "Name must be 64 characters or less",
+    "nameInvalidChars": "Name must contain only lowercase letters, numbers, and hyphens",
+    "nameReservedWord": "Name cannot contain reserved words: anthropic, claude",
+    "descriptionRequired": "Description is required",
+    "descriptionTooLong": "Description must be 1024 characters or less"
+  },
+  "export": {
+    "success": "Skill exported successfully",
+    "error": "Failed to export skill",
+    "confirmOverwrite": "Skill already exists. Overwrite?"
+  },
+  "generate": {
+    "success": "{{count}} skills generated",
+    "error": "Failed to generate skills",
+    "noData": "No project data found. Run project analysis first."
+  },
+  "empty": {
+    "title": "No Skills Generated",
+    "description": "Click 'Auto-Generate Skills' to create skills from your project index, or use 'Generate from Prompt' to create a custom skill",
+    "aiDescription": "AI can analyze your project architecture and generate contextual skills that help Claude work effectively with your codebase.",
+    "action": "Auto-Generate Skills"
+  },
+  "aiGenerate": {
+    "button": "Analyze & Generate",
+    "stop": "Stop",
+    "tooltip": "Use AI to analyze project and generate contextual skills",
+    "inProgress": "Analyzing project architecture...",
+    "starting": "Starting AI analysis..."
+  },
+  "promptGenerate": {
+    "title": "Generate Skill from Prompt",
+    "description": "Describe what you want the skill to do, and we'll generate a SKILL.md file for Claude to use.",
+    "name": "Skill Name",
+    "namePlaceholder": "my-custom-skill",
+    "prompt": "Describe Your Skill",
+    "promptPlaceholder": "Create a skill that helps build React components with TypeScript, proper prop types, and follows the project's coding conventions...",
+    "promptHint": "Be specific about what the skill should do and when it should be used",
+    "examples": "Example prompts:",
+    "exampleReact": "React component patterns",
+    "exampleApi": "REST API endpoint patterns",
+    "exampleTest": "Test writing patterns",
+    "generate": "Generate Skill",
+    "generating": "Generating...",
+    "success": "Skill generated successfully",
+    "error": "Failed to generate skill"
+  }
+}

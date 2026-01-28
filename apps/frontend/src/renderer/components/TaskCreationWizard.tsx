@@ -117,6 +117,13 @@ export function TaskCreationWizard({
   // Review setting
   const [requireReviewBeforeCoding, setRequireReviewBeforeCoding] = useState(false);
 
+  // Ralph Loop settings
+  const [enableRalphLoop, setEnableRalphLoop] = useState(false);
+  const [ralphLoopMaxCoderIterations, setRalphLoopMaxCoderIterations] = useState(5);
+  const [ralphLoopMaxQaIterations, setRalphLoopMaxQaIterations] = useState(3);
+  const [ralphLoopRetryStrategy, setRalphLoopRetryStrategy] = useState<'conservative' | 'aggressive' | 'adaptive'>('adaptive');
+  const [ralphLoopOvernightMode, setRalphLoopOvernightMode] = useState(false);
+
   // Draft state
   const [isDraftRestored, setIsDraftRestored] = useState(false);
 
@@ -155,6 +162,11 @@ export function TaskCreationWizard({
         setImages(draft.images);
         setReferencedFiles(draft.referencedFiles ?? []);
         setRequireReviewBeforeCoding(draft.requireReviewBeforeCoding ?? false);
+        setEnableRalphLoop(draft.enableRalphLoop ?? false);
+        setRalphLoopMaxCoderIterations(draft.ralphLoopMaxCoderIterations ?? 5);
+        setRalphLoopMaxQaIterations(draft.ralphLoopMaxQaIterations ?? 3);
+        setRalphLoopRetryStrategy(draft.ralphLoopRetryStrategy ?? 'adaptive');
+        setRalphLoopOvernightMode(draft.ralphLoopOvernightMode ?? false);
         setIsDraftRestored(true);
 
         if (draft.category || draft.priority || draft.complexity || draft.impact) {
@@ -177,6 +189,11 @@ export function TaskCreationWizard({
         setImages([]);
         setReferencedFiles([]);
         setRequireReviewBeforeCoding(false);
+        setEnableRalphLoop(false);
+        setRalphLoopMaxCoderIterations(5);
+        setRalphLoopMaxQaIterations(3);
+        setRalphLoopRetryStrategy('adaptive');
+        setRalphLoopOvernightMode(false);
         setBaseBranch(PROJECT_DEFAULT_BRANCH);
         setUseWorktree(true);
         setIsDraftRestored(false);
@@ -252,8 +269,13 @@ export function TaskCreationWizard({
     images,
     referencedFiles,
     requireReviewBeforeCoding,
+    enableRalphLoop,
+    ralphLoopMaxCoderIterations,
+    ralphLoopMaxQaIterations,
+    ralphLoopRetryStrategy,
+    ralphLoopOvernightMode,
     savedAt: new Date()
-  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding]);
+  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, enableRalphLoop, ralphLoopMaxCoderIterations, ralphLoopMaxQaIterations, ralphLoopRetryStrategy, ralphLoopOvernightMode]);
 
   /**
    * Detect @ mention being typed and show autocomplete
@@ -422,6 +444,15 @@ export function TaskCreationWizard({
       if (images.length > 0) metadata.attachedImages = images;
       if (allReferencedFiles.length > 0) metadata.referencedFiles = allReferencedFiles;
       if (requireReviewBeforeCoding) metadata.requireReviewBeforeCoding = true;
+      if (enableRalphLoop) {
+        metadata.ralphLoop = {
+          enabled: enableRalphLoop,
+          maxCoderIterations: ralphLoopMaxCoderIterations,
+          maxQaIterations: ralphLoopMaxQaIterations,
+          retryStrategy: ralphLoopRetryStrategy,
+          overnightMode: ralphLoopOvernightMode,
+        };
+      }
       // Always include baseBranch - resolve PROJECT_DEFAULT_BRANCH to actual branch name
       // This ensures the backend always knows which branch to use for worktree creation
       if (baseBranch === PROJECT_DEFAULT_BRANCH) {
@@ -463,6 +494,11 @@ export function TaskCreationWizard({
     setImages([]);
     setReferencedFiles([]);
     setRequireReviewBeforeCoding(false);
+    setEnableRalphLoop(false);
+    setRalphLoopMaxCoderIterations(5);
+    setRalphLoopMaxQaIterations(3);
+    setRalphLoopRetryStrategy('adaptive');
+    setRalphLoopOvernightMode(false);
     setBaseBranch(PROJECT_DEFAULT_BRANCH);
     setUseWorktree(true);
     setError(null);
@@ -645,6 +681,16 @@ export function TaskCreationWizard({
           onImagesChange={setImages}
           requireReviewBeforeCoding={requireReviewBeforeCoding}
           onRequireReviewChange={setRequireReviewBeforeCoding}
+          enableRalphLoop={enableRalphLoop}
+          onEnableRalphLoopChange={setEnableRalphLoop}
+          ralphLoopMaxCoderIterations={ralphLoopMaxCoderIterations}
+          onRalphLoopMaxCoderIterationsChange={setRalphLoopMaxCoderIterations}
+          ralphLoopMaxQaIterations={ralphLoopMaxQaIterations}
+          onRalphLoopMaxQaIterationsChange={setRalphLoopMaxQaIterations}
+          ralphLoopRetryStrategy={ralphLoopRetryStrategy}
+          onRalphLoopRetryStrategyChange={setRalphLoopRetryStrategy}
+          ralphLoopOvernightMode={ralphLoopOvernightMode}
+          onRalphLoopOvernightModeChange={setRalphLoopOvernightMode}
           disabled={isCreating}
           error={error}
           onError={setError}

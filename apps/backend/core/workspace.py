@@ -1574,10 +1574,9 @@ def _resolve_git_conflicts_with_ai(
         except Exception as e:
             print(muted(f"    Warning: Could not process {file_path}: {e}"))
 
-    # V2: Record merge completion in Evolution Tracker for future context
-    # TODO: _record_merge_completion not yet implemented - see line 141
-    # if resolved_files:
-    #     _record_merge_completion(project_dir, spec_name, resolved_files)
+    # Record merge completion in Timeline Tracker for future context
+    if resolved_files:
+        _record_merge_completion(project_dir, spec_name, resolved_files)
 
     # Build result - partial success if some files failed but we got others
     result = {
@@ -1622,6 +1621,98 @@ def _resolve_git_conflicts_with_ai(
         print(muted("    npm install / pnpm install / yarn / uv sync / cargo update"))
 
     return result
+
+
+def _record_merge_completion(
+    project_dir: Path,
+    spec_name: str,
+    resolved_files: list[str],
+) -> None:
+    """
+    Record merge completion in MergeHistoryTracker for audit and rollback.
+
+    Args:
+        project_dir: The project directory
+        spec_name: Name of the spec (used as task_id)
+        resolved_files: List of files that were successfully merged
+    """
+    debug(
+        MODULE,
+        "Recording merge completion",
+        spec_name=spec_name,
+        num_files=len(resolved_files),
+    )
+
+    try:
+        from datetime import datetime
+
+        from merge.merge_history import MergeHistoryTracker
+        from merge.merge_history_models import MergeHistoryEntry
+
+        # Get storage path
+        storage_path = project_dir / ".auto-claude"
+        tracker = MergeHistoryTracker(storage_path)
+
+        # Get current HEAD commit (merge commit)
+        head_result = run_git(["rev-parse", "HEAD"], cwd=project_dir)
+        if head_result.returncode != 0:
+            debug_warning(MODULE, "Could not get HEAD commit for merge recording")
+            return
+        merge_commit = head_result.stdout.strip()
+
+        # Get pre-merge commit (HEAD~1)
+        pre_merge_result = run_git(["rev-parse", "HEAD~1"], cwd=project_dir)
+        pre_merge_commit = (
+            pre_merge_result.stdout.strip() if pre_merge_result.returncode == 0 else ""
+        )
+
+        # Get current branch
+        branch_result = run_git(["branch", "--show-current"], cwd=project_dir)
+        target_branch = (
+            branch_result.stdout.strip() if branch_result.returncode == 0 else "main"
+        )
+
+        # Create merge history entry
+        now = datetime.now()
+        entry = MergeHistoryEntry(
+            merge_id=f"{spec_name}-{now.strftime('%Y%m%d-%H%M%S')}",
+            task_id=spec_name,
+            spec_name=spec_name,
+            started_at=now,
+            completed_at=now,
+            source_worktree=f".auto-claude/worktrees/{spec_name}",
+            source_branch=f"auto-claude/{spec_name}",
+            target_branch=target_branch,
+            files_changed=resolved_files,
+            files_added=[],  # Could categorize if data available
+            files_deleted=[],  # Could categorize if data available
+            conflicts_resolved=[],  # Could add if conflict data available
+            total_conflicts=0,
+            auto_resolved_count=0,
+            ai_resolved_count=0,
+            pre_merge_commit=pre_merge_commit,
+            merge_commit=merge_commit,
+            success=True,
+            error_message=None,
+            ai_tokens_used=0,  # Could track if data available
+            duration_seconds=0.0,  # Could track if start time recorded
+        )
+
+        # Record the merge in new system
+        tracker.record_merge(entry)
+
+        debug_success(MODULE, f"Merge {entry.merge_id} recorded to history")
+
+        # Also record in FileTimelineTracker for backward compatibility
+        timeline_tracker = FileTimelineTracker(project_dir)
+        timeline_tracker.on_task_merged(task_id=spec_name, merge_commit=merge_commit)
+
+    except Exception as e:
+        debug_warning(MODULE, f"Failed to record merge completion: {e}")
+        import traceback
+
+        traceback.print_exc()
+        # Don't fail the merge if recording fails
 
 
 # Note: All constants, classes and helper functions are imported from the refactored modules above

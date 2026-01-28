@@ -43,7 +43,9 @@ export default defineConfig({
         'debug',
         'ms',
         // Minimatch for glob pattern matching in worktree handlers
-        'minimatch'
+        'minimatch',
+        // gray-matter for parsing SKILL.md frontmatter in skills handlers
+        'gray-matter'
       ]
     })],
     build: {

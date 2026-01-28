@@ -472,6 +472,31 @@ export const IPC_CHANNELS = {
   CHANGELOG_GENERATION_COMPLETE: 'changelog:generationComplete',
   CHANGELOG_GENERATION_ERROR: 'changelog:generationError',
 
+  // Skills operations
+  SKILLS_LIST: 'skills:list',
+  SKILLS_GET: 'skills:get',
+  SKILLS_GENERATE: 'skills:generate',
+  SKILLS_GENERATE_FROM_PROMPT: 'skills:generateFromPrompt',
+  SKILLS_INSTALL: 'skills:install',
+  SKILLS_UPDATE: 'skills:update',
+  SKILLS_DELETE: 'skills:delete',
+  SKILLS_VALIDATE: 'skills:validate',
+
+  // Skills events (main -> renderer) - template-based
+  SKILLS_GENERATION_PROGRESS: 'skills:generationProgress',
+  SKILLS_GENERATION_COMPLETE: 'skills:generationComplete',
+  SKILLS_GENERATION_ERROR: 'skills:generationError',
+
+  // AI-powered skills generation
+  SKILLS_GENERATE_AI: 'skills:generateAI',
+  SKILLS_GENERATE_AI_STOP: 'skills:generateAIStop',
+
+  // AI skills events (main -> renderer)
+  SKILLS_GENERATE_AI_PROGRESS: 'skills:generateAIProgress',
+  SKILLS_GENERATE_AI_COMPLETE: 'skills:generateAIComplete',
+  SKILLS_GENERATE_AI_ERROR: 'skills:generateAIError',
+  SKILLS_GENERATE_AI_STOPPED: 'skills:generateAIStopped',
+
   // Insights operations
   INSIGHTS_GET_SESSION: 'insights:getSession',
   INSIGHTS_SEND_MESSAGE: 'insights:sendMessage',
@@ -563,5 +588,10 @@ export const IPC_CHANNELS = {
   // Queue routing events (main -> renderer)
   QUEUE_PROFILE_SWAPPED: 'queue:profileSwapped',      // Task switched to different profile
   QUEUE_SESSION_CAPTURED: 'queue:sessionCaptured',    // Session ID captured from running task
-  QUEUE_BLOCKED_NO_PROFILES: 'queue:blockedNoProfiles' // All profiles unavailable
+  QUEUE_BLOCKED_NO_PROFILES: 'queue:blockedNoProfiles', // All profiles unavailable
+
+  // Merge History operations
+  MERGE_HISTORY_GET: 'mergeHistory:get',              // Get all merge history entries
+  MERGE_HISTORY_GET_DETAILS: 'mergeHistory:getDetails', // Get details for a specific merge
+  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback'     // Rollback a specific merge
 } as const;

@@ -1,0 +1,86 @@
+{
+  "title": "Compétences",
+  "description": "Compétences Claude Code pour votre projet",
+  "autoGenerate": "Générer automatiquement les compétences",
+  "generateFromPrompt": "Générer à partir d'un prompt",
+  "enabledCount": "{{count}} activée(s)",
+  "card": {
+    "enabled": "Activée",
+    "disabled": "Désactivée",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "enableTooltip": "Activer cette compétence pour l'export",
+    "disableTooltip": "Désactiver cette compétence",
+    "preview": "Aperçu",
+    "previewTooltip": "Aperçu du contenu SKILL.md",
+    "edit": "Modifier",
+    "editTooltip": "Modifier les métadonnées de la compétence",
+    "export": "Exporter",
+    "exportTooltip": "Exporter vers .claude/skills/",
+    "exportDisabledTooltip": "Activer la compétence pour l'exporter"
+  },
+  "preview": {
+    "title": "Aperçu SKILL.md",
+    "frontmatter": "En-tête",
+    "instructions": "Instructions",
+    "close": "Fermer"
+  },
+  "edit": {
+    "title": "Modifier les métadonnées de la compétence",
+    "name": "Nom",
+    "description": "Description",
+    "namePlaceholder": "nom-competence",
+    "descriptionPlaceholder": "Décrivez quand et ce que fait cette compétence",
+    "characterCount": "{{count}} / {{max}} caractères",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "validation": {
+    "nameRequired": "Le nom est requis",
+    "nameTooLong": "Le nom doit contenir 64 caractères ou moins",
+    "nameInvalidChars": "Le nom doit contenir uniquement des lettres minuscules, des chiffres et des tirets",
+    "nameReservedWord": "Le nom ne peut pas contenir de mots réservés : anthropic, claude",
+    "descriptionRequired": "La description est requise",
+    "descriptionTooLong": "La description doit contenir 1024 caractères ou moins"
+  },
+  "export": {
+    "success": "Compétence exportée avec succès",
+    "error": "Échec de l'export de la compétence",
+    "confirmOverwrite": "La compétence existe déjà. Écraser ?"
+  },
+  "generate": {
+    "success": "{{count}} compétence(s) générée(s)",
+    "error": "Échec de la génération des compétences",
+    "noData": "Aucune donnée de projet trouvée. Exécutez l'analyse du projet d'abord."
+  },
+  "empty": {
+    "title": "Aucune compétence générée",
+    "description": "Cliquez sur 'Générer automatiquement les compétences' pour créer des compétences à partir de votre index de projet, ou utilisez 'Générer à partir d'un prompt' pour créer une compétence personnalisée",
+    "aiDescription": "L'IA peut analyser l'architecture de votre projet et générer des compétences contextuelles qui aident Claude à travailler efficacement avec votre codebase.",
+    "action": "Générer automatiquement les compétences"
+  },
+  "aiGenerate": {
+    "button": "Analyser et Générer",
+    "stop": "Arrêter",
+    "tooltip": "Utiliser l'IA pour analyser le projet et générer des compétences contextuelles",
+    "inProgress": "Analyse de l'architecture du projet...",
+    "starting": "Démarrage de l'analyse IA..."
+  },
+  "promptGenerate": {
+    "title": "Générer une compétence à partir d'un prompt",
+    "description": "Décrivez ce que vous voulez que la compétence fasse, et nous générerons un fichier SKILL.md pour Claude.",
+    "name": "Nom de la compétence",
+    "namePlaceholder": "ma-competence-personnalisee",
+    "prompt": "Décrivez votre compétence",
+    "promptPlaceholder": "Créer une compétence qui aide à construire des composants React avec TypeScript, des types de props appropriés, et qui suit les conventions de codage du projet...",
+    "promptHint": "Soyez précis sur ce que la compétence doit faire et quand elle doit être utilisée",
+    "examples": "Exemples de prompts :",
+    "exampleReact": "Patterns de composants React",
+    "exampleApi": "Patterns d'endpoints API REST",
+    "exampleTest": "Patterns d'écriture de tests",
+    "generate": "Générer la compétence",
+    "generating": "Génération en cours...",
+    "success": "Compétence générée avec succès",
+    "error": "Échec de la génération de la compétence"
+  }
+}

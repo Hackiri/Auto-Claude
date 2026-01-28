@@ -10,6 +10,12 @@ The security system has three layers:
 2. Stack commands - Detected from project structure (frameworks, languages)
 3. Custom commands - User-defined allowlist
 
+Enhanced with AST-based validation (via bash_validator.py):
+- Detects dangerous shell constructs (redirects, command substitution, etc.)
+- Blocks process substitution (<(...) and >(...))
+- Prevents background execution (&)
+- Validates control characters
+
 Public API
 ----------
 Main functions:
@@ -17,6 +23,7 @@ Main functions:
 - validate_command: Standalone validation function for testing
 - get_security_profile: Get or create security profile for a project
 - reset_profile_cache: Reset cached security profile
+- clear_pattern_cache: Clear AST validator pattern cache
 
 Command parsing:
 - extract_commands: Extract command names from shell strings
@@ -49,6 +56,9 @@ from .profile import (
     get_security_profile,
     reset_profile_cache,
 )
+
+# AST-based validator utilities
+from .shell_validators import clear_pattern_cache
 
 # Tool input validation
 from .tool_input_validator import (
@@ -87,6 +97,7 @@ __all__ = [
     "validate_command",
     "get_security_profile",
     "reset_profile_cache",
+    "clear_pattern_cache",
     # Parsing utilities
     "extract_commands",
     "split_command_segments",

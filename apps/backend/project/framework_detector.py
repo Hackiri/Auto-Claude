@@ -6,6 +6,8 @@ Detects frameworks and libraries from package dependencies
 (package.json, pyproject.toml, requirements.txt, Gemfile, etc.).
 """
 
+import glob
+import json
 import re
 from pathlib import Path
 
@@ -41,7 +43,7 @@ class FrameworkDetector:
         return self.frameworks
 
     def detect_nodejs_frameworks(self) -> None:
-        """Detect Node.js frameworks from package.json."""
+        """Detect Node.js frameworks from package.json (including workspaces)."""
         pkg = self.parser.read_json("package.json")
         if not pkg:
             return
@@ -50,6 +52,11 @@ class FrameworkDetector:
             **pkg.get("dependencies", {}),
             **pkg.get("devDependencies", {}),
         }
+
+        # Also check workspace package.json files for monorepos
+        workspaces = pkg.get("workspaces", [])
+        if workspaces:
+            deps.update(self._collect_workspace_deps(workspaces))
 
         # Detect Node.js frameworks
         framework_deps = {
@@ -263,3 +270,46 @@ class FrameworkDetector:
             self.frameworks.append("shelf")
         if "aqueduct" in content_lower:
             self.frameworks.append("aqueduct")
+
+    def _collect_workspace_deps(self, workspaces: list) -> dict:
+        """
+        Collect dependencies from all workspace package.json files.
+
+        Handles both string patterns (e.g., "apps/*") and object format
+        (e.g., {"packages": ["apps/*"]}).
+
+        Args:
+            workspaces: Workspace patterns from root package.json
+
+        Returns:
+            Dict of all dependencies from workspace packages
+        """
+        all_deps = {}
+
+        # Normalize workspace patterns (handle both list of strings and object format)
+        patterns = []
+        if isinstance(workspaces, list):
+            for ws in workspaces:
+                if isinstance(ws, str):
+                    patterns.append(ws)
+                elif isinstance(ws, dict) and "packages" in ws:
+                    patterns.extend(ws["packages"])
+        elif isinstance(workspaces, dict) and "packages" in workspaces:
+            patterns = workspaces["packages"]
+
+        # Expand glob patterns and collect dependencies
+        for pattern in patterns:
+            # Convert npm workspace pattern to glob pattern
+            workspace_glob = str(self.project_dir / pattern)
+            for workspace_path in glob.glob(workspace_glob):
+                pkg_path = Path(workspace_path) / "package.json"
+                if pkg_path.exists():
+                    try:
+                        with open(pkg_path, encoding="utf-8") as f:
+                            pkg = json.load(f)
+                        all_deps.update(pkg.get("dependencies", {}))
+                        all_deps.update(pkg.get("devDependencies", {}))
+                    except (OSError, json.JSONDecodeError):
+                        continue
+
+        return all_deps

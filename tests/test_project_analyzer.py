@@ -256,6 +256,26 @@ dependencies = ["flask>=2.0"]
 
         assert "pytest" in analyzer.profile.detected_stack.frameworks
 
+    def test_detects_vitest_from_workspace(self, temp_dir: Path):
+        """Detects vitest from workspace package.json in monorepo setup."""
+        # Create root package.json with workspaces
+        root_pkg = {
+            "name": "monorepo",
+            "workspaces": ["apps/*"],
+        }
+        (temp_dir / "package.json").write_text(json.dumps(root_pkg))
+
+        # Create workspace with vitest
+        workspace_dir = temp_dir / "apps" / "frontend"
+        workspace_dir.mkdir(parents=True)
+        workspace_pkg = {"devDependencies": {"vitest": "^1.0.0"}}
+        (workspace_dir / "package.json").write_text(json.dumps(workspace_pkg))
+
+        analyzer = ProjectAnalyzer(temp_dir)
+        analyzer._detect_frameworks()
+
+        assert "vitest" in analyzer.profile.detected_stack.frameworks
+
 
 class TestDatabaseDetection:
     """Tests for database detection."""

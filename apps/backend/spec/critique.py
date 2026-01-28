@@ -15,7 +15,9 @@ The critique system ensures:
 """
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -27,7 +29,7 @@ class CritiqueResult:
     improvements_made: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage."""
         return {
             "passes": self.passes,
@@ -37,7 +39,7 @@ class CritiqueResult:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "CritiqueResult":
+    def from_dict(cls, data: dict[str, Any]) -> "CritiqueResult":
         """Load from dictionary."""
         return cls(
             passes=data.get("passes", False),
@@ -48,7 +50,7 @@ class CritiqueResult:
 
 
 def generate_critique_prompt(
-    subtask: dict, files_modified: list[str], patterns_from: list[str]
+    subtask: dict[str, Any], files_modified: list[str], patterns_from: Sequence[str]
 ) -> str:
     """
     Generate a critique prompt for the agent to self-evaluate.

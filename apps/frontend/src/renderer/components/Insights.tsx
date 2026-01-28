@@ -23,6 +23,7 @@ import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
 import { cn } from '../lib/utils';
 import {
   useInsightsStore,
@@ -120,6 +121,7 @@ export function Insights({ projectId }: InsightsProps) {
   // Auto-scroll to bottom when messages change
   // Uses requestAnimationFrame to ensure DOM layout is complete before scrolling
   // and direct scrollTop manipulation for more predictable behavior than scrollIntoView
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps intentionally trigger scroll on message/content changes
   useEffect(() => {
     const scrollToBottom = () => {
       const viewport = scrollAreaViewportRef.current;
@@ -165,6 +167,7 @@ export function Insights({ projectId }: InsightsProps) {
   }, []);
 
   // Reset taskCreated when switching sessions
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when session changes
   useEffect(() => {
     setTaskCreated(new Set());
   }, [session?.id]);
@@ -445,7 +448,7 @@ interface MessageBubbleProps {
   taskCreated: boolean;
 }
 
-function MessageBubble({
+export function MessageBubble({
   message,
   markdownComponents,
   onCreateTask,
@@ -453,6 +456,12 @@ function MessageBubble({
   taskCreated
 }: MessageBubbleProps) {
   const isUser = message.role === 'user';
+  const [expanded, setExpanded] = useState(false);
+
+  // Detect if content needs truncation (>500 chars OR >10 lines)
+  const contentLength = message.content.length;
+  const lineCount = message.content.split('\n').length;
+  const needsTruncation = isUser && (contentLength > 500 || lineCount > 10);
 
   return (
     <div className="flex gap-3">
@@ -472,11 +481,42 @@ function MessageBubble({
         <div className="text-sm font-medium text-foreground">
           {isUser ? 'You' : 'Assistant'}
         </div>
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-            {message.content}
-          </ReactMarkdown>
-        </div>
+        {needsTruncation ? (
+          <Collapsible open={expanded} onOpenChange={setExpanded}>
+            <div className="relative">
+              <CollapsibleContent forceMount>
+                <div
+                  className={cn(
+                    'prose prose-sm dark:prose-invert max-w-none',
+                    !expanded && 'max-h-[150px] overflow-hidden'
+                  )}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+                {/* Gradient fade overlay for truncated content */}
+                {!expanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                )}
+              </CollapsibleContent>
+            </div>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="mt-2 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                {expanded ? 'Show less ▲' : 'Show more ▼'}
+              </button>
+            </CollapsibleTrigger>
+          </Collapsible>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
 
         {/* Tool usage history for assistant messages */}
         {!isUser && message.toolsUsed && message.toolsUsed.length > 0 && (
@@ -606,6 +646,7 @@ function ToolUsageHistory({ tools }: ToolUsageHistoryProps) {
   return (
     <div className="mt-2">
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >

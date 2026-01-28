@@ -14,7 +14,8 @@ import type {
   SupportedTerminal,
   WorktreeCreatePROptions,
   WorktreeCreatePRResult,
-  ImageAttachment
+  ImageAttachment,
+  MergeHistoryEntry
 } from '../../shared/types';
 
 export interface TaskAPI {
@@ -84,6 +85,10 @@ export interface TaskAPI {
   unwatchTaskLogs: (specId: string) => Promise<IPCResult>;
   onTaskLogsChanged: (callback: (specId: string, logs: TaskLogs) => void) => () => void;
   onTaskLogsStream: (callback: (specId: string, chunk: TaskLogStreamChunk) => void) => () => void;
+
+  // Merge History
+  getMergeHistory: (projectId: string) => Promise<IPCResult<MergeHistoryEntry[]>>;
+  rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
 }
 
 export const createTaskAPI = (): TaskAPI => ({
@@ -308,5 +313,12 @@ export const createTaskAPI = (): TaskAPI => ({
     return () => {
       ipcRenderer.removeListener(IPC_CHANNELS.TASK_LOGS_STREAM, handler);
     };
-  }
+  },
+
+  // Merge History
+  getMergeHistory: (projectId: string): Promise<IPCResult<MergeHistoryEntry[]>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_GET, projectId),
+
+  rollbackMerge: (projectId: string, mergeId: string): Promise<IPCResult<{ message: string }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId)
 });

@@ -45,6 +45,7 @@ import { GitLabMergeRequests } from './components/gitlab-merge-requests';
 import { Changelog } from './components/Changelog';
 import { Worktrees } from './components/Worktrees';
 import { AgentTools } from './components/AgentTools';
+import { AgentSessions } from './components/agent-sessions';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { RateLimitModal } from './components/RateLimitModal';
 import { SDKRateLimitModal } from './components/SDKRateLimitModal';
@@ -865,6 +866,7 @@ export function App() {
                     isRefreshing={isRefreshingTasks}
                   />
                 )}
+                {activeView === 'agent-sessions' && <AgentSessions />}
                 {/* TerminalGrid is always mounted but hidden when not active to preserve terminal state */}
                 <div className={activeView === 'terminals' ? 'h-full' : 'hidden'}>
                   <TerminalGrid

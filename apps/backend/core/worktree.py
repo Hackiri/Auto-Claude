@@ -1203,11 +1203,22 @@ class WorktreeManager:
                 error="GitHub CLI (gh) not found. Install from https://cli.github.com/",
             )
 
+        # Detect target repository from origin remote
+        # This fixes issues when multiple remotes exist (origin + upstream)
+        # where gh CLI might pick the wrong one
+        repo_flag: list[str] = []
+        origin_url = self._get_origin_remote_url(info.path)
+        if origin_url:
+            repo_name = self._extract_repo_from_url(origin_url)
+            if repo_name:
+                repo_flag = ["--repo", repo_name]
+
         # Build gh pr create command
         gh_args = [
             gh_executable,
             "pr",
             "create",
+            *repo_flag,
             "--base",
             target,
             "--head",
@@ -1406,6 +1417,49 @@ class WorktreeManager:
                 invalidate_gh_cache()
             debug_warning("worktree", f"Could not get existing PR URL: {e}")
 
+        return None
+
+    def _get_origin_remote_url(self, repo_path: Path) -> str | None:
+        """Get the URL of the 'origin' remote.
+
+        This is used to determine the correct repository for PR creation
+        when multiple remotes exist (e.g., origin + upstream).
+        """
+        try:
+            git_executable = get_git_executable()
+            result = subprocess.run(
+                [git_executable, "remote", "get-url", "origin"],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+                env=get_isolated_git_env(),
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError) as e:
+            debug_warning("worktree", f"Could not get origin remote URL: {e}")
+        return None
+
+    def _extract_repo_from_url(self, url: str) -> str | None:
+        """Extract owner/repo from a git URL.
+
+        Handles both HTTPS and SSH URL formats:
+        - https://github.com/owner/repo.git
+        - git@github.com:owner/repo.git
+        """
+        # Handle HTTPS URLs: https://github.com/owner/repo.git or https://github.com/owner/repo
+        # Handle SSH URLs: git@github.com:owner/repo.git or git@github.com:owner/repo
+        patterns = [
+            r"github\.com[/:]([^/]+)/([^/]+?)(?:\.git)?$",
+            r"github\.com[/:]([^/]+)/([^/]+)$",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return f"{match.group(1)}/{match.group(2)}"
         return None
 
     def push_and_create_pr(
