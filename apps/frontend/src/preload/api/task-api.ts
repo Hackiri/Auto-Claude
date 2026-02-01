@@ -15,7 +15,9 @@ import type {
   WorktreeCreatePROptions,
   WorktreeCreatePRResult,
   ImageAttachment,
-  MergeHistoryEntry
+  MergeHistoryEntry,
+  TaskQAValidationData,
+  ProjectQATrends
 } from '../../shared/types';
 
 export interface TaskAPI {
@@ -89,6 +91,10 @@ export interface TaskAPI {
   // Merge History
   getMergeHistory: (projectId: string) => Promise<IPCResult<MergeHistoryEntry[]>>;
   rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
+  // QA Validation Dashboard
+  getQAValidationData: (projectId: string, specId: string) => Promise<IPCResult<TaskQAValidationData | null>>;
+  getProjectQATrends: (projectId: string) => Promise<IPCResult<ProjectQATrends | null>>;
 }
 
 export const createTaskAPI = (): TaskAPI => ({
@@ -320,5 +326,12 @@ export const createTaskAPI = (): TaskAPI => ({
     ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_GET, projectId),
 
   rollbackMerge: (projectId: string, mergeId: string): Promise<IPCResult<{ message: string }>> =>
-    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId)
+    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId),
+
+  // QA Validation Dashboard
+  getQAValidationData: (projectId: string, specId: string): Promise<IPCResult<TaskQAValidationData | null>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TASK_QA_VALIDATION_GET, projectId, specId),
+
+  getProjectQATrends: (projectId: string): Promise<IPCResult<ProjectQATrends | null>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PROJECT_QA_TRENDS_GET, projectId)
 });

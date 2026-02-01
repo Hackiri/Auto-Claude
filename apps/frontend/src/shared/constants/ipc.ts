@@ -593,5 +593,9 @@ export const IPC_CHANNELS = {
   // Merge History operations
   MERGE_HISTORY_GET: 'mergeHistory:get',              // Get all merge history entries
   MERGE_HISTORY_GET_DETAILS: 'mergeHistory:getDetails', // Get details for a specific merge
-  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback'     // Rollback a specific merge
+  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback',    // Rollback a specific merge
+
+  // QA Validation Dashboard operations
+  TASK_QA_VALIDATION_GET: 'task:qaValidation:get',    // Get QA validation data for a task
+  PROJECT_QA_TRENDS_GET: 'project:qaTrends:get'       // Get project-wide QA trends
 } as const;

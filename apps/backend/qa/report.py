@@ -21,6 +21,222 @@ ISSUE_SIMILARITY_THRESHOLD = 0.8  # Consider issues "same" if similarity >= this
 
 
 # =============================================================================
+# PER-CRITERION VALIDATION RESULTS
+# =============================================================================
+
+
+def record_criterion_result(
+    spec_dir: Path,
+    criterion_id: str,
+    criterion_text: str,
+    status: str,
+    iteration: int,
+    evidence: dict[str, Any] | None = None,
+) -> bool:
+    """
+    Record the validation result for a single acceptance criterion.
+
+    Args:
+        spec_dir: Spec directory
+        criterion_id: Unique identifier for the criterion (e.g., "AC-1", "AC-2")
+        criterion_text: The acceptance criterion text from spec.md
+        status: "passed", "failed", "pending", or "skipped"
+        iteration: Current QA iteration number
+        evidence: Optional evidence dict containing:
+            - error_message: Error details if failed
+            - screenshot_path: Path to screenshot if available
+            - log_output: Relevant log output
+            - command: Command that was executed
+            - expected_result: What was expected
+            - actual_result: What was actually found
+
+    Returns:
+        True if recorded successfully
+    """
+    plan = load_implementation_plan(spec_dir)
+    if not plan:
+        plan = {}
+
+    if "qa_criterion_results" not in plan:
+        plan["qa_criterion_results"] = []
+
+    # Create the result record
+    result = {
+        "id": criterion_id,
+        "criterion_text": criterion_text,
+        "status": status,
+        "iteration_number": iteration,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+    if evidence:
+        result["evidence"] = {
+            k: v for k, v in evidence.items() if v is not None
+        }
+
+    plan["qa_criterion_results"].append(result)
+
+    return save_implementation_plan(spec_dir, plan)
+
+
+def record_criteria_batch(
+    spec_dir: Path,
+    criteria_results: list[dict[str, Any]],
+    iteration: int,
+) -> bool:
+    """
+    Record validation results for multiple criteria at once.
+
+    Args:
+        spec_dir: Spec directory
+        criteria_results: List of dicts, each containing:
+            - criterion_id: Unique ID
+            - criterion_text: The criterion text
+            - status: "passed", "failed", "pending", or "skipped"
+            - evidence: Optional evidence dict
+        iteration: Current QA iteration number
+
+    Returns:
+        True if all recorded successfully
+    """
+    plan = load_implementation_plan(spec_dir)
+    if not plan:
+        plan = {}
+
+    if "qa_criterion_results" not in plan:
+        plan["qa_criterion_results"] = []
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    for cr in criteria_results:
+        result = {
+            "id": cr.get("criterion_id", f"AC-{len(plan['qa_criterion_results']) + 1}"),
+            "criterion_text": cr.get("criterion_text", ""),
+            "status": cr.get("status", "pending"),
+            "iteration_number": iteration,
+            "timestamp": timestamp,
+        }
+
+        evidence = cr.get("evidence")
+        if evidence:
+            result["evidence"] = {
+                k: v for k, v in evidence.items() if v is not None
+            }
+
+        plan["qa_criterion_results"].append(result)
+
+    return save_implementation_plan(spec_dir, plan)
+
+
+def get_criterion_results(spec_dir: Path) -> list[dict[str, Any]]:
+    """
+    Get all criterion validation results.
+
+    Returns:
+        List of all criterion result records sorted by timestamp.
+    """
+    plan = load_implementation_plan(spec_dir)
+    if not plan:
+        return []
+    results = plan.get("qa_criterion_results", [])
+    return sorted(results, key=lambda x: x.get("timestamp", ""))
+
+
+def get_latest_criterion_results(spec_dir: Path) -> list[dict[str, Any]]:
+    """
+    Get the most recent validation result for each unique criterion.
+
+    Returns:
+        List of the latest result for each criterion ID.
+    """
+    all_results = get_criterion_results(spec_dir)
+
+    # Keep only the latest result for each criterion
+    latest_by_id: dict[str, dict[str, Any]] = {}
+    for result in all_results:
+        criterion_id = result.get("id", "")
+        existing = latest_by_id.get(criterion_id)
+        if not existing or result.get("timestamp", "") > existing.get("timestamp", ""):
+            latest_by_id[criterion_id] = result
+
+    return list(latest_by_id.values())
+
+
+def get_criterion_results_for_iteration(
+    spec_dir: Path,
+    iteration: int,
+) -> list[dict[str, Any]]:
+    """
+    Get criterion results for a specific iteration.
+
+    Args:
+        spec_dir: Spec directory
+        iteration: Iteration number to filter by
+
+    Returns:
+        List of criterion results for the specified iteration.
+    """
+    all_results = get_criterion_results(spec_dir)
+    return [r for r in all_results if r.get("iteration_number") == iteration]
+
+
+def get_criterion_validation_summary(spec_dir: Path) -> dict[str, Any]:
+    """
+    Get summary statistics for criterion validation.
+
+    Returns:
+        Summary dict with pass/fail counts and rates.
+    """
+    latest_results = get_latest_criterion_results(spec_dir)
+
+    total = len(latest_results)
+    if total == 0:
+        return {
+            "total_criteria": 0,
+            "passed_criteria": 0,
+            "failed_criteria": 0,
+            "pending_criteria": 0,
+            "skipped_criteria": 0,
+            "pass_rate": 0.0,
+        }
+
+    passed = sum(1 for r in latest_results if r.get("status") == "passed")
+    failed = sum(1 for r in latest_results if r.get("status") == "failed")
+    pending = sum(1 for r in latest_results if r.get("status") == "pending")
+    skipped = sum(1 for r in latest_results if r.get("status") == "skipped")
+
+    # Calculate pass rate (only counting validated criteria)
+    validated = passed + failed
+    pass_rate = (passed / validated * 100) if validated > 0 else 0.0
+
+    return {
+        "total_criteria": total,
+        "passed_criteria": passed,
+        "failed_criteria": failed,
+        "pending_criteria": pending,
+        "skipped_criteria": skipped,
+        "pass_rate": round(pass_rate, 1),
+    }
+
+
+def clear_criterion_results(spec_dir: Path) -> bool:
+    """
+    Clear all criterion validation results.
+
+    Useful when starting a fresh QA cycle.
+
+    Returns:
+        True if cleared successfully.
+    """
+    plan = load_implementation_plan(spec_dir)
+    if not plan:
+        return True
+
+    plan["qa_criterion_results"] = []
+    return save_implementation_plan(spec_dir, plan)
+
+
+# =============================================================================
 # ITERATION TRACKING
 # =============================================================================
 
@@ -44,6 +260,7 @@ def record_iteration(
     status: str,
     issues: list[dict[str, Any]],
     duration_seconds: float | None = None,
+    criteria_results: list[dict[str, Any]] | None = None,
 ) -> bool:
     """
     Record a QA iteration to the history.
@@ -54,6 +271,12 @@ def record_iteration(
         status: "approved", "rejected", or "error"
         issues: List of issues found (empty if approved)
         duration_seconds: Optional duration of the iteration
+        criteria_results: Optional list of per-criterion validation results.
+            Each dict should contain:
+            - criterion_id: Unique ID (e.g., "AC-1")
+            - criterion_text: The acceptance criterion text
+            - status: "passed", "failed", "pending", or "skipped"
+            - evidence: Optional dict with error_message, screenshot_path, etc.
 
     Returns:
         True if recorded successfully
@@ -65,16 +288,50 @@ def record_iteration(
     if "qa_iteration_history" not in plan:
         plan["qa_iteration_history"] = []
 
+    timestamp = datetime.now(timezone.utc).isoformat()
+
     record = {
         "iteration": iteration,
         "status": status,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": timestamp,
         "issues": issues,
     }
     if duration_seconds is not None:
         record["duration_seconds"] = round(duration_seconds, 2)
 
+    # Include criterion results summary in iteration record
+    if criteria_results:
+        passed = sum(1 for cr in criteria_results if cr.get("status") == "passed")
+        failed = sum(1 for cr in criteria_results if cr.get("status") == "failed")
+        record["criteria_summary"] = {
+            "total": len(criteria_results),
+            "passed": passed,
+            "failed": failed,
+        }
+
     plan["qa_iteration_history"].append(record)
+
+    # Record per-criterion results to qa_criterion_results
+    if criteria_results:
+        if "qa_criterion_results" not in plan:
+            plan["qa_criterion_results"] = []
+
+        for cr in criteria_results:
+            criterion_record = {
+                "id": cr.get("criterion_id", f"AC-{len(plan['qa_criterion_results']) + 1}"),
+                "criterion_text": cr.get("criterion_text", ""),
+                "status": cr.get("status", "pending"),
+                "iteration_number": iteration,
+                "timestamp": timestamp,
+            }
+
+            evidence = cr.get("evidence")
+            if evidence:
+                criterion_record["evidence"] = {
+                    k: v for k, v in evidence.items() if v is not None
+                }
+
+            plan["qa_criterion_results"].append(criterion_record)
 
     # Update summary stats
     if "qa_stats" not in plan:
@@ -91,6 +348,16 @@ def record_iteration(
             issue_type = issue.get("type", "unknown")
             issue_types[issue_type] += 1
     plan["qa_stats"]["issues_by_type"] = dict(issue_types)
+
+    # Update criterion stats
+    if criteria_results:
+        plan["qa_stats"]["last_criteria_count"] = len(criteria_results)
+        plan["qa_stats"]["last_criteria_passed"] = sum(
+            1 for cr in criteria_results if cr.get("status") == "passed"
+        )
+        plan["qa_stats"]["last_criteria_failed"] = sum(
+            1 for cr in criteria_results if cr.get("status") == "failed"
+        )
 
     return save_implementation_plan(spec_dir, plan)
 

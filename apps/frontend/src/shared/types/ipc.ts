@@ -47,6 +47,10 @@ import type {
   ImageAttachment
 } from './task';
 import type {
+  TaskQAValidationData,
+  ProjectQATrends
+} from './qa';
+import type {
   TerminalCreateOptions,
   TerminalSession,
   TerminalRestoreResult,
@@ -774,6 +778,10 @@ export interface ElectronAPI {
   // Merge History operations
   getMergeHistory: (projectId: string) => Promise<IPCResult<import('./task').MergeHistoryEntry[]>>;
   rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
+  // QA Validation Dashboard operations
+  getQAValidationData: (projectId: string, specId: string) => Promise<IPCResult<TaskQAValidationData | null>>;
+  getProjectQATrends: (projectId: string) => Promise<IPCResult<ProjectQATrends | null>>;
 
   // Task logs event listeners
   onTaskLogsChanged: (

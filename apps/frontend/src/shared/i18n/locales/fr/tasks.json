@@ -359,5 +359,132 @@
   "referenceImages": {
     "title": "Images de référence (facultatif)",
     "description": "Ajoutez des références visuelles comme des captures d'écran ou des conceptions pour aider l'IA à comprendre vos exigences."
+  },
+  "qa": {
+    "tab": "QA",
+    "dashboard": {
+      "title": "Résultats de validation QA",
+      "subtitle": "Résumé de la validation d'assurance qualité",
+      "noData": "Aucune donnée QA disponible",
+      "noDataDescription": "Les résultats QA apparaîtront ici après les validations",
+      "loading": "Chargement des résultats QA...",
+      "errorLoading": "Échec du chargement des résultats QA",
+      "retry": "Réessayer",
+      "lastRun": "Dernière exécution",
+      "totalRuns": "Exécutions totales",
+      "viewDetails": "Voir les détails",
+      "viewReport": "Voir le rapport complet",
+      "collapseAll": "Tout réduire",
+      "expandAll": "Tout développer"
+    },
+    "status": {
+      "passed": "Réussi",
+      "failed": "Échoué",
+      "pending": "En attente",
+      "skipped": "Ignoré",
+      "running": "En cours",
+      "notRun": "Non exécuté"
+    },
+    "criteria": {
+      "title": "Critères d'acceptation",
+      "passed": "Réussis",
+      "failed": "Échoués",
+      "pending": "En attente",
+      "total": "Total",
+      "passRate": "Taux de réussite",
+      "noCriteria": "Aucun critère d'acceptation défini",
+      "viewAll": "Voir tous les critères",
+      "criterion": "Critère",
+      "result": "Résultat",
+      "details": "Détails",
+      "evidence": "Preuve",
+      "noEvidence": "Aucune preuve fournie"
+    },
+    "history": {
+      "title": "Historique de validation",
+      "iteration": "Itération",
+      "iterationLabel": "Itération {{number}}",
+      "timestamp": "Horodatage",
+      "duration": "Durée",
+      "result": "Résultat",
+      "noHistory": "Aucun historique de validation",
+      "noHistoryDescription": "Les exécutions de validation passées apparaîtront ici",
+      "viewIteration": "Voir les détails de l'itération",
+      "compareIterations": "Comparer les itérations",
+      "latestIteration": "Dernière",
+      "previousIterations": "Itérations précédentes"
+    },
+    "trends": {
+      "title": "Tendances",
+      "passRate": "Taux de réussite",
+      "passRateOverTime": "Taux de réussite dans le temps",
+      "criteriaProgress": "Progression des critères",
+      "iterationsToPass": "Itérations pour réussir",
+      "averageIterations": "Itérations moyennes",
+      "improvement": "Amélioration",
+      "regression": "Régression",
+      "stable": "Stable",
+      "noTrendData": "Données insuffisantes pour les tendances",
+      "chartLabel": "Tendance du taux de réussite QA"
+    },
+    "issues": {
+      "title": "Problèmes",
+      "issue": "Problème",
+      "severity": "Sévérité",
+      "description": "Description",
+      "location": "Emplacement",
+      "suggestion": "Suggestion",
+      "noIssues": "Aucun problème trouvé",
+      "issueCount": "{{count}} problème",
+      "issueCount_plural": "{{count}} problèmes",
+      "critical": "Critique",
+      "high": "Élevé",
+      "medium": "Moyen",
+      "low": "Faible",
+      "fixed": "Corrigé",
+      "unfixed": "Non corrigé"
+    },
+    "summary": {
+      "title": "Résumé",
+      "overallStatus": "Statut global",
+      "criteriaPassed": "Critères réussis",
+      "criteriaFailed": "Critères échoués",
+      "issuesFound": "Problèmes trouvés",
+      "fixAttempts": "Tentatives de correction",
+      "recommendation": "Recommandation",
+      "approved": "Approuvé",
+      "rejected": "Rejeté",
+      "needsReview": "Révision requise"
+    },
+    "actions": {
+      "runQA": "Lancer QA",
+      "rerunQA": "Relancer QA",
+      "approveTask": "Approuver la tâche",
+      "rejectTask": "Rejeter la tâche",
+      "requestFixes": "Demander des corrections",
+      "viewReport": "Voir le rapport",
+      "downloadReport": "Télécharger le rapport",
+      "copyReport": "Copier le rapport"
+    },
+    "filters": {
+      "all": "Tous",
+      "passedOnly": "Réussis uniquement",
+      "failedOnly": "Échoués uniquement",
+      "byIteration": "Par itération",
+      "bySeverity": "Par sévérité"
+    },
+    "report": {
+      "title": "Rapport QA",
+      "generatedAt": "Généré le",
+      "taskName": "Tâche",
+      "specId": "ID de spécification",
+      "sections": {
+        "overview": "Aperçu",
+        "criteria": "Critères d'acceptation",
+        "issues": "Problèmes",
+        "history": "Historique",
+        "recommendations": "Recommandations"
+      }
+    }
   }
 }
