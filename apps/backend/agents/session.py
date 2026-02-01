@@ -3,7 +3,7 @@ Agent Session Management
 ========================
 
 Handles running agent sessions and post-session processing including
-memory updates, recovery tracking, and Linear integration.
+memory updates, recovery tracking, Linear integration, and decision audit logging.
 """
 
 import logging
@@ -11,6 +11,14 @@ from pathlib import Path
 
 from claude_agent_sdk import ClaudeSDKClient
 from debug import debug, debug_detailed, debug_error, debug_section, debug_success
+from decision_audit import (
+    DecisionAuditLogger,
+    get_decision_logger,
+)
+from decision_audit.extractor import (
+    extract_decisions_from_response,
+    is_decision_extraction_enabled,
+)
 from insight_extractor import extract_session_insights
 from linear_updater import (
     linear_subtask_completed,
@@ -57,6 +65,7 @@ async def post_session_processing(
     linear_enabled: bool = False,
     status_manager: StatusManager | None = None,
     source_spec_dir: Path | None = None,
+    response_text: str | None = None,
 ) -> bool:
     """
     Process session results and update memory automatically.
@@ -74,6 +83,7 @@ async def post_session_processing(
         linear_enabled: Whether Linear integration is enabled
         status_manager: Optional status manager for ccstatusline
         source_spec_dir: Original spec directory (for syncing back from worktree)
+        response_text: Optional agent response text for decision extraction
 
     Returns:
         True if subtask was completed successfully
@@ -105,6 +115,38 @@ async def post_session_processing(
 
     print_key_value("Subtask status", subtask_status)
     print_key_value("New commits", str(new_commits))
+
+    # Extract decisions from response text (comprehensive capture)
+    # This runs in post-session processing to ensure reliable capture
+    # even if inline extraction during streaming was interrupted
+    if response_text and is_decision_extraction_enabled():
+        try:
+            decision_logger = get_decision_logger(spec_dir)
+            decision_logger.set_phase("post_session")
+            decision_logger.set_subtask(subtask_id)
+
+            decisions = await extract_decisions_from_response(
+                response_text=response_text,
+                subtask_id=subtask_id,
+                phase="post_session",
+                project_dir=project_dir,
+            )
+
+            if decisions and decision_logger.storage:
+                for decision in decisions:
+                    decision_logger.storage.add_entry(decision)
+
+                print_status(
+                    f"Post-session: extracted {len(decisions)} decision(s)",
+                    "info",
+                )
+                logger.info(
+                    f"Post-session decision extraction: {len(decisions)} decisions "
+                    f"for subtask {subtask_id}"
+                )
+        except Exception as e:
+            # Decision extraction failure should never block session processing
+            logger.debug(f"Post-session decision extraction failed (non-blocking): {e}")
 
     if subtask_status == "completed":
         # Success! Record the attempt and good commit
@@ -317,6 +359,8 @@ async def run_agent_session(
     spec_dir: Path,
     verbose: bool = False,
     phase: LogPhase = LogPhase.CODING,
+    subtask_id: str | None = None,
+    project_dir: Path | None = None,
 ) -> tuple[str, str]:
     """
     Run a single agent session using Claude Agent SDK.
@@ -327,6 +371,8 @@ async def run_agent_session(
         spec_dir: Spec directory path
         verbose: Whether to show detailed output
         phase: Current execution phase for logging
+        subtask_id: Current subtask ID for decision logging
+        project_dir: Project directory for decision extraction
 
     Returns:
         (status, response_text) where status is:
@@ -350,6 +396,18 @@ async def run_agent_session(
     current_tool = None
     message_count = 0
     tool_count = 0
+
+    # Initialize decision logger for this session
+    decision_logger: DecisionAuditLogger | None = None
+    try:
+        decision_logger = get_decision_logger(spec_dir)
+        decision_logger.set_phase(phase.value)
+        if subtask_id:
+            decision_logger.set_subtask(subtask_id)
+        debug("session", "Decision logger initialized", subtask_id=subtask_id)
+    except Exception as e:
+        logger.debug(f"Decision logger initialization failed (non-blocking): {e}")
+        decision_logger = None
 
     try:
         # Send the query
@@ -519,6 +577,33 @@ async def run_agent_session(
                         current_tool = None
 
         print("\n" + "-" * 70 + "\n")
+
+        # Extract decisions from the response (non-blocking, failure-safe)
+        if response_text and is_decision_extraction_enabled():
+            try:
+                decisions = await extract_decisions_from_response(
+                    response_text=response_text,
+                    subtask_id=subtask_id,
+                    phase=phase.value,
+                    project_dir=project_dir,
+                )
+                if decisions and decision_logger and decision_logger.storage:
+                    # Log extracted decisions to the decision audit logger
+                    for decision in decisions:
+                        decision_logger.storage.add_entry(decision)
+                    debug(
+                        "session",
+                        f"Extracted and logged {len(decisions)} decisions",
+                        subtask_id=subtask_id,
+                        phase=phase.value,
+                    )
+                    print_status(
+                        f"Extracted {len(decisions)} decision(s) from agent response",
+                        "info",
+                    )
+            except Exception as e:
+                # Decision extraction failure should never block the session
+                logger.debug(f"Decision extraction failed (non-blocking): {e}")
 
         # Check if build is complete
         if is_build_complete(spec_dir):

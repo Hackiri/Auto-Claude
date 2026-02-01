@@ -9,7 +9,12 @@
  * - task/execution-handlers.ts - Start, Stop, Review, Status management, Recovery
  * - task/worktree-handlers.ts - Worktree management (status, diff, merge, discard, list)
  * - task/logs-handlers.ts - Task logs management (get, watch, unwatch)
+ * - task/decision-handlers.ts - Decision audit trail (getDecisions, annotateDecision)
  * - task/shared.ts - Shared utilities and helper functions
+ *
+ * Decision Audit Trail:
+ * - getDecisions: Load decision audit trail from spec directory
+ * - annotateDecision: Mark decisions as good/bad patterns for memory learning
  *
  * This modular structure improves:
  * - Code maintainability and readability

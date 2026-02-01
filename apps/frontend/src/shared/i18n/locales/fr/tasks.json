@@ -359,5 +359,89 @@
   "referenceImages": {
     "title": "Images de référence (facultatif)",
     "description": "Ajoutez des références visuelles comme des captures d'écran ou des conceptions pour aider l'IA à comprendre vos exigences."
+  },
+  "decisions": {
+    "title": "Décisions",
+    "tab": "Décisions",
+    "empty": {
+      "title": "Aucune décision enregistrée",
+      "description": "Les décisions de l'agent apparaîtront ici au fur et à mesure de l'avancement de la tâche"
+    },
+    "loading": "Chargement des décisions...",
+    "errorLoading": "Échec du chargement des décisions",
+    "retry": "Réessayer",
+    "count": "{{count}} décision",
+    "count_plural": "{{count}} décisions",
+    "types": {
+      "approach": "Approche",
+      "implementation": "Implémentation",
+      "architecture": "Architecture",
+      "tooling": "Outillage",
+      "tradeoff": "Compromis",
+      "recovery": "Récupération",
+      "other": "Autre"
+    },
+    "labels": {
+      "reasoning": "Raisonnement",
+      "alternatives": "Alternatives envisagées",
+      "context": "Contexte",
+      "outcome": "Résultat",
+      "timestamp": "Horodatage",
+      "phase": "Phase",
+      "confidence": "Confiance"
+    },
+    "confidence": {
+      "high": "Confiance élevée",
+      "medium": "Confiance moyenne",
+      "low": "Confiance faible"
+    },
+    "context": {
+      "graphitiQuery": "Requête Graphiti",
+      "fileRead": "Lecture de fichier",
+      "codeAnalysis": "Analyse de code",
+      "userInput": "Entrée utilisateur",
+      "memoryRecall": "Rappel de mémoire"
+    },
+    "filter": {
+      "title": "Filtrer les décisions",
+      "byType": "Par type",
+      "byPhase": "Par phase",
+      "byConfidence": "Par confiance",
+      "all": "Toutes les décisions",
+      "clearFilters": "Effacer les filtres",
+      "noResults": "Aucune décision ne correspond à vos filtres"
+    },
+    "annotations": {
+      "title": "Annotations",
+      "addAnnotation": "Ajouter une annotation",
+      "editAnnotation": "Modifier l'annotation",
+      "deleteAnnotation": "Supprimer l'annotation",
+      "placeholder": "Ajoutez une note sur cette décision...",
+      "markGoodPattern": "Marquer comme bon modèle",
+      "markBadPattern": "Marquer comme mauvais modèle",
+      "removePattern": "Retirer la marque de modèle",
+      "goodPattern": "Bon modèle",
+      "badPattern": "Mauvais modèle",
+      "learnFromThis": "Apprendre de ceci",
+      "saved": "Annotation enregistrée",
+      "deleted": "Annotation supprimée",
+      "saveFailed": "Échec de l'enregistrement de l'annotation"
+    },
+    "actions": {
+      "expand": "Développer la décision",
+      "collapse": "Réduire la décision",
+      "expandAll": "Tout développer",
+      "collapseAll": "Tout réduire",
+      "copyToClipboard": "Copier dans le presse-papiers",
+      "copied": "Copié dans le presse-papiers",
+      "export": "Exporter les décisions",
+      "exportJson": "Exporter en JSON",
+      "exportMarkdown": "Exporter en Markdown"
+    },
+    "tooltips": {
+      "viewContext": "Voir le contexte qui a influencé cette décision",
+      "viewAlternatives": "Voir les alternatives envisagées",
+      "patternLearning": "Marquer les modèles aide l'IA à apprendre de vos retours"
+    }
   }
 }

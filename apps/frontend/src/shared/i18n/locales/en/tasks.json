@@ -360,5 +360,89 @@
   "referenceImages": {
     "title": "Reference Images (optional)",
     "description": "Add visual references like screenshots or designs to help the AI understand your requirements."
+  },
+  "decisions": {
+    "title": "Decisions",
+    "tab": "Decisions",
+    "empty": {
+      "title": "No decisions recorded",
+      "description": "Agent decisions will appear here as the task progresses"
+    },
+    "loading": "Loading decisions...",
+    "errorLoading": "Failed to load decisions",
+    "retry": "Retry",
+    "count": "{{count}} decision",
+    "count_plural": "{{count}} decisions",
+    "types": {
+      "approach": "Approach",
+      "implementation": "Implementation",
+      "architecture": "Architecture",
+      "tooling": "Tooling",
+      "tradeoff": "Trade-off",
+      "recovery": "Recovery",
+      "other": "Other"
+    },
+    "labels": {
+      "reasoning": "Reasoning",
+      "alternatives": "Alternatives Considered",
+      "context": "Context",
+      "outcome": "Outcome",
+      "timestamp": "Timestamp",
+      "phase": "Phase",
+      "confidence": "Confidence"
+    },
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence"
+    },
+    "context": {
+      "graphitiQuery": "Graphiti Query",
+      "fileRead": "File Read",
+      "codeAnalysis": "Code Analysis",
+      "userInput": "User Input",
+      "memoryRecall": "Memory Recall"
+    },
+    "filter": {
+      "title": "Filter Decisions",
+      "byType": "By type",
+      "byPhase": "By phase",
+      "byConfidence": "By confidence",
+      "all": "All decisions",
+      "clearFilters": "Clear filters",
+      "noResults": "No decisions match your filters"
+    },
+    "annotations": {
+      "title": "Annotations",
+      "addAnnotation": "Add annotation",
+      "editAnnotation": "Edit annotation",
+      "deleteAnnotation": "Delete annotation",
+      "placeholder": "Add a note about this decision...",
+      "markGoodPattern": "Mark as good pattern",
+      "markBadPattern": "Mark as bad pattern",
+      "removePattern": "Remove pattern mark",
+      "goodPattern": "Good pattern",
+      "badPattern": "Bad pattern",
+      "learnFromThis": "Learn from this",
+      "saved": "Annotation saved",
+      "deleted": "Annotation deleted",
+      "saveFailed": "Failed to save annotation"
+    },
+    "actions": {
+      "expand": "Expand decision",
+      "collapse": "Collapse decision",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
+      "copyToClipboard": "Copy to clipboard",
+      "copied": "Copied to clipboard",
+      "export": "Export decisions",
+      "exportJson": "Export as JSON",
+      "exportMarkdown": "Export as Markdown"
+    },
+    "tooltips": {
+      "viewContext": "View the context that influenced this decision",
+      "viewAlternatives": "See what alternatives were considered",
+      "patternLearning": "Marking patterns helps the AI learn from your feedback"
+    }
   }
 }

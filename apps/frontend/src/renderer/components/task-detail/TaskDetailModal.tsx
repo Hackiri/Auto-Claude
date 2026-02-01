@@ -29,7 +29,8 @@ import {
   Pencil,
   X,
   GitPullRequest,
-  GitMerge
+  GitMerge,
+  Brain
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { calculateProgress } from '../../lib/utils';
@@ -44,6 +45,7 @@ import { TaskLogs } from './TaskLogs';
 import { TaskFiles } from './TaskFiles';
 import { TaskReview } from './TaskReview';
 import { TaskMergeHistory } from './TaskMergeHistory';
+import { TaskDecisions } from './TaskDecisions';
 import type { Task, WorktreeCreatePROptions } from '../../../shared/types';
 
 interface TaskDetailModalProps {
@@ -492,6 +494,13 @@ function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals,
                     <GitMerge className="h-4 w-4 mr-1.5 inline-block" />
                     Merge History
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="decisions"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2.5 text-sm"
+                  >
+                    <Brain className="h-4 w-4 mr-1.5 inline-block" />
+                    {t('tasks:decisions.tab', 'Decisions')}
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab */}
@@ -580,6 +589,11 @@ function TaskDetailModalContent({ open, task, onOpenChange, onSwitchToTerminals,
                 {/* Merge History Tab */}
                 <TabsContent value="merge-history" className="flex-1 min-h-0 overflow-hidden mt-0">
                   <TaskMergeHistory task={task} />
+                </TabsContent>
+
+                {/* Decisions Tab */}
+                <TabsContent value="decisions" className="flex-1 min-h-0 overflow-hidden mt-0">
+                  <TaskDecisions task={task} />
                 </TabsContent>
               </Tabs>
             </div>
