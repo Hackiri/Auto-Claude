@@ -50,7 +50,11 @@
     "title": "Journaux de Session",
     "streaming": "En direct",
     "noLogs": "Pas encore de journaux",
-    "noLogsHint": "Les journaux apparaitront ici lorsque la session demarrera"
+    "noLogsHint": "Les journaux apparaitront ici lorsque la session demarrera",
+    "collapse": "Reduire",
+    "expand": "Agrandir",
+    "entriesFiltered": "{{filtered}} / {{total}} entrees",
+    "entriesTotal": "{{count}} entrees"
   },
   "empty": {
     "noSessions": "Aucune Session Active",

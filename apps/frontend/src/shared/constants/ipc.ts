@@ -599,5 +599,6 @@ export const IPC_CHANNELS = {
   SESSION_HISTORY_LIST: 'sessionHistory:list',        // List all historical sessions for a project
   SESSION_HISTORY_LOAD: 'sessionHistory:load',        // Load a single session by ID
   SESSION_HISTORY_DELETE: 'sessionHistory:delete',    // Delete a session from history
+  SESSION_HISTORY_SAVE: 'sessionHistory:save',         // Save a completed session to history
   SESSION_HISTORY_METRICS: 'sessionHistory:metrics'   // Get aggregated metrics for analytics
 } as const;

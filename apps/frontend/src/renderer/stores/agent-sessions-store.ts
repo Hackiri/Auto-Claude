@@ -148,7 +148,7 @@ function autoPersistIfTerminal(session: AgentSession, status: SessionStatus): vo
   }
 
   debugLog('[AgentSessionsStore] Auto-persisting session to history:', session.id, status);
-  persistCompletedSession(session.projectId, session.id).catch((err) => {
+  persistCompletedSession(session.projectId, session).catch((err) => {
     debugLog('[AgentSessionsStore] Auto-persist failed:', err);
   });
 }

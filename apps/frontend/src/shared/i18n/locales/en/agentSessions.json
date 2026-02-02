@@ -50,7 +50,11 @@
     "title": "Session Logs",
     "streaming": "Live",
     "noLogs": "No logs yet",
-    "noLogsHint": "Logs will appear here when the session starts"
+    "noLogsHint": "Logs will appear here when the session starts",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "entriesFiltered": "{{filtered}} / {{total}} entries",
+    "entriesTotal": "{{count}} entries"
   },
   "empty": {
     "noSessions": "No Active Sessions",

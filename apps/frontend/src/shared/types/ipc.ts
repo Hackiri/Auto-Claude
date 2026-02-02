@@ -900,6 +900,7 @@ export interface ElectronAPI {
   // Session History operations (agent session persistence & analytics)
   listSessionHistory: (projectId: string) => Promise<IPCResult<import('./agent-session').SessionHistoryEntry[]>>;
   loadSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult<import('./agent-session').SessionHistoryEntry>>;
+  saveSessionHistory: (projectId: string, entry: import('./agent-session').SessionHistoryEntry) => Promise<IPCResult>;
   deleteSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult>;
   getSessionMetrics: (projectId: string) => Promise<IPCResult<import('./agent-session').SessionMetrics>>;
 

@@ -139,8 +139,8 @@ export function SessionLogViewer({ sessionId }: SessionLogViewerProps) {
           <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-t border-border text-xs">
             <span className="text-muted-foreground">
               {hasActiveFilter
-                ? `${filteredCount} / ${logCount} entries`
-                : `${logCount} entries`}
+                ? t('logs.entriesFiltered', { filtered: filteredCount, total: logCount })
+                : t('logs.entriesTotal', { count: logCount })}
             </span>
             <div className="flex items-center gap-1">
               <LogExport logs={displayLogs} sessionId={sessionId} />
@@ -153,12 +153,12 @@ export function SessionLogViewer({ sessionId }: SessionLogViewerProps) {
                 {isMaximized ? (
                   <>
                     <Minimize2 className="h-3 w-3" />
-                    Collapse
+                    {t('logs.collapse')}
                   </>
                 ) : (
                   <>
                     <Maximize2 className="h-3 w-3" />
-                    Expand
+                    {t('logs.expand')}
                   </>
                 )}
               </Button>

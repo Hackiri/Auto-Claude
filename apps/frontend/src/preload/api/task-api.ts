@@ -93,6 +93,7 @@ export interface TaskAPI {
   // Session History (agent session persistence & analytics)
   listSessionHistory: (projectId: string) => Promise<IPCResult<import('../../shared/types/agent-session').SessionHistoryEntry[]>>;
   loadSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult<import('../../shared/types/agent-session').SessionHistoryEntry>>;
+  saveSessionHistory: (projectId: string, entry: import('../../shared/types/agent-session').SessionHistoryEntry) => Promise<IPCResult>;
   deleteSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult>;
   getSessionMetrics: (projectId: string) => Promise<IPCResult<import('../../shared/types/agent-session').SessionMetrics>>;
 }
@@ -334,6 +335,9 @@ export const createTaskAPI = (): TaskAPI => ({
 
   loadSessionHistory: (projectId: string, sessionId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_LOAD, projectId, sessionId),
+
+  saveSessionHistory: (projectId: string, entry: import('../../shared/types/agent-session').SessionHistoryEntry) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_SAVE, projectId, entry),
 
   deleteSessionHistory: (projectId: string, sessionId: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_DELETE, projectId, sessionId),

@@ -5,7 +5,7 @@
 
 import { ipcMain } from 'electron';
 import path from 'path';
-import { readdir, readFile, unlink, stat } from 'fs/promises';
+import { mkdir, readdir, readFile, rename, unlink, stat, writeFile } from 'fs/promises';
 import { IPC_CHANNELS } from '../../shared/constants';
 import type { IPCResult } from '../../shared/types';
 import type { SessionHistoryEntry, SessionMetrics } from '../../shared/types/agent-session';
@@ -100,6 +100,46 @@ function computeMetrics(sessions: SessionHistoryEntry[]): SessionMetrics {
  * Register all session history IPC handlers
  */
 export function registerSessionHistoryHandlers(): void {
+  // Save a completed session to history
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_HISTORY_SAVE,
+    async (_event, projectId: string, sessionData: SessionHistoryEntry): Promise<IPCResult> => {
+      debugLog('saveSessionHistory called', { projectId, sessionId: sessionData?.id });
+
+      const project = projectStore.getProject(projectId);
+      if (!project) {
+        return { success: false, error: 'Project not found' };
+      }
+
+      if (!sessionData?.id) {
+        return { success: false, error: 'Invalid session data: missing id' };
+      }
+
+      try {
+        const historyDir = getSessionHistoryDir(project.path);
+
+        // Ensure directory exists
+        await mkdir(historyDir, { recursive: true });
+
+        const filePath = path.join(historyDir, `${sessionData.id}.json`);
+        const tempPath = `${filePath}.tmp`;
+
+        // Atomic write: write to temp file, then rename
+        await writeFile(tempPath, JSON.stringify(sessionData, null, 2), 'utf-8');
+        await rename(tempPath, filePath);
+
+        debugLog(`Saved session history: ${sessionData.id}`);
+        return { success: true };
+      } catch (error) {
+        debugLog('Failed to save session', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to save session',
+        };
+      }
+    }
+  );
+
   // List all historical sessions for a project
   ipcMain.handle(
     IPC_CHANNELS.SESSION_HISTORY_LIST,

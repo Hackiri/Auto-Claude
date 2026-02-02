@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import type {
   SessionHistoryEntry,
   SessionMetrics,
-  SessionStatus
+  SessionStatus,
+  AgentSession,
+  LogSummary,
+  PhaseDuration
 } from '../../shared/types';
 import { debugLog } from '../../shared/utils/debug-logger';
 
@@ -212,16 +215,67 @@ export async function deleteSessionHistoryEntry(
   }
 }
 
+/**
+ * Build a SessionHistoryEntry from an AgentSession and persist it to disk
+ */
+export function buildHistoryEntry(session: AgentSession): SessionHistoryEntry {
+  const now = new Date().toISOString();
+  const createdAt = session.createdAt instanceof Date ? session.createdAt.toISOString() : String(session.createdAt);
+  const startedAt = session.startedAt instanceof Date ? session.startedAt.toISOString() : session.startedAt ? String(session.startedAt) : undefined;
+  const completedAt = session.completedAt instanceof Date ? session.completedAt.toISOString() : session.completedAt ? String(session.completedAt) : undefined;
+
+  const durationMs = startedAt && completedAt
+    ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
+    : 0;
+
+  // Extract phase durations from plan if available
+  const phaseDurations: PhaseDuration[] = [];
+
+  // Compute subtask counts from plan phases
+  const allSubtasks = session.plan?.phases?.flatMap(p => p.subtasks ?? []) ?? [];
+  const subtaskTotal = allSubtasks.length;
+  const subtaskCompleted = allSubtasks.filter(
+    (s) => s.status === 'completed'
+  ).length;
+
+  const logSummary: LogSummary = {
+    totalEntries: 0,
+    errorCount: 0,
+    warningCount: 0,
+    phaseTransitions: 0,
+  };
+
+  return {
+    id: session.id,
+    specId: session.specId,
+    projectId: session.projectId,
+    title: session.title,
+    status: session.status,
+    success: session.status === 'completed',
+    createdAt,
+    startedAt,
+    completedAt,
+    durationMs,
+    phaseDurations,
+    overallProgress: session.overallProgress,
+    subtaskTotal,
+    subtaskCompleted,
+    logSummary,
+    updatedAt: now,
+  };
+}
+
 export async function persistCompletedSession(
   projectId: string,
-  sessionId: string
+  session: AgentSession
 ): Promise<SessionHistoryEntry | null> {
   try {
-    const result = await window.electronAPI.loadSessionHistory(projectId, sessionId);
+    const entry = buildHistoryEntry(session);
+    const result = await window.electronAPI.saveSessionHistory(projectId, entry);
     if (result.success) {
       // Refresh the full list after persisting
       await loadSessionHistory(projectId);
-      return result.data ?? null;
+      return entry;
     }
     debugLog('[SessionHistoryStore] Failed to persist session:', result.error);
     return null;
