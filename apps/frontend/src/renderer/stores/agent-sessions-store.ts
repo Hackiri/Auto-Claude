@@ -10,6 +10,7 @@ import type {
 } from '../../shared/types';
 import { taskStatusToSessionStatus, isActiveSession, isArchivedSession } from '../../shared/types/agent-session';
 import { debugLog } from '../../shared/utils/debug-logger';
+import { persistCompletedSession } from './session-history-store';
 
 interface AgentSessionsState {
   sessions: AgentSession[];
@@ -132,6 +133,23 @@ function extractSessionTasks(plan: ImplementationPlan): SessionTask[] {
   return tasks;
 }
 
+/**
+ * Persist a session to history storage when it reaches a terminal status.
+ * Fires asynchronously without blocking the store update.
+ */
+function autoPersistIfTerminal(session: AgentSession, status: SessionStatus): void {
+  if (status !== 'completed' && status !== 'failed') return;
+  if (!session.projectId) {
+    debugLog('[AgentSessionsStore] Cannot auto-persist session without projectId:', session.id);
+    return;
+  }
+
+  debugLog('[AgentSessionsStore] Auto-persisting session to history:', session.id, status);
+  persistCompletedSession(session.projectId, session.id).catch((err) => {
+    debugLog('[AgentSessionsStore] Auto-persist failed:', err);
+  });
+}
+
 export const useAgentSessionsStore = create<AgentSessionsState>((set, get) => ({
   sessions: [],
   selectedSessionId: null,
@@ -176,47 +194,52 @@ export const useAgentSessionsStore = create<AgentSessionsState>((set, get) => ({
       };
     }),
 
-  updateSessionPhase: (sessionId, phase, progress) =>
-    set((state) => {
-      const index = findSessionIndex(state.sessions, sessionId);
-      if (index === -1) return state;
+  updateSessionPhase: (sessionId, phase, progress) => {
+    const state = get();
+    const index = findSessionIndex(state.sessions, sessionId);
+    if (index === -1) return;
 
-      return {
-        sessions: updateSessionAtIndex(state.sessions, index, (s) => {
-          // Determine if session is now running based on phase
-          const isRunning = !['idle', 'complete', 'failed'].includes(phase);
-          const newStatus: SessionStatus = phase === 'complete'
-            ? 'completed'
-            : phase === 'failed'
-              ? 'failed'
-              : isRunning
-                ? 'running'
-                : s.status;
+    const session = state.sessions[index];
+    const isRunning = !['idle', 'complete', 'failed'].includes(phase);
+    const newStatus: SessionStatus = phase === 'complete'
+      ? 'completed'
+      : phase === 'failed'
+        ? 'failed'
+        : isRunning
+          ? 'running'
+          : session.status;
 
-          return {
-            ...s,
-            currentPhase: phase,
-            phaseProgress: progress,
-            status: newStatus,
-            logStreamActive: isRunning
-          };
-        })
-      };
-    }),
+    set({
+      sessions: updateSessionAtIndex(state.sessions, index, (s) => ({
+        ...s,
+        currentPhase: phase,
+        phaseProgress: progress,
+        status: newStatus,
+        completedAt: (newStatus === 'completed' || newStatus === 'failed') ? (s.completedAt ?? new Date()) : s.completedAt,
+        logStreamActive: isRunning
+      }))
+    });
 
-  updateSessionStatus: (sessionId, status) =>
-    set((state) => {
-      const index = findSessionIndex(state.sessions, sessionId);
-      if (index === -1) return state;
+    autoPersistIfTerminal(session, newStatus);
+  },
 
-      return {
-        sessions: updateSessionAtIndex(state.sessions, index, (s) => ({
-          ...s,
-          status,
-          logStreamActive: status === 'running'
-        }))
-      };
-    }),
+  updateSessionStatus: (sessionId, status) => {
+    const state = get();
+    const index = findSessionIndex(state.sessions, sessionId);
+    if (index === -1) return;
+
+    const session = state.sessions[index];
+    set({
+      sessions: updateSessionAtIndex(state.sessions, index, (s) => ({
+        ...s,
+        status,
+        completedAt: (status === 'completed' || status === 'failed') ? (s.completedAt ?? new Date()) : s.completedAt,
+        logStreamActive: status === 'running'
+      }))
+    });
+
+    autoPersistIfTerminal(session, status);
+  },
 
   archiveSession: (sessionId) =>
     set((state) => {
