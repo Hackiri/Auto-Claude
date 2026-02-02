@@ -15,7 +15,7 @@ import { persistCompletedSession } from './session-history-store';
 interface AgentSessionsState {
   sessions: AgentSession[];
   selectedSessionId: string | null;
-  activeTab: 'active' | 'archived';
+  activeTab: 'active' | 'archived' | 'history';
   sessionLogs: Map<string, TaskLogEntry[]>;
   isLoading: boolean;
 
@@ -28,7 +28,7 @@ interface AgentSessionsState {
   updateSessionStatus: (sessionId: string, status: SessionStatus) => void;
   archiveSession: (sessionId: string) => void;
   selectSession: (sessionId: string | null) => void;
-  setActiveTab: (tab: 'active' | 'archived') => void;
+  setActiveTab: (tab: 'active' | 'archived' | 'history') => void;
   appendLogs: (sessionId: string, logs: TaskLogEntry[]) => void;
   clearSessionLogs: (sessionId: string) => void;
   setLoading: (loading: boolean) => void;

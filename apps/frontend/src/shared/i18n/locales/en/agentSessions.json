@@ -4,7 +4,8 @@
     "active": "Active",
     "archived": "Archived",
     "activeCount": "Active ({{count}})",
-    "archivedCount": "Archived ({{count}})"
+    "archivedCount": "Archived ({{count}})",
+    "history": "History"
   },
   "status": {
     "pending": "Pending",
@@ -53,7 +54,14 @@
     "noSessions": "No Active Sessions",
     "noSessionsHint": "Start a task from the Kanban board to create an agent session",
     "noArchivedSessions": "No Archived Sessions",
-    "noArchivedSessionsHint": "Completed sessions will appear here after archiving"
+    "noArchivedSessionsHint": "Completed sessions will appear here after archiving",
+    "noHistorySessions": "No Session History",
+    "noHistorySessionsHint": "Completed and failed sessions will be saved here automatically"
+  },
+  "history": {
+    "searchPlaceholder": "Search history...",
+    "loading": "Loading history...",
+    "subtasks": "subtasks"
   },
   "actions": {
     "archive": "Archive",

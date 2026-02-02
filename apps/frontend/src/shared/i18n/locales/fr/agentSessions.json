@@ -4,7 +4,8 @@
     "active": "Actives",
     "archived": "Archivees",
     "activeCount": "Actives ({{count}})",
-    "archivedCount": "Archivees ({{count}})"
+    "archivedCount": "Archivees ({{count}})",
+    "history": "Historique"
   },
   "status": {
     "pending": "En attente",
@@ -53,7 +54,14 @@
     "noSessions": "Aucune Session Active",
     "noSessionsHint": "Demarrez une tache depuis le tableau Kanban pour creer une session d'agent",
     "noArchivedSessions": "Aucune Session Archivee",
-    "noArchivedSessionsHint": "Les sessions terminees apparaitront ici apres archivage"
+    "noArchivedSessionsHint": "Les sessions terminees apparaitront ici apres archivage",
+    "noHistorySessions": "Aucun Historique",
+    "noHistorySessionsHint": "Les sessions terminees et echouees seront sauvegardees ici automatiquement"
+  },
+  "history": {
+    "searchPlaceholder": "Rechercher dans l'historique...",
+    "loading": "Chargement de l'historique...",
+    "subtasks": "sous-taches"
   },
   "actions": {
     "archive": "Archiver",
