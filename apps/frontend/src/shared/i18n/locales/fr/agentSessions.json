@@ -5,7 +5,9 @@
     "archived": "Archivees",
     "activeCount": "Actives ({{count}})",
     "archivedCount": "Archivees ({{count}})",
-    "history": "Historique"
+    "history": "Historique",
+    "sessions": "Sessions",
+    "analytics": "Analytique"
   },
   "status": {
     "pending": "En attente",
