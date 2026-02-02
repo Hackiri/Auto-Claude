@@ -897,6 +897,12 @@ export interface ElectronAPI {
   getSources: () => Promise<IPCResult<ScreenshotSource[]> & { devMode?: boolean }>;
   capture: (options: { sourceId: string }) => Promise<IPCResult<string>>;
 
+  // Session History operations (agent session persistence & analytics)
+  listSessionHistory: (projectId: string) => Promise<IPCResult<import('./agent-session').SessionHistoryEntry[]>>;
+  loadSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult<import('./agent-session').SessionHistoryEntry>>;
+  deleteSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult>;
+  getSessionMetrics: (projectId: string) => Promise<IPCResult<import('./agent-session').SessionMetrics>>;
+
   // Queue Routing API (rate limit recovery)
   queue: import('../../preload/api/queue-api').QueueAPI;
 }

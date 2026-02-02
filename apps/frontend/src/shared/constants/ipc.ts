@@ -593,5 +593,11 @@ export const IPC_CHANNELS = {
   // Merge History operations
   MERGE_HISTORY_GET: 'mergeHistory:get',              // Get all merge history entries
   MERGE_HISTORY_GET_DETAILS: 'mergeHistory:getDetails', // Get details for a specific merge
-  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback'     // Rollback a specific merge
+  MERGE_HISTORY_ROLLBACK: 'mergeHistory:rollback',    // Rollback a specific merge
+
+  // Session History operations (agent session persistence & analytics)
+  SESSION_HISTORY_LIST: 'sessionHistory:list',        // List all historical sessions for a project
+  SESSION_HISTORY_LOAD: 'sessionHistory:load',        // Load a single session by ID
+  SESSION_HISTORY_DELETE: 'sessionHistory:delete',    // Delete a session from history
+  SESSION_HISTORY_METRICS: 'sessionHistory:metrics'   // Get aggregated metrics for analytics
 } as const;

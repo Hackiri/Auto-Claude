@@ -89,6 +89,12 @@ export interface TaskAPI {
   // Merge History
   getMergeHistory: (projectId: string) => Promise<IPCResult<MergeHistoryEntry[]>>;
   rollbackMerge: (projectId: string, mergeId: string) => Promise<IPCResult<{ message: string }>>;
+
+  // Session History (agent session persistence & analytics)
+  listSessionHistory: (projectId: string) => Promise<IPCResult<import('../../shared/types/agent-session').SessionHistoryEntry[]>>;
+  loadSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult<import('../../shared/types/agent-session').SessionHistoryEntry>>;
+  deleteSessionHistory: (projectId: string, sessionId: string) => Promise<IPCResult>;
+  getSessionMetrics: (projectId: string) => Promise<IPCResult<import('../../shared/types/agent-session').SessionMetrics>>;
 }
 
 export const createTaskAPI = (): TaskAPI => ({
@@ -320,5 +326,18 @@ export const createTaskAPI = (): TaskAPI => ({
     ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_GET, projectId),
 
   rollbackMerge: (projectId: string, mergeId: string): Promise<IPCResult<{ message: string }>> =>
-    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId)
+    ipcRenderer.invoke(IPC_CHANNELS.MERGE_HISTORY_ROLLBACK, projectId, mergeId),
+
+  // Session History
+  listSessionHistory: (projectId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_LIST, projectId),
+
+  loadSessionHistory: (projectId: string, sessionId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_LOAD, projectId, sessionId),
+
+  deleteSessionHistory: (projectId: string, sessionId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_DELETE, projectId, sessionId),
+
+  getSessionMetrics: (projectId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SESSION_HISTORY_METRICS, projectId)
 });
