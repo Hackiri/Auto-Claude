@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { BarChart3, TrendingUp, PieChart, Layers } from 'lucide-react';
 import { useSessionAnalytics } from '../../../hooks/useSessionAnalytics';
 import { cn } from '../../../lib/utils';
+import { ExecutionTimeChart } from './ExecutionTimeChart';
+import { SuccessRateChart } from './SuccessRateChart';
 
 interface ChartPanelProps {
   title: string;
@@ -89,7 +91,7 @@ function ChartPlaceholder() {
 
 export function AnalyticsDashboard() {
   const { t } = useTranslation('agentSessions');
-  const { hasData } = useSessionAnalytics();
+  const { hasData, executionTimeData, successRateData } = useSessionAnalytics();
 
   if (!hasData) {
     return <EmptyAnalyticsState />;
@@ -109,7 +111,7 @@ export function AnalyticsDashboard() {
           description={t('analytics.executionTimeDesc')}
           icon={<BarChart3 className="h-4 w-4" />}
         >
-          <ChartPlaceholder />
+          <ExecutionTimeChart data={executionTimeData} />
         </ChartPanel>
 
         <ChartPanel
@@ -117,7 +119,7 @@ export function AnalyticsDashboard() {
           description={t('analytics.successRateDesc')}
           icon={<PieChart className="h-4 w-4" />}
         >
-          <ChartPlaceholder />
+          <SuccessRateChart data={successRateData} />
         </ChartPanel>
 
         <ChartPanel
