@@ -16,7 +16,6 @@ if str(_PARENT_DIR) not in sys.path:
 
 from merge.conflict_monitor import ConflictMonitor, ConflictReport
 from merge.conflict_predictor import ConflictPredictor, PredictionResult
-from merge.resolution_advisor import ResolutionAdvisor
 from ui import (
     Icons,
     icon,
@@ -134,14 +133,18 @@ def _print_advice(result: PredictionResult) -> None:
     if not result.has_conflicts:
         return
 
-    advisor = ResolutionAdvisor()
-    advices = advisor.advise(result)
-    if advices:
-        print(f"\n  {icon(Icons.LIGHTNING)} Resolution Advice:")
-        for advice in advices:
-            print(f"    • {advice.file_path}: {advice.strategy.value} - {advice.rationale}")
-            if advice.recommended_action:
-                print(f"      Action: {advice.recommended_action}")
+    print(f"\n  {icon(Icons.LIGHTNING)} Resolution Advice:")
+    for conflict in result.conflicts:
+        severity = conflict.severity.value
+        if severity in ("critical", "high"):
+            action = "Manual review recommended"
+        elif conflict.needs_rebase if hasattr(conflict, "needs_rebase") else False:
+            action = "Rebase recommended"
+        else:
+            action = "Monitor and resolve before merge"
+        print(f"    • {conflict.file_path} [{severity}]: {action}")
+        if conflict.description:
+            print(f"      {conflict.description}")
 
 
 def handle_conflict_check(project_dir: Path, spec_name: str) -> None:

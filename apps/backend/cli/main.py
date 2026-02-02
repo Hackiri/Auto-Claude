@@ -384,6 +384,11 @@ def _run_cli() -> None:
         handle_batch_cleanup_command(str(project_dir), dry_run=not args.no_dry_run)
         return
 
+    # Handle conflict-status (doesn't require --spec)
+    if args.conflict_status:
+        handle_conflict_status(project_dir)
+        return
+
     # Require --spec if not listing
     if not args.spec:
         print_banner()
@@ -417,13 +422,9 @@ def _run_cli() -> None:
         },
     )
 
-    # Handle conflict analysis commands
+    # Handle conflict check (requires --spec for spec_dir)
     if args.conflict_check:
         handle_conflict_check(project_dir, spec_dir.name)
-        return
-
-    if args.conflict_status:
-        handle_conflict_status(project_dir)
         return
 
     # Handle build management commands
