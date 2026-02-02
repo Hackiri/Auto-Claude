@@ -18,6 +18,7 @@ interface AgentSessionsState {
   activeTab: 'active' | 'archived' | 'history';
   sessionLogs: Map<string, TaskLogEntry[]>;
   isLoading: boolean;
+  comparisonSessionIds: [string, string] | null;
 
   // Actions
   setSessions: (sessions: AgentSession[]) => void;
@@ -33,6 +34,8 @@ interface AgentSessionsState {
   clearSessionLogs: (sessionId: string) => void;
   setLoading: (loading: boolean) => void;
   clearSessions: () => void;
+  toggleComparisonSession: (sessionId: string) => void;
+  clearComparison: () => void;
 
   // Sync from tasks
   syncFromTasks: (tasks: Task[]) => void;
@@ -156,6 +159,7 @@ export const useAgentSessionsStore = create<AgentSessionsState>((set, get) => ({
   activeTab: 'active',
   sessionLogs: new Map(),
   isLoading: false,
+  comparisonSessionIds: null,
 
   setSessions: (sessions) => set({ sessions }),
 
@@ -276,7 +280,32 @@ export const useAgentSessionsStore = create<AgentSessionsState>((set, get) => ({
 
   setLoading: (isLoading) => set({ isLoading }),
 
-  clearSessions: () => set({ sessions: [], selectedSessionId: null, sessionLogs: new Map() }),
+  clearSessions: () => set({ sessions: [], selectedSessionId: null, sessionLogs: new Map(), comparisonSessionIds: null }),
+
+  toggleComparisonSession: (sessionId) =>
+    set((state) => {
+      const current = state.comparisonSessionIds;
+
+      if (!current) {
+        // Start comparison: use currently selected + new session
+        const first = state.selectedSessionId;
+        if (!first || first === sessionId) {
+          // Can't compare with itself or nothing; just select it
+          return { selectedSessionId: sessionId };
+        }
+        return { comparisonSessionIds: [first, sessionId] as [string, string] };
+      }
+
+      // If clicking one of the compared sessions, exit comparison
+      if (current[0] === sessionId || current[1] === sessionId) {
+        return { comparisonSessionIds: null };
+      }
+
+      // Replace second session
+      return { comparisonSessionIds: [current[0], sessionId] as [string, string] };
+    }),
+
+  clearComparison: () => set({ comparisonSessionIds: null }),
 
   syncFromTasks: (tasks) =>
     set((state) => {
