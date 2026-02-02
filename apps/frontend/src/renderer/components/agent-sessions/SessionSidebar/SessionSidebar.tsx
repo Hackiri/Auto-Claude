@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bot, Activity, History, Search } from 'lucide-react';
 import { ScrollArea } from '../../ui/scroll-area';
@@ -6,7 +7,7 @@ import { useAgentSessionsStore } from '../../../stores/agent-sessions-store';
 import { useSessionHistoryStore } from '../../../stores/session-history-store';
 import { SessionListItem } from './SessionListItem';
 import { cn } from '../../../lib/utils';
-import type { SessionHistoryEntry } from '../../../../shared/types';
+import type { AgentSession, SessionHistoryEntry } from '../../../../shared/types';
 
 export function SessionSidebar() {
   const { t } = useTranslation('agentSessions');
@@ -24,11 +25,69 @@ export function SessionSidebar() {
   const archivedSessions = getArchivedSessions();
   const historyEntries = getFilteredEntries();
 
+  const selectSession = useAgentSessionsStore((state) => state.selectSession);
+  const selectedSessionId = useAgentSessionsStore((state) => state.selectedSessionId);
+
   // Count running sessions
   const runningSessions = activeSessions.filter(s => s.status === 'running').length;
 
+  // Get current tab's session list for keyboard navigation
+  const currentSessions: AgentSession[] = activeTab === 'active' ? activeSessions : activeTab === 'archived' ? archivedSessions : [];
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Reset focused index when tab or sessions change
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [activeTab, currentSessions.length]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Don't handle if inside an input
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    if (currentSessions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const next = prev < currentSessions.length - 1 ? prev + 1 : prev;
+          return next;
+        });
+        break;
+      }
+      case 'ArrowUp': {
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const next = prev > 0 ? prev - 1 : 0;
+          return next;
+        });
+        break;
+      }
+      case 'Enter': {
+        e.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < currentSessions.length) {
+          selectSession(currentSessions[focusedIndex].id);
+        }
+        break;
+      }
+      case 'Escape': {
+        e.preventDefault();
+        selectSession(null);
+        setFocusedIndex(-1);
+        break;
+      }
+    }
+  }, [currentSessions, focusedIndex, selectSession]);
+
   return (
-    <div className="flex flex-col h-full bg-card/30">
+    <div
+      ref={sidebarRef}
+      className="flex flex-col h-full bg-card/30"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      role="navigation"
+      aria-label={t('title')}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-border bg-card/50">
         <div className="flex items-center gap-2.5">
@@ -75,8 +134,12 @@ export function SessionSidebar() {
                   hint={t('empty.noSessionsHint')}
                 />
               ) : (
-                activeSessions.map((session) => (
-                  <SessionListItem key={session.id} session={session} />
+                activeSessions.map((session, index) => (
+                  <SessionListItem
+                    key={session.id}
+                    session={session}
+                    isFocused={activeTab === 'active' && focusedIndex === index}
+                  />
                 ))
               )}
             </div>
@@ -92,8 +155,12 @@ export function SessionSidebar() {
                   hint={t('empty.noArchivedSessionsHint')}
                 />
               ) : (
-                archivedSessions.map((session) => (
-                  <SessionListItem key={session.id} session={session} />
+                archivedSessions.map((session, index) => (
+                  <SessionListItem
+                    key={session.id}
+                    session={session}
+                    isFocused={activeTab === 'archived' && focusedIndex === index}
+                  />
                 ))
               )}
             </div>

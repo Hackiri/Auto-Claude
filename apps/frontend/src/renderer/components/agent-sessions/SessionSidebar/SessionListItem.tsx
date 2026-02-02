@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play, Pause, CheckCircle2, XCircle, Clock, Archive, Loader2 } from 'lucide-react';
 import { useAgentSessionsStore } from '../../../stores/agent-sessions-store';
@@ -8,25 +9,36 @@ import type { AgentSession } from '../../../../shared/types';
 
 interface SessionListItemProps {
   session: AgentSession;
+  isFocused?: boolean;
 }
 
-export function SessionListItem({ session }: SessionListItemProps) {
+export function SessionListItem({ session, isFocused = false }: SessionListItemProps) {
   const { t } = useTranslation('agentSessions');
   const selectedSessionId = useAgentSessionsStore((state) => state.selectedSessionId);
   const selectSession = useAgentSessionsStore((state) => state.selectSession);
 
   const isSelected = selectedSessionId === session.id;
   const statusConfig = getStatusConfig(session.status, t);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (isFocused && buttonRef.current) {
+      buttonRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [isFocused]);
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={() => selectSession(session.id)}
       className={cn(
         'w-full text-left rounded-lg p-3.5 transition-all duration-150',
         'border border-transparent',
         'hover:bg-accent/60 hover:border-border/50',
-        isSelected && 'bg-accent border-border shadow-sm'
+        isSelected && 'bg-accent border-border shadow-sm',
+        isFocused && !isSelected && 'ring-2 ring-ring ring-offset-1 ring-offset-background'
       )}
     >
       <div className="flex items-start gap-3">
