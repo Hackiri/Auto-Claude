@@ -4,6 +4,8 @@ import { useSessionAnalytics } from '../../../hooks/useSessionAnalytics';
 import { cn } from '../../../lib/utils';
 import { ExecutionTimeChart } from './ExecutionTimeChart';
 import { SuccessRateChart } from './SuccessRateChart';
+import { PhaseDurationChart } from './PhaseDurationChart';
+import { TrendChart } from './TrendChart';
 
 interface ChartPanelProps {
   title: string;
@@ -81,17 +83,9 @@ function EmptyAnalyticsState() {
   );
 }
 
-function ChartPlaceholder() {
-  return (
-    <div className="flex items-center justify-center h-full min-h-[180px] text-muted-foreground text-sm">
-      {/* Placeholder for chart component - will be replaced by subtask-4-2 and subtask-4-3 */}
-    </div>
-  );
-}
-
 export function AnalyticsDashboard() {
   const { t } = useTranslation('agentSessions');
-  const { hasData, executionTimeData, successRateData } = useSessionAnalytics();
+  const { hasData, executionTimeData, successRateData, phaseDurationData, trendData } = useSessionAnalytics();
 
   if (!hasData) {
     return <EmptyAnalyticsState />;
@@ -127,7 +121,7 @@ export function AnalyticsDashboard() {
           description={t('analytics.phaseDurationDesc')}
           icon={<Layers className="h-4 w-4" />}
         >
-          <ChartPlaceholder />
+          <PhaseDurationChart data={phaseDurationData} />
         </ChartPanel>
 
         <ChartPanel
@@ -135,7 +129,7 @@ export function AnalyticsDashboard() {
           description={t('analytics.trendsDesc')}
           icon={<TrendingUp className="h-4 w-4" />}
         >
-          <ChartPlaceholder />
+          <TrendChart data={trendData} />
         </ChartPanel>
       </div>
     </div>
