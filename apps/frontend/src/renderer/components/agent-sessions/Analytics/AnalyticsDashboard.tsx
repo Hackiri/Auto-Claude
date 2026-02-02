@@ -1,11 +1,48 @@
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, TrendingUp, PieChart, Layers } from 'lucide-react';
+import { BarChart3, TrendingUp, PieChart, Layers, AlertTriangle } from 'lucide-react';
 import { useSessionAnalytics } from '../../../hooks/useSessionAnalytics';
 import { cn } from '../../../lib/utils';
 import { ExecutionTimeChart } from './ExecutionTimeChart';
 import { SuccessRateChart } from './SuccessRateChart';
 import { PhaseDurationChart } from './PhaseDurationChart';
 import { TrendChart } from './TrendChart';
+
+/**
+ * Error boundary for individual chart panels.
+ * Prevents a single chart crash from taking down the entire dashboard.
+ */
+class ChartErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { fallback: ReactNode; children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(_error: Error, _info: ErrorInfo): void {
+    // Silently recover - corrupted data should not crash the UI
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function ChartErrorFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center p-4">
+      <AlertTriangle className="h-6 w-6 text-muted-foreground/40 mb-2" />
+      <p className="text-xs text-muted-foreground">Unable to render chart</p>
+    </div>
+  );
+}
 
 interface ChartPanelProps {
   title: string;
@@ -24,7 +61,11 @@ function ChartPanel({ title, description, icon, children }: ChartPanelProps) {
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
-      <div className="flex-1 min-h-0">{children}</div>
+      <div className="flex-1 min-h-0">
+        <ChartErrorBoundary fallback={<ChartErrorFallback />}>
+          {children}
+        </ChartErrorBoundary>
+      </div>
     </div>
   );
 }
