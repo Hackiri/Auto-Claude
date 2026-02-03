@@ -425,7 +425,25 @@ const browserMockAPI: ElectronAPI = {
   onSkillsAIProgress: () => () => {},
   onSkillsAIComplete: () => () => {},
   onSkillsAIError: () => () => {},
-  onSkillsAIStopped: () => () => {}
+  onSkillsAIStopped: () => () => {},
+
+  // Session History (mock)
+  listSessionHistory: async () => ({ success: true as const, data: [] }),
+  loadSessionHistory: async () => ({ success: false as const, error: 'Not available in browser mock' }),
+  saveSessionHistory: async () => ({ success: true as const }),
+  deleteSessionHistory: async () => ({ success: true as const }),
+  getSessionMetrics: async () => ({
+    success: true as const,
+    data: {
+      totalSessions: 0,
+      successCount: 0,
+      failureCount: 0,
+      successRate: 0,
+      averageDurationMs: 0,
+      medianDurationMs: 0,
+      averagePhaseDurations: {},
+    }
+  })
 };
 
 /**

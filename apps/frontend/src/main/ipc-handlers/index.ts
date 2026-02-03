@@ -36,6 +36,7 @@ import { registerProfileHandlers } from './profile-handlers';
 import { registerScreenshotHandlers } from './screenshot-handlers';
 import { registerTerminalWorktreeIpcHandlers } from './terminal';
 import { registerMergeHistoryHandlers } from './merge-history-handlers';
+import { registerSessionHistoryHandlers } from './session-history-handlers';
 import { notificationService } from '../notification-service';
 
 /**
@@ -130,6 +131,9 @@ export function setupIpcHandlers(
   // Merge History handlers (for viewing merge completion history and rollback)
   registerMergeHistoryHandlers();
 
+  // Session History handlers (agent session persistence & analytics)
+  registerSessionHistoryHandlers();
+
   console.warn('[IPC] All handler modules registered successfully');
 }
 
@@ -159,5 +163,6 @@ export {
   registerProfileHandlers,
   registerSkillsHandlers,
   registerScreenshotHandlers,
-  registerMergeHistoryHandlers
+  registerMergeHistoryHandlers,
+  registerSessionHistoryHandlers
 };

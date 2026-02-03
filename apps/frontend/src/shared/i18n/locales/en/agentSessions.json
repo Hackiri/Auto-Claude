@@ -4,7 +4,10 @@
     "active": "Active",
     "archived": "Archived",
     "activeCount": "Active ({{count}})",
-    "archivedCount": "Archived ({{count}})"
+    "archivedCount": "Archived ({{count}})",
+    "history": "History",
+    "sessions": "Sessions",
+    "analytics": "Analytics"
   },
   "status": {
     "pending": "Pending",
@@ -47,13 +50,91 @@
     "title": "Session Logs",
     "streaming": "Live",
     "noLogs": "No logs yet",
-    "noLogsHint": "Logs will appear here when the session starts"
+    "noLogsHint": "Logs will appear here when the session starts",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "entriesFiltered": "{{filtered}} / {{total}} entries",
+    "entriesTotal": "{{count}} entries"
   },
   "empty": {
     "noSessions": "No Active Sessions",
     "noSessionsHint": "Start a task from the Kanban board to create an agent session",
     "noArchivedSessions": "No Archived Sessions",
-    "noArchivedSessionsHint": "Completed sessions will appear here after archiving"
+    "noArchivedSessionsHint": "Completed sessions will appear here after archiving",
+    "noHistorySessions": "No Session History",
+    "noHistorySessionsHint": "Completed and failed sessions will be saved here automatically"
+  },
+  "history": {
+    "searchPlaceholder": "Search history...",
+    "loading": "Loading history...",
+    "subtasks": "subtasks",
+    "duration": "Duration",
+    "noResults": "No matching sessions",
+    "noResultsHint": "Try adjusting your search or filters",
+    "deleteConfirm": "Delete this session from history?",
+    "deleted": "Session removed from history",
+    "sortBy": "Sort by",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortDuration": "Duration",
+    "filterStatus": "Filter by status",
+    "allStatuses": "All statuses"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "noData": "No Analytics Data",
+    "noDataHint": "Complete some sessions to see analytics",
+    "executionTime": "Execution Time",
+    "executionTimeDesc": "Duration of each session",
+    "successRate": "Success Rate",
+    "successRateDesc": "Completed vs failed sessions",
+    "phaseDuration": "Phase Duration",
+    "phaseDurationDesc": "Time spent in each phase",
+    "trends": "Trends",
+    "trendsDesc": "Performance over time",
+    "totalSessions": "Total Sessions",
+    "avgDuration": "Avg Duration",
+    "completed": "Completed",
+    "failed": "Failed",
+    "minutes": "min",
+    "seconds": "sec"
+  },
+  "logFilter": {
+    "searchPlaceholder": "Search logs...",
+    "filterByType": "Filter by type",
+    "filterByPhase": "Filter by phase",
+    "allTypes": "All types",
+    "allPhases": "All phases",
+    "typeError": "Error",
+    "typeInfo": "Info",
+    "typePhase": "Phase",
+    "typeTool": "Tool",
+    "errorPatterns": "Error Patterns",
+    "noErrorPatterns": "No error patterns detected",
+    "matchCount": "{{count}} match(es)",
+    "export": "Export",
+    "exportJson": "Export as JSON",
+    "exportText": "Export as Text",
+    "clearFilters": "Clear filters"
+  },
+  "comparison": {
+    "title": "Session Comparison",
+    "selectTwo": "Select two sessions to compare",
+    "session": "Session",
+    "status": "Status",
+    "duration": "Duration",
+    "phases": "Phases",
+    "subtasks": "Subtasks",
+    "logs": "Logs",
+    "compare": "Compare",
+    "exitComparison": "Exit Comparison"
+  },
+  "keyboard": {
+    "navigateUp": "Previous session",
+    "navigateDown": "Next session",
+    "select": "Select session",
+    "deselect": "Deselect",
+    "toggleCompare": "Toggle compare"
   },
   "actions": {
     "archive": "Archive",

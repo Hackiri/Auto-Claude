@@ -4,7 +4,10 @@
     "active": "Actives",
     "archived": "Archivees",
     "activeCount": "Actives ({{count}})",
-    "archivedCount": "Archivees ({{count}})"
+    "archivedCount": "Archivees ({{count}})",
+    "history": "Historique",
+    "sessions": "Sessions",
+    "analytics": "Analytique"
   },
   "status": {
     "pending": "En attente",
@@ -47,13 +50,91 @@
     "title": "Journaux de Session",
     "streaming": "En direct",
     "noLogs": "Pas encore de journaux",
-    "noLogsHint": "Les journaux apparaitront ici lorsque la session demarrera"
+    "noLogsHint": "Les journaux apparaitront ici lorsque la session demarrera",
+    "collapse": "Reduire",
+    "expand": "Agrandir",
+    "entriesFiltered": "{{filtered}} / {{total}} entrees",
+    "entriesTotal": "{{count}} entrees"
   },
   "empty": {
     "noSessions": "Aucune Session Active",
     "noSessionsHint": "Demarrez une tache depuis le tableau Kanban pour creer une session d'agent",
     "noArchivedSessions": "Aucune Session Archivee",
-    "noArchivedSessionsHint": "Les sessions terminees apparaitront ici apres archivage"
+    "noArchivedSessionsHint": "Les sessions terminees apparaitront ici apres archivage",
+    "noHistorySessions": "Aucun Historique",
+    "noHistorySessionsHint": "Les sessions terminees et echouees seront sauvegardees ici automatiquement"
+  },
+  "history": {
+    "searchPlaceholder": "Rechercher dans l'historique...",
+    "loading": "Chargement de l'historique...",
+    "subtasks": "sous-taches",
+    "duration": "Duree",
+    "noResults": "Aucune session correspondante",
+    "noResultsHint": "Essayez d'ajuster votre recherche ou vos filtres",
+    "deleteConfirm": "Supprimer cette session de l'historique ?",
+    "deleted": "Session supprimee de l'historique",
+    "sortBy": "Trier par",
+    "sortNewest": "Plus recentes",
+    "sortOldest": "Plus anciennes",
+    "sortDuration": "Duree",
+    "filterStatus": "Filtrer par statut",
+    "allStatuses": "Tous les statuts"
+  },
+  "analytics": {
+    "title": "Analytique",
+    "noData": "Aucune donnee analytique",
+    "noDataHint": "Terminez quelques sessions pour voir les analytiques",
+    "executionTime": "Temps d'execution",
+    "executionTimeDesc": "Duree de chaque session",
+    "successRate": "Taux de reussite",
+    "successRateDesc": "Sessions terminees vs echouees",
+    "phaseDuration": "Duree des phases",
+    "phaseDurationDesc": "Temps passe dans chaque phase",
+    "trends": "Tendances",
+    "trendsDesc": "Performance au fil du temps",
+    "totalSessions": "Sessions totales",
+    "avgDuration": "Duree moyenne",
+    "completed": "Terminees",
+    "failed": "Echouees",
+    "minutes": "min",
+    "seconds": "sec"
+  },
+  "logFilter": {
+    "searchPlaceholder": "Rechercher dans les journaux...",
+    "filterByType": "Filtrer par type",
+    "filterByPhase": "Filtrer par phase",
+    "allTypes": "Tous les types",
+    "allPhases": "Toutes les phases",
+    "typeError": "Erreur",
+    "typeInfo": "Info",
+    "typePhase": "Phase",
+    "typeTool": "Outil",
+    "errorPatterns": "Motifs d'erreur",
+    "noErrorPatterns": "Aucun motif d'erreur detecte",
+    "matchCount": "{{count}} correspondance(s)",
+    "export": "Exporter",
+    "exportJson": "Exporter en JSON",
+    "exportText": "Exporter en texte",
+    "clearFilters": "Effacer les filtres"
+  },
+  "comparison": {
+    "title": "Comparaison de sessions",
+    "selectTwo": "Selectionnez deux sessions a comparer",
+    "session": "Session",
+    "status": "Statut",
+    "duration": "Duree",
+    "phases": "Phases",
+    "subtasks": "Sous-taches",
+    "logs": "Journaux",
+    "compare": "Comparer",
+    "exitComparison": "Quitter la comparaison"
+  },
+  "keyboard": {
+    "navigateUp": "Session precedente",
+    "navigateDown": "Session suivante",
+    "select": "Selectionner la session",
+    "deselect": "Deselectionner",
+    "toggleCompare": "Basculer la comparaison"
   },
   "actions": {
     "archive": "Archiver",

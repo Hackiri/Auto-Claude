@@ -100,3 +100,140 @@ export function isActiveSession(session: AgentSession): boolean {
 export function isArchivedSession(session: AgentSession): boolean {
   return session.status === 'archived';
 }
+
+// --- Session History & Persistence Types ---
+
+/**
+ * Phase duration record - tracks time spent in each execution phase
+ */
+export interface PhaseDuration {
+  phase: ExecutionPhase;
+  durationMs: number;
+  startedAt: string;      // ISO string for serialization
+  completedAt: string;    // ISO string for serialization
+}
+
+/**
+ * Log summary - compact summary of session logs for history storage
+ */
+export interface LogSummary {
+  totalEntries: number;
+  errorCount: number;
+  warningCount: number;
+  phaseTransitions: number;
+}
+
+/**
+ * Session History Entry - serializable version of AgentSession for disk persistence
+ * Stored as individual JSON files in session history directory
+ */
+export interface SessionHistoryEntry {
+  id: string;
+  specId: string;
+  projectId: string;
+  title: string;
+  status: SessionStatus;
+  success: boolean;
+  createdAt: string;      // ISO string
+  startedAt?: string;     // ISO string
+  completedAt?: string;   // ISO string
+  durationMs: number;     // Total execution time
+  phaseDurations: PhaseDuration[];
+  overallProgress: number;
+  subtaskTotal: number;
+  subtaskCompleted: number;
+  logSummary: LogSummary;
+  updatedAt: string;      // ISO string - used for sorting
+}
+
+// --- Session Metrics & Analytics Types ---
+
+/**
+ * Aggregated session metrics computed from history
+ */
+export interface SessionMetrics {
+  totalSessions: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;           // 0-1
+  averageDurationMs: number;
+  medianDurationMs: number;
+  averagePhaseDurations: Record<string, number>;  // phase name → avg ms
+}
+
+/**
+ * Data point for execution time chart
+ */
+export interface ExecutionTimeDataPoint {
+  sessionId: string;
+  title: string;
+  durationMs: number;
+  completedAt: string;   // ISO string
+  success: boolean;
+}
+
+/**
+ * Data point for success rate chart
+ */
+export interface SuccessRateDataPoint {
+  name: string;
+  value: number;
+  color: string;
+}
+
+/**
+ * Data point for phase duration chart
+ */
+export interface PhaseDurationDataPoint {
+  sessionTitle: string;
+  [phase: string]: string | number;  // dynamic phase keys with ms values
+}
+
+/**
+ * Data point for trend chart
+ */
+export interface TrendDataPoint {
+  date: string;           // ISO date string (day granularity)
+  averageDurationMs: number;
+  successRate: number;    // 0-1
+  sessionCount: number;
+}
+
+// --- Log Filter Types ---
+
+/**
+ * Log entry type for filtering
+ */
+export type LogEntryType = 'error' | 'info' | 'phase' | 'tool' | 'warning';
+
+/**
+ * Log filter options for the log filter bar
+ */
+export interface LogFilterOptions {
+  types: LogEntryType[];           // Filter by log entry types (empty = all)
+  phase: string | null;            // Filter by specific phase (null = all)
+  searchText: string;              // Text search within log messages
+  dateRange?: {
+    from: string;                  // ISO string
+    to: string;                    // ISO string
+  };
+}
+
+/**
+ * Detected error pattern in logs
+ */
+export interface ErrorPattern {
+  pattern: string;
+  count: number;
+  firstOccurrence: number;        // Log entry index
+  lastOccurrence: number;         // Log entry index
+}
+
+/**
+ * Default log filter options
+ */
+export const DEFAULT_LOG_FILTER: LogFilterOptions = {
+  types: [],
+  phase: null,
+  searchText: '',
+};
