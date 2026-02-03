@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Task, TaskStatus, SubtaskStatus, ImplementationPlan, Subtask, TaskMetadata, ExecutionProgress, ExecutionPhase, ReviewReason, TaskDraft, ImageAttachment, TaskOrderState } from '../../shared/types';
+import type { Task, TaskStatus, SubtaskStatus, ImplementationPlan, Subtask, TaskMetadata, ExecutionProgress, ExecutionPhase, ReviewReason, TaskDraft, ImageAttachment, TaskOrderState, SwarmState } from '../../shared/types';
 import { debugLog } from '../../shared/utils/debug-logger';
 import { isTerminalPhase } from '../../shared/constants/phase-protocol';
 
@@ -10,6 +10,7 @@ interface TaskState {
   isLoading: boolean;
   error: string | null;
   taskOrder: TaskOrderState | null;  // Per-column task ordering for kanban board
+  swarmState: SwarmState | null;  // Live swarm mode state
 
   // Actions
   setTasks: (tasks: Task[]) => void;
@@ -28,6 +29,7 @@ interface TaskState {
   setTaskOrder: (order: TaskOrderState) => void;
   reorderTasksInColumn: (status: TaskStatus, activeId: string, overId: string) => void;
   moveTaskToColumnTop: (taskId: string, targetStatus: TaskStatus, sourceStatus?: TaskStatus) => void;
+  updateSwarmState: (state: SwarmState | null) => void;
   loadTaskOrder: (projectId: string) => void;
   saveTaskOrder: (projectId: string) => boolean;
   clearTaskOrder: (projectId: string) => void;
@@ -158,6 +160,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   isLoading: false,
   error: null,
   taskOrder: null,
+  swarmState: null,
 
   setTasks: (tasks) => set({ tasks }),
 
@@ -580,6 +583,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       return { taskOrder: newTaskOrder };
     });
   },
+
+  updateSwarmState: (swarmState) => set({ swarmState }),
 
   loadTaskOrder: (projectId) => {
     try {

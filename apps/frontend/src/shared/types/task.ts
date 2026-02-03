@@ -160,6 +160,9 @@ export interface TaskDraft {
   ralphLoopMaxQaIterations?: number;
   ralphLoopRetryStrategy?: 'conservative' | 'aggressive' | 'adaptive';
   ralphLoopOvernightMode?: boolean;
+  // Swarm Mode settings
+  enableSwarmMode?: boolean;
+  swarmMaxWorkers?: number;
   savedAt: Date;
 }
 
@@ -240,6 +243,12 @@ export interface TaskMetadata {
     overnightMode?: boolean;
   };
 
+  // Swarm Mode settings
+  swarmMode?: {
+    enabled?: boolean;
+    maxWorkers?: number;
+  };
+
   // Agent configuration (from agent profile or manual selection)
   model?: ModelType;  // Claude model to use (haiku, sonnet, opus) - used when not auto profile
   thinkingLevel?: ThinkingLevel;  // Thinking budget level (none, low, medium, high, ultrathink)
@@ -256,6 +265,27 @@ export interface TaskMetadata {
   // Archive status
   archivedAt?: string;  // ISO date when task was archived
   archivedInVersion?: string;  // Version in which task was archived (from changelog)
+}
+
+// Swarm mode live state (from swarm_state.json)
+export interface SwarmWorkerState {
+  id: string;
+  status: 'idle' | 'claiming' | 'working' | 'done' | 'error';
+  current_task: string | null;
+  tasks_completed: number;
+}
+
+export interface SwarmTaskState {
+  status: string;
+  assigned_to: string | null;
+}
+
+export interface SwarmState {
+  workers: SwarmWorkerState[];
+  tasks: Record<string, SwarmTaskState>;
+  started_at: string | null;
+  total_tasks: number;
+  completed_tasks: number;
 }
 
 export interface Task {

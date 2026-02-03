@@ -124,6 +124,10 @@ export function TaskCreationWizard({
   const [ralphLoopRetryStrategy, setRalphLoopRetryStrategy] = useState<'conservative' | 'aggressive' | 'adaptive'>('adaptive');
   const [ralphLoopOvernightMode, setRalphLoopOvernightMode] = useState(false);
 
+  // Swarm Mode settings
+  const [enableSwarmMode, setEnableSwarmMode] = useState(false);
+  const [swarmMaxWorkers, setSwarmMaxWorkers] = useState(3);
+
   // Draft state
   const [isDraftRestored, setIsDraftRestored] = useState(false);
 
@@ -167,6 +171,8 @@ export function TaskCreationWizard({
         setRalphLoopMaxQaIterations(draft.ralphLoopMaxQaIterations ?? 3);
         setRalphLoopRetryStrategy(draft.ralphLoopRetryStrategy ?? 'adaptive');
         setRalphLoopOvernightMode(draft.ralphLoopOvernightMode ?? false);
+        setEnableSwarmMode(draft.enableSwarmMode ?? false);
+        setSwarmMaxWorkers(draft.swarmMaxWorkers ?? 3);
         setIsDraftRestored(true);
 
         if (draft.category || draft.priority || draft.complexity || draft.impact) {
@@ -274,8 +280,10 @@ export function TaskCreationWizard({
     ralphLoopMaxQaIterations,
     ralphLoopRetryStrategy,
     ralphLoopOvernightMode,
+    enableSwarmMode,
+    swarmMaxWorkers,
     savedAt: new Date()
-  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, enableRalphLoop, ralphLoopMaxCoderIterations, ralphLoopMaxQaIterations, ralphLoopRetryStrategy, ralphLoopOvernightMode]);
+  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, enableRalphLoop, ralphLoopMaxCoderIterations, ralphLoopMaxQaIterations, ralphLoopRetryStrategy, ralphLoopOvernightMode, enableSwarmMode, swarmMaxWorkers]);
 
   /**
    * Detect @ mention being typed and show autocomplete
@@ -453,6 +461,12 @@ export function TaskCreationWizard({
           overnightMode: ralphLoopOvernightMode,
         };
       }
+      if (enableSwarmMode) {
+        metadata.swarmMode = {
+          enabled: enableSwarmMode,
+          maxWorkers: swarmMaxWorkers,
+        };
+      }
       // Always include baseBranch - resolve PROJECT_DEFAULT_BRANCH to actual branch name
       // This ensures the backend always knows which branch to use for worktree creation
       if (baseBranch === PROJECT_DEFAULT_BRANCH) {
@@ -499,6 +513,8 @@ export function TaskCreationWizard({
     setRalphLoopMaxQaIterations(3);
     setRalphLoopRetryStrategy('adaptive');
     setRalphLoopOvernightMode(false);
+    setEnableSwarmMode(false);
+    setSwarmMaxWorkers(3);
     setBaseBranch(PROJECT_DEFAULT_BRANCH);
     setUseWorktree(true);
     setError(null);
@@ -691,6 +707,10 @@ export function TaskCreationWizard({
           onRalphLoopRetryStrategyChange={setRalphLoopRetryStrategy}
           ralphLoopOvernightMode={ralphLoopOvernightMode}
           onRalphLoopOvernightModeChange={setRalphLoopOvernightMode}
+          enableSwarmMode={enableSwarmMode}
+          onEnableSwarmModeChange={setEnableSwarmMode}
+          swarmMaxWorkers={swarmMaxWorkers}
+          onSwarmMaxWorkersChange={setSwarmMaxWorkers}
           disabled={isCreating}
           error={error}
           onError={setError}

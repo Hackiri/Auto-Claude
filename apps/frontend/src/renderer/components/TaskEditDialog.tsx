@@ -137,6 +137,14 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
     task.metadata?.ralphLoop?.overnightMode ?? false
   );
 
+  // Swarm Mode settings
+  const [enableSwarmMode, setEnableSwarmMode] = useState(
+    task.metadata?.swarmMode?.enabled ?? false
+  );
+  const [swarmMaxWorkers, setSwarmMaxWorkers] = useState(
+    task.metadata?.swarmMode?.maxWorkers ?? 3
+  );
+
   // Reset form when task changes or dialog opens
   useEffect(() => {
     if (open) {
@@ -231,6 +239,8 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
       ralphLoopMaxQaIterations !== (task.metadata?.ralphLoop?.maxQaIterations ?? 3) ||
       ralphLoopRetryStrategy !== (task.metadata?.ralphLoop?.retryStrategy ?? 'adaptive') ||
       ralphLoopOvernightMode !== (task.metadata?.ralphLoop?.overnightMode ?? false) ||
+      enableSwarmMode !== (task.metadata?.swarmMode?.enabled ?? false) ||
+      swarmMaxWorkers !== (task.metadata?.swarmMode?.maxWorkers ?? 3) ||
       JSON.stringify(images) !== JSON.stringify(task.metadata?.attachedImages || []) ||
       JSON.stringify(phaseModels) !== JSON.stringify(task.metadata?.phaseModels || DEFAULT_PHASE_MODELS) ||
       JSON.stringify(phaseThinking) !== JSON.stringify(task.metadata?.phaseThinking || DEFAULT_PHASE_THINKING);
@@ -265,6 +275,10 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
       maxQaIterations: ralphLoopMaxQaIterations,
       retryStrategy: ralphLoopRetryStrategy,
       overnightMode: ralphLoopOvernightMode,
+    };
+    metadataUpdates.swarmMode = {
+      enabled: enableSwarmMode,
+      maxWorkers: swarmMaxWorkers,
     };
 
     const success = await persistUpdateTask(task.id, {
@@ -355,6 +369,10 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
         onRalphLoopRetryStrategyChange={setRalphLoopRetryStrategy}
         ralphLoopOvernightMode={ralphLoopOvernightMode}
         onRalphLoopOvernightModeChange={setRalphLoopOvernightMode}
+        enableSwarmMode={enableSwarmMode}
+        onEnableSwarmModeChange={setEnableSwarmMode}
+        swarmMaxWorkers={swarmMaxWorkers}
+        onSwarmMaxWorkersChange={setSwarmMaxWorkers}
         disabled={isSaving}
         error={error}
         onError={setError}

@@ -62,6 +62,7 @@ def handle_build_command(
     force_bypass_approval: bool,
     base_branch: str | None = None,
     ralph_loop: bool = False,
+    swarm: bool = False,
 ) -> None:
     """
     Handle the main build command.
@@ -79,6 +80,7 @@ def handle_build_command(
         force_bypass_approval: Force bypass approval check
         base_branch: Base branch for worktree creation (default: current branch)
         ralph_loop: Enable Ralph Wiggum iterative loop mode
+        swarm: Enable swarm mode parallel execution
     """
     # Lazy imports to avoid loading heavy modules
     from agent import run_autonomous_agent, sync_spec_to_source
@@ -92,11 +94,15 @@ def handle_build_command(
     from prompts_pkg.prompts import get_base_branch_from_metadata
     from qa_loop import run_qa_validation_loop, should_run_qa
     from ralph_loop.config import is_ralph_loop_enabled, load_ralph_config
+    from swarm.config import is_swarm_mode_enabled, load_swarm_config
 
     from .utils import print_banner, validate_environment
 
     # Load Ralph loop configuration (merges task_metadata.json + CLI flag)
-    ralph_config = load_ralph_config(spec_dir, cli_enabled=ralph_loop)
+    ralph_config = load_ralph_config(spec_dir, cli_enabled=ralph_loop or None)
+
+    # Load swarm mode configuration (merges task_metadata.json + CLI flag)
+    swarm_config = load_swarm_config(spec_dir, cli_enabled=swarm or None)
 
     # Get the resolved model for the planning phase (first phase of build)
     # This respects task_metadata.json phase configuration from the UI
@@ -127,6 +133,10 @@ def handle_build_command(
         print(f"Ralph loop: {highlight('ENABLED')} (iterative overnight mode)")
         if ralph_config.get("overnight_mode"):
             print("  Overnight mode: Active (reduced logging)")
+
+    # Show swarm mode status if enabled
+    if is_swarm_mode_enabled(swarm_config):
+        print(f"Swarm mode: {highlight('ENABLED')} ({swarm_config.get('max_workers', 3)} workers)")
 
     print()
 
@@ -253,6 +263,7 @@ def handle_build_command(
                 verbose=verbose,
                 source_spec_dir=source_spec_dir,  # For syncing progress back to main project
                 ralph_config=ralph_config,  # Ralph loop configuration
+                swarm_config=swarm_config,  # Swarm mode configuration
             )
         )
         debug_success("run.py", "Agent execution completed")
@@ -329,6 +340,7 @@ def handle_build_command(
             max_iterations=max_iterations,
             verbose=verbose,
             ralph_config=ralph_config,
+            swarm_config=swarm_config,
         )
     except Exception as e:
         print(f"\nFatal error: {e}")
@@ -348,6 +360,7 @@ def _handle_build_interrupt(
     max_iterations: int | None,
     verbose: bool,
     ralph_config: dict | None = None,
+    swarm_config: dict | None = None,
 ) -> None:
     """
     Handle keyboard interrupt during build.

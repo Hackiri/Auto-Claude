@@ -79,6 +79,11 @@ export interface TaskAPI {
     callback: (taskId: string, progress: import('../../shared/types').ExecutionProgress, projectId?: string) => void
   ) => () => void;
 
+  // Swarm Mode
+  onTaskSwarmStatus: (
+    callback: (taskId: string, swarmState: import('../../shared/types').SwarmState, projectId?: string) => void
+  ) => () => void;
+
   // Task Phase Logs
   getTaskLogs: (projectId: string, specId: string) => Promise<IPCResult<TaskLogs | null>>;
   watchTaskLogs: (projectId: string, specId: string) => Promise<IPCResult>;
@@ -270,6 +275,23 @@ export const createTaskAPI = (): TaskAPI => ({
     ipcRenderer.on(IPC_CHANNELS.TASK_EXECUTION_PROGRESS, handler);
     return () => {
       ipcRenderer.removeListener(IPC_CHANNELS.TASK_EXECUTION_PROGRESS, handler);
+    };
+  },
+
+  onTaskSwarmStatus: (
+    callback: (taskId: string, swarmState: import('../../shared/types').SwarmState, projectId?: string) => void
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      taskId: string,
+      swarmState: import('../../shared/types').SwarmState,
+      projectId?: string
+    ): void => {
+      callback(taskId, swarmState, projectId);
+    };
+    ipcRenderer.on(IPC_CHANNELS.TASK_SWARM_STATUS, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.TASK_SWARM_STATUS, handler);
     };
   },
 

@@ -2,7 +2,9 @@ import { Zap, Loader2 } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { cn, calculateProgress } from '../../lib/utils';
 import { EXECUTION_PHASE_BADGE_COLORS, EXECUTION_PHASE_LABELS } from '../../../shared/constants';
-import type { Task, ExecutionPhase } from '../../../shared/types';
+import type { Task, ExecutionPhase, SwarmState } from '../../../shared/types';
+import { useTaskStore } from '../../stores/task-store';
+import { SwarmMonitor } from './SwarmMonitor';
 
 interface TaskProgressProps {
   task: Task;
@@ -14,6 +16,7 @@ interface TaskProgressProps {
 
 export function TaskProgress({ task, isRunning, hasActiveExecution, executionPhase, isStuck }: TaskProgressProps) {
   const progress = calculateProgress(task.subtasks);
+  const swarmState = useTaskStore((state) => state.swarmState);
 
   return (
     <div>
@@ -115,6 +118,13 @@ export function TaskProgress({ task, isRunning, hasActiveExecution, executionPha
             style={{ width: '5%' }}
             title="Complete (95-100%)"
           />
+        </div>
+      )}
+
+      {/* Swarm Monitor */}
+      {swarmState && hasActiveExecution && (
+        <div className="mt-4">
+          <SwarmMonitor swarmState={swarmState} />
         </div>
       )}
     </div>

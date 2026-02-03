@@ -384,4 +384,10 @@ export function registerAgenteventsHandlers(
     const { project } = findTaskAndProject(taskId);
     safeSendToRenderer(getMainWindow, IPC_CHANNELS.TASK_ERROR, taskId, error, project?.id);
   });
+
+  // Swarm state file changes → Renderer
+  fileWatcher.on("swarmStatus", (taskId: string, swarmState: import("../../shared/types").SwarmState) => {
+    const { project } = findTaskAndProject(taskId);
+    safeSendToRenderer(getMainWindow, IPC_CHANNELS.TASK_SWARM_STATUS, taskId, swarmState, project?.id);
+  });
 }

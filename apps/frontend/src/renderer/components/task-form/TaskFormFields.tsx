@@ -98,6 +98,12 @@ interface TaskFormFieldsProps {
   ralphLoopOvernightMode?: boolean;
   onRalphLoopOvernightModeChange?: (enabled: boolean) => void;
 
+  // Swarm Mode
+  enableSwarmMode?: boolean;
+  onEnableSwarmModeChange?: (enabled: boolean) => void;
+  swarmMaxWorkers?: number;
+  onSwarmMaxWorkersChange?: (value: number) => void;
+
   // Form state
   disabled?: boolean;
   error?: string | null;
@@ -157,6 +163,10 @@ export function TaskFormFields({
   onRalphLoopRetryStrategyChange,
   ralphLoopOvernightMode,
   onRalphLoopOvernightModeChange,
+  enableSwarmMode,
+  onEnableSwarmModeChange,
+  swarmMaxWorkers,
+  onSwarmMaxWorkersChange,
   disabled = false,
   error,
   onError,
@@ -561,8 +571,14 @@ export function TaskFormFields({
             <Checkbox
               id={`${prefix}enable-ralph-loop`}
               checked={enableRalphLoop}
-              onCheckedChange={(checked) => onEnableRalphLoopChange?.(checked === true)}
-              disabled={disabled}
+              onCheckedChange={(checked) => {
+                onEnableRalphLoopChange?.(checked === true);
+                // Mutually exclusive with Swarm Mode
+                if (checked === true && enableSwarmMode) {
+                  onEnableSwarmModeChange?.(false);
+                }
+              }}
+              disabled={disabled || enableSwarmMode}
               className="mt-0.5"
             />
             <div className="flex-1 space-y-1">
@@ -656,6 +672,60 @@ export function TaskFormFields({
                     {t('tasks:form.ralphLoop.overnightModeHint')}
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Swarm Mode Toggle */}
+        <div className="space-y-3 p-4 rounded-lg border border-border bg-muted/30">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id={`${prefix}enable-swarm-mode`}
+              checked={enableSwarmMode}
+              onCheckedChange={(checked) => {
+                onEnableSwarmModeChange?.(checked === true);
+                // Mutually exclusive with Ralph Loop
+                if (checked === true && enableRalphLoop) {
+                  onEnableRalphLoopChange?.(false);
+                }
+              }}
+              disabled={disabled || enableRalphLoop}
+              className="mt-0.5"
+            />
+            <div className="flex-1 space-y-1">
+              <Label
+                htmlFor={`${prefix}enable-swarm-mode`}
+                className="text-sm font-medium text-foreground cursor-pointer"
+              >
+                {t('tasks:form.enableSwarmModeLabel')}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t('tasks:form.enableSwarmModeDescription')}
+              </p>
+            </div>
+          </div>
+
+          {/* Swarm Mode Options (shown when enabled) */}
+          {enableSwarmMode && (
+            <div className="ml-7 space-y-4 pt-3 border-t border-border/50">
+              <div className="space-y-1.5">
+                <Label htmlFor={`${prefix}swarm-max-workers`} className="text-xs font-medium">
+                  {t('tasks:form.swarmMode.maxWorkers')}
+                </Label>
+                <Input
+                  id={`${prefix}swarm-max-workers`}
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={swarmMaxWorkers ?? 3}
+                  onChange={(e) => onSwarmMaxWorkersChange?.(parseInt(e.target.value) || 3)}
+                  disabled={disabled}
+                  className="h-8 text-sm w-24"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('tasks:form.swarmMode.maxWorkersHint')}
+                </p>
               </div>
             </div>
           )}

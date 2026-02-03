@@ -280,6 +280,12 @@
       "overnightMode": "Overnight Mode",
       "overnightModeHint": "Optimized for unattended overnight execution with extended timeouts."
     },
+    "enableSwarmModeLabel": "Enable Swarm Mode",
+    "enableSwarmModeDescription": "Run multiple worker agents in parallel for faster builds. Mutually exclusive with Ralph Loop.",
+    "swarmMode": {
+      "maxWorkers": "Max Workers",
+      "maxWorkersHint": "Number of concurrent worker agents (1-10). More workers = faster but higher API usage."
+    },
     "errors": {
       "descriptionRequired": "Please provide a description",
       "maxImagesReached": "Maximum of 5 images allowed",

@@ -187,6 +187,7 @@ export function registerTaskExecutionHandlers(
         task.specId
       );
       fileWatcher.watch(taskId, specDir);
+      fileWatcher.watchSwarmState(taskId, specDir);
 
       // Check if spec.md exists (indicates spec creation was already done or in progress)
       const specFilePath = path.join(specDir, AUTO_BUILD_PATHS.SPEC_FILE);
@@ -302,6 +303,7 @@ export function registerTaskExecutionHandlers(
 
     agentManager.killTask(taskId);
     fileWatcher.unwatch(taskId);
+    fileWatcher.unwatchSwarmState(taskId);
 
     // Notify status change IMMEDIATELY for instant UI feedback
     const ipcSentAt = Date.now();

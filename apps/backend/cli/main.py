@@ -131,6 +131,12 @@ Environment Variables:
     )
 
     parser.add_argument(
+        "--swarm",
+        action="store_true",
+        help="Use swarm mode for parallel multi-worker build execution",
+    )
+
+    parser.add_argument(
         "--ralph-status",
         action="store_true",
         help="Show Ralph Wiggum loop progress status for a spec",
@@ -490,6 +496,7 @@ def _run_cli() -> None:
         force_bypass_approval=args.force,
         base_branch=args.base_branch,
         ralph_loop=args.ralph_loop,
+        swarm=args.swarm,
     )
 
 

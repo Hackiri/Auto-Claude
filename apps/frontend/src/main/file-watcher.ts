@@ -2,7 +2,7 @@ import chokidar, { FSWatcher } from 'chokidar';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
-import type { ImplementationPlan } from '../shared/types';
+import type { ImplementationPlan, SwarmState } from '../shared/types';
 
 interface WatcherInfo {
   taskId: string;
@@ -10,11 +10,18 @@ interface WatcherInfo {
   planPath: string;
 }
 
+interface SwarmWatcherInfo {
+  taskId: string;
+  watcher: FSWatcher;
+  swarmStatePath: string;
+}
+
 /**
  * Watches implementation_plan.json files for real-time progress updates
  */
 export class FileWatcher extends EventEmitter {
   private watchers: Map<string, WatcherInfo> = new Map();
+  private swarmWatchers: Map<string, SwarmWatcherInfo> = new Map();
 
   /**
    * Start watching a task's implementation plan
@@ -91,13 +98,17 @@ export class FileWatcher extends EventEmitter {
    * Stop all watchers
    */
   async unwatchAll(): Promise<void> {
-    const closePromises = Array.from(this.watchers.values()).map(
-      async (info) => {
+    const closePromises = [
+      ...Array.from(this.watchers.values()).map(async (info) => {
         await info.watcher.close();
-      }
-    );
+      }),
+      ...Array.from(this.swarmWatchers.values()).map(async (info) => {
+        await info.watcher.close();
+      }),
+    ];
     await Promise.all(closePromises);
     this.watchers.clear();
+    this.swarmWatchers.clear();
   }
 
   /**
@@ -105,6 +116,56 @@ export class FileWatcher extends EventEmitter {
    */
   isWatching(taskId: string): boolean {
     return this.watchers.has(taskId);
+  }
+
+  /**
+   * Start watching a task's swarm_state.json for live swarm monitoring
+   */
+  async watchSwarmState(taskId: string, specDir: string): Promise<void> {
+    await this.unwatchSwarmState(taskId);
+
+    const swarmStatePath = path.join(specDir, 'swarm_state.json');
+
+    // Watch for creation and changes
+    const watcher = chokidar.watch(swarmStatePath, {
+      persistent: true,
+      ignoreInitial: false,
+      awaitWriteFinish: {
+        stabilityThreshold: 200,
+        pollInterval: 100
+      }
+    });
+
+    this.swarmWatchers.set(taskId, { taskId, watcher, swarmStatePath });
+
+    const emitState = (): void => {
+      try {
+        if (!existsSync(swarmStatePath)) return;
+        const content = readFileSync(swarmStatePath, 'utf-8');
+        const state: SwarmState = JSON.parse(content);
+        this.emit('swarmStatus', taskId, state);
+      } catch {
+        // Ignore parse errors during writes
+      }
+    };
+
+    watcher.on('add', emitState);
+    watcher.on('change', emitState);
+    watcher.on('error', (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emit('error', taskId, message);
+    });
+  }
+
+  /**
+   * Stop watching a task's swarm state
+   */
+  async unwatchSwarmState(taskId: string): Promise<void> {
+    const info = this.swarmWatchers.get(taskId);
+    if (info) {
+      await info.watcher.close();
+      this.swarmWatchers.delete(taskId);
+    }
   }
 
   /**

@@ -370,6 +370,14 @@ export function useIpcListeners(): void {
       }
     );
 
+    // Swarm status listener
+    const updateSwarmState = useTaskStore.getState().updateSwarmState;
+    const cleanupSwarmStatus = window.electronAPI.onTaskSwarmStatus(
+      (_taskId: string, swarmState: import('../../shared/types').SwarmState) => {
+        updateSwarmState(swarmState);
+      }
+    );
+
     // Auth failure listener (401 errors requiring re-authentication)
     const showAuthFailureModal = useAuthFailureStore.getState().showAuthFailureModal;
     const cleanupAuthFailure = window.electronAPI.onAuthFailure(
@@ -402,6 +410,7 @@ export function useIpcListeners(): void {
       cleanupRoadmapError();
       cleanupRoadmapStopped();
       cleanupRateLimit();
+      cleanupSwarmStatus();
       cleanupSDKRateLimit();
       cleanupAuthFailure();
     };

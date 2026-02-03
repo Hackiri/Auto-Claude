@@ -279,6 +279,12 @@
       "overnightMode": "Mode nuit",
       "overnightModeHint": "Optimisé pour l'exécution nocturne sans surveillance avec des délais prolongés."
     },
+    "enableSwarmModeLabel": "Activer le mode Essaim",
+    "enableSwarmModeDescription": "Exécuter plusieurs agents en parallèle pour des builds plus rapides. Exclusif avec Ralph Loop.",
+    "swarmMode": {
+      "maxWorkers": "Nombre max de workers",
+      "maxWorkersHint": "Nombre d'agents concurrents (1-10). Plus de workers = plus rapide mais plus d'utilisation API."
+    },
     "errors": {
       "descriptionRequired": "Veuillez fournir une description",
       "maxImagesReached": "Maximum de 5 images autorisé",

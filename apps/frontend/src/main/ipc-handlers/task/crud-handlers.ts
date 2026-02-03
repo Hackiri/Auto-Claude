@@ -8,7 +8,7 @@ import { titleGenerator } from '../../title-generator';
 import { AgentManager } from '../../agent';
 import { findTaskAndProject } from './shared';
 import { findAllSpecPaths, isValidTaskId } from '../../utils/spec-path-helpers';
-import { isPathWithinBase } from '../../worktree-paths';
+import { isPathWithinBase, findTaskWorktree } from '../../worktree-paths';
 
 /**
  * Register task CRUD (Create, Read, Update, Delete) handlers
@@ -446,6 +446,44 @@ export function registerTaskCRUDHandlers(agentManager: AgentManager): void {
             if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               console.error('Failed to update requirements.json:', err);
             }
+          }
+        }
+
+        // Sync updates to worktree if one exists
+        const worktreePath = findTaskWorktree(project.path, task.specId);
+        if (worktreePath) {
+          const worktreeSpecDir = path.join(worktreePath, getSpecsDir(autoBuildDir), task.specId);
+
+          if (existsSync(worktreeSpecDir)) {
+            // Sync task_metadata.json
+            if (updatedMetadata) {
+              try {
+                writeFileSync(
+                  path.join(worktreeSpecDir, 'task_metadata.json'),
+                  JSON.stringify(updatedMetadata, null, 2), 'utf-8'
+                );
+              } catch (err) {
+                console.warn('[TASK_UPDATE] Failed to sync task_metadata.json to worktree:', err);
+              }
+            }
+
+            // Sync implementation_plan.json
+            try {
+              const planContent = readFileSync(path.join(specDir, AUTO_BUILD_PATHS.IMPLEMENTATION_PLAN), 'utf-8');
+              writeFileSync(path.join(worktreeSpecDir, AUTO_BUILD_PATHS.IMPLEMENTATION_PLAN), planContent, 'utf-8');
+            } catch { /* ignore if source missing */ }
+
+            // Sync spec.md
+            try {
+              const specContent = readFileSync(path.join(specDir, AUTO_BUILD_PATHS.SPEC_FILE), 'utf-8');
+              writeFileSync(path.join(worktreeSpecDir, AUTO_BUILD_PATHS.SPEC_FILE), specContent, 'utf-8');
+            } catch { /* ignore if source missing */ }
+
+            // Sync requirements.json
+            try {
+              const reqContent = readFileSync(path.join(specDir, 'requirements.json'), 'utf-8');
+              writeFileSync(path.join(worktreeSpecDir, 'requirements.json'), reqContent, 'utf-8');
+            } catch { /* ignore if source missing */ }
           }
         }
 
