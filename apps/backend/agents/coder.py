@@ -15,6 +15,7 @@ When ralph_config is provided and enabled, the agent runs with:
 import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 
 from core.client import create_client
@@ -45,6 +46,7 @@ from prompt_generator import (
 )
 from prompts import is_first_run
 from ralph_loop.config import RalphLoopConfig, get_max_iterations, is_ralph_loop_enabled
+from swarm.config import SwarmConfig, is_swarm_mode_enabled
 from ralph_loop.promises import (
     evaluate_all_promises as evaluate_promises,  # Alias for subtask completion checks
 )
@@ -52,7 +54,7 @@ from ralph_loop.promises import (
     get_default_promises,
     load_promises_from_plan,
 )
-from ralph_loop.reporter import generate_ralph_report
+from ralph_loop.reporter import RalphLoopReporter
 from ralph_loop.strategy import RetryStrategy
 from recovery import RecoveryManager
 from security.constants import PROJECT_DIR_ENV_VAR
@@ -105,6 +107,7 @@ async def run_autonomous_agent(
     verbose: bool = False,
     source_spec_dir: Path | None = None,
     ralph_config: RalphLoopConfig | None = None,
+    swarm_config: SwarmConfig | None = None,
 ) -> None:
     """
     Run the autonomous agent loop with automatic memory management.
@@ -156,6 +159,10 @@ async def run_autonomous_agent(
 
         # Initialize retry strategy
         ralph_retry_strategy = RetryStrategy(strategy_type=ralph_retry_strategy_type)
+
+        # Initialize reporter for iteration tracking
+        ralph_reporter = RalphLoopReporter(spec_dir)
+        ralph_reporter.start_run(ralph_config)
 
         # Load completion promises from plan, or use defaults
         ralph_completion_promises = load_promises_from_plan(spec_dir)
@@ -426,6 +433,41 @@ async def run_autonomous_agent(
                 if sync_spec_to_source(spec_dir, source_spec_dir):
                     print_status("Phase transition synced to main project", "success")
 
+            # === SWARM MODE BYPASS ===
+            # After planning completes, if swarm mode is enabled, hand off to
+            # the SwarmOrchestrator for parallel multi-worker execution.
+            if just_transitioned_from_planning and swarm_config is not None and is_swarm_mode_enabled(swarm_config):
+                from swarm.orchestrator import SwarmOrchestrator
+
+                print_status(
+                    f"Swarm mode: Launching {swarm_config.get('max_workers', 3)} parallel workers",
+                    "success",
+                )
+                orchestrator = SwarmOrchestrator(
+                    project_dir=project_dir,
+                    spec_dir=spec_dir,
+                    model=model,
+                    swarm_config=swarm_config,
+                    recovery_manager=recovery_manager,
+                    task_logger=task_logger,
+                )
+                await orchestrator.run_swarm_build()
+
+                # After swarm completes, check if build is done
+                if is_build_complete(spec_dir):
+                    print_build_complete_banner(spec_dir)
+                    status_manager.update(state=BuildState.COMPLETE)
+                    if task_logger:
+                        task_logger.end_phase(
+                            LogPhase.CODING,
+                            success=True,
+                            message="All subtasks completed via swarm mode",
+                        )
+                    break
+
+                # If not fully complete, fall through to normal sequential processing
+                print_status("Swarm mode finished with remaining tasks, continuing sequentially", "warning")
+
             if not next_subtask:
                 # FIX for Issue #495: Race condition after planning phase
                 # The implementation_plan.json may not be fully flushed to disk yet,
@@ -548,6 +590,7 @@ async def run_autonomous_agent(
             task_logger.set_session(iteration)
 
         # Run session with async context manager
+        session_start_time = time.time()
         async with client:
             status, response = await run_agent_session(
                 client, prompt, spec_dir, verbose, phase=current_log_phase
@@ -635,6 +678,17 @@ async def run_autonomous_agent(
             if sync_spec_to_source(spec_dir, source_spec_dir):
                 print_status("Implementation plan synced to main project", "success")
 
+        # Record iteration in Ralph reporter
+        if ralph_loop_enabled:
+            session_duration = time.time() - session_start_time
+            ralph_reporter.record_iteration(
+                phase="planning" if current_log_phase == LogPhase.PLANNING else "coder",
+                status="success" if (status != "error") else "error",
+                duration_seconds=session_duration,
+                subtask_id=subtask_id,
+                approach=None,
+            )
+
         # =============================================================================
         # RALPH LOOP COMPLETION PROMISE EVALUATION (AFTER SUBTASK COMPLETION)
         # =============================================================================
@@ -648,6 +702,10 @@ async def run_autonomous_agent(
                 spec_dir,
                 project_dir,
             )
+
+            # Record promise results in reporter
+            for result in promise_results:
+                ralph_reporter.record_promise_result(result)
 
             # Log promise evaluation results
             passed_count = sum(1 for r in promise_results if r.passed)
@@ -750,6 +808,11 @@ async def run_autonomous_agent(
                     f"Ralph loop: consecutive failure {ralph_consecutive_failures}/{RALPH_CONSECUTIVE_FAILURE_LIMIT}"
                 )
 
+                # Update the last recorded iteration with error details
+                if ralph_reporter.history:
+                    last_record = ralph_reporter.history[-1]
+                    last_record.error_message = str(response)[:200] if response else None
+
                 # Check if we've hit the consecutive failure limit
                 if ralph_consecutive_failures >= RALPH_CONSECUTIVE_FAILURE_LIMIT:
                     print_status(
@@ -777,6 +840,10 @@ async def run_autonomous_agent(
                     )
 
                     if decision.should_retry and decision.approach:
+                        # Update approach on the last recorded iteration
+                        if ralph_reporter.history:
+                            ralph_reporter.history[-1].approach = decision.approach.category.value
+                            ralph_reporter._save_history()
                         print()
                         print_status(
                             f"Ralph loop: Trying different approach - {decision.approach.category.value}",
@@ -827,13 +894,13 @@ async def run_autonomous_agent(
         else:
             ralph_final_status = "interrupted"
 
-        # Generate the report
-        report_path = generate_ralph_report(
-            spec_dir=spec_dir,
+        # Finish the run and generate the report
+        ralph_reporter.finish_run(
             final_status=ralph_final_status,
             subtasks_completed=completed,
             subtasks_total=total,
         )
+        report_path = ralph_reporter.generate_report()
         logger.info(f"Ralph loop report generated: {report_path}")
         print_status(f"Ralph loop report saved: {report_path.name}", "success")
 
