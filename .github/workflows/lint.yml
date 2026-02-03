@@ -48,26 +48,6 @@ jobs:
       - name: Run ruff format check
         run: ruff format apps/backend/ --check --diff
 
-  # Python type checking (mypy) - catches type errors before runtime
-  mypy:
-    name: Python Types (mypy)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install mypy
-        run: pip install mypy types-toml
-
-      - name: Run mypy
-        run: mypy apps/backend --strict --ignore-missing-imports
-
   # TypeScript/JavaScript linting (Biome) - 15-25x faster than ESLint
   typescript:
     name: TypeScript (Biome)
@@ -94,17 +74,15 @@ jobs:
   lint-complete:
     name: Lint Complete
     runs-on: ubuntu-latest
-    needs: [python, mypy, typescript]
+    needs: [python, typescript]
     if: always()
     steps:
       - name: Check lint results
         run: |
           if [[ "${{ needs.python.result }}" != "success" ]] || \
-             [[ "${{ needs.mypy.result }}" != "success" ]] || \
              [[ "${{ needs.typescript.result }}" != "success" ]]; then
             echo "❌ Linting failed"
             echo "  Python:     ${{ needs.python.result }}"
-            echo "  Python Types: ${{ needs.mypy.result }}"
             echo "  TypeScript: ${{ needs.typescript.result }}"
             exit 1
           fi

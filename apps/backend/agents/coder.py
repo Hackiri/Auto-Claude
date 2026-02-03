@@ -46,7 +46,6 @@ from prompt_generator import (
 )
 from prompts import is_first_run
 from ralph_loop.config import RalphLoopConfig, get_max_iterations, is_ralph_loop_enabled
-from swarm.config import SwarmConfig, is_swarm_mode_enabled
 from ralph_loop.promises import (
     evaluate_all_promises as evaluate_promises,  # Alias for subtask completion checks
 )
@@ -58,6 +57,7 @@ from ralph_loop.reporter import RalphLoopReporter
 from ralph_loop.strategy import RetryStrategy
 from recovery import RecoveryManager
 from security.constants import PROJECT_DIR_ENV_VAR
+from swarm.config import SwarmConfig, is_swarm_mode_enabled
 from task_logger import (
     LogPhase,
     get_task_logger,

@@ -10,6 +10,7 @@ and reports progress to a shared swarm_state.json file.
 from __future__ import annotations
 
 import asyncio
+import importlib.util as _imputil
 import json
 import logging
 import os
@@ -22,7 +23,6 @@ from typing import TYPE_CHECKING, Any
 from core.client import create_client
 from phase_config import get_phase_model, get_phase_thinking_budget
 from progress import get_next_subtask, is_build_complete
-import importlib.util as _imputil
 
 # Import file_lock directly to avoid runners.github.__init__ side effects
 _fl_spec = _imputil.spec_from_file_location(
