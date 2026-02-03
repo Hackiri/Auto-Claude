@@ -136,7 +136,9 @@ def handle_build_command(
 
     # Show swarm mode status if enabled
     if is_swarm_mode_enabled(swarm_config):
-        print(f"Swarm mode: {highlight('ENABLED')} ({swarm_config.get('max_workers', 3)} workers)")
+        print(
+            f"Swarm mode: {highlight('ENABLED')} ({swarm_config.get('max_workers', 3)} workers)"
+        )
 
     print()
 

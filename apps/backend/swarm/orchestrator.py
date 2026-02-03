@@ -100,14 +100,10 @@ class SwarmOrchestrator:
         # Initialize swarm state file
         self._write_swarm_state()
 
-        logger.info(
-            f"Swarm build starting with {self.max_workers} workers"
-        )
+        logger.info(f"Swarm build starting with {self.max_workers} workers")
 
         # Spawn worker coroutines
-        tasks = [
-            self._worker_loop(worker) for worker in self._workers
-        ]
+        tasks = [self._worker_loop(worker) for worker in self._workers]
         await asyncio.gather(*tasks, return_exceptions=True)
 
         # Mark all workers as done
@@ -312,9 +308,7 @@ class SwarmOrchestrator:
                     return phase
         return {}
 
-    def _update_task_status(
-        self, subtask_id: str, status: str, worker_id: str
-    ) -> None:
+    def _update_task_status(self, subtask_id: str, status: str, worker_id: str) -> None:
         """Update the task status in the implementation plan and swarm state."""
         plan_path = self.spec_dir / "implementation_plan.json"
         if not plan_path.exists():
@@ -353,9 +347,7 @@ class SwarmOrchestrator:
 
         self._write_swarm_state()
 
-    async def _log_event(
-        self, subtask_id: str, worker_id: str, message: str
-    ) -> None:
+    async def _log_event(self, subtask_id: str, worker_id: str, message: str) -> None:
         """Log a swarm event via task_logger, serializing concurrent writes."""
         if self.task_logger is None:
             return

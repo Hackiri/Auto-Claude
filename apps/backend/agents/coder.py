@@ -436,7 +436,11 @@ async def run_autonomous_agent(
             # === SWARM MODE BYPASS ===
             # After planning completes, if swarm mode is enabled, hand off to
             # the SwarmOrchestrator for parallel multi-worker execution.
-            if just_transitioned_from_planning and swarm_config is not None and is_swarm_mode_enabled(swarm_config):
+            if (
+                just_transitioned_from_planning
+                and swarm_config is not None
+                and is_swarm_mode_enabled(swarm_config)
+            ):
                 from swarm.orchestrator import SwarmOrchestrator
 
                 print_status(
@@ -466,7 +470,10 @@ async def run_autonomous_agent(
                     break
 
                 # If not fully complete, fall through to normal sequential processing
-                print_status("Swarm mode finished with remaining tasks, continuing sequentially", "warning")
+                print_status(
+                    "Swarm mode finished with remaining tasks, continuing sequentially",
+                    "warning",
+                )
 
             if not next_subtask:
                 # FIX for Issue #495: Race condition after planning phase
@@ -811,7 +818,9 @@ async def run_autonomous_agent(
                 # Update the last recorded iteration with error details
                 if ralph_reporter.history:
                     last_record = ralph_reporter.history[-1]
-                    last_record.error_message = str(response)[:200] if response else None
+                    last_record.error_message = (
+                        str(response)[:200] if response else None
+                    )
 
                 # Check if we've hit the consecutive failure limit
                 if ralph_consecutive_failures >= RALPH_CONSECUTIVE_FAILURE_LIMIT:
@@ -842,7 +851,9 @@ async def run_autonomous_agent(
                     if decision.should_retry and decision.approach:
                         # Update approach on the last recorded iteration
                         if ralph_reporter.history:
-                            ralph_reporter.history[-1].approach = decision.approach.category.value
+                            ralph_reporter.history[
+                                -1
+                            ].approach = decision.approach.category.value
                             ralph_reporter._save_history()
                         print()
                         print_status(
