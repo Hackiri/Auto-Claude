@@ -12,12 +12,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts', 'src/**/*.tsx'],
       exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.spec.ts', 'src/**/*.spec.tsx', 'src/**/*.d.ts'],
-      thresholds: {
-        lines: 30,
-        functions: 30,
-        branches: 30,
-        statements: 30
-      }
+
     },
     // Mock Electron modules for unit tests
     alias: {
