@@ -50,7 +50,7 @@ class DependencyAnalyzer:
         """Build the dependency graph from the implementation plan."""
         phases = self.plan.get("phases", [])
 
-        # First pass: collect all subtask info
+        # First pass: collect all subtask info and explicit subtask-level dependencies
         for phase in phases:
             phase_id = phase.get("phase", 0)
             phase_depends_on = phase.get("depends_on", [])
@@ -66,16 +66,19 @@ class DependencyAnalyzer:
                     + subtask.get("files_to_create", [])
                 )
 
+                # Read explicit subtask-level dependencies (blocks field)
+                explicit_deps = subtask.get("blocks", [])
+
                 self._dependency_graph[subtask_id] = DependencyInfo(
                     subtask_id=subtask_id,
-                    depends_on=[],  # Will be filled in second pass
+                    depends_on=list(explicit_deps),  # Start with explicit deps
                     depended_by=[],
                     files_touched=files_touched,
                     service=subtask.get("service"),
                     can_parallelize=phase.get("parallel_safe", False),
                 )
 
-        # Second pass: build dependencies based on phase ordering
+        # Second pass: add phase-level dependencies
         # Subtasks in phase N depend on all subtasks in phases that phase N depends on
         for phase in phases:
             phase_id = phase.get("phase", 0)
@@ -93,17 +96,21 @@ class DependencyAnalyzer:
                             if other_subtask.get("id"):
                                 dependency_subtasks.append(other_subtask["id"])
 
-            # Set dependencies for all subtasks in this phase
+            # Add phase-level dependencies to all subtasks in this phase
             for subtask in subtasks:
                 subtask_id = subtask.get("id", "")
                 if subtask_id and subtask_id in self._dependency_graph:
-                    self._dependency_graph[subtask_id].depends_on = dependency_subtasks
-                    # Update depended_by for dependency subtasks
-                    for dep_id in dependency_subtasks:
-                        if dep_id in self._dependency_graph:
-                            self._dependency_graph[dep_id].depended_by.append(
-                                subtask_id
-                            )
+                    # Merge phase-level deps with existing subtask-level deps
+                    existing_deps = set(self._dependency_graph[subtask_id].depends_on)
+                    existing_deps.update(dependency_subtasks)
+                    self._dependency_graph[subtask_id].depends_on = list(existing_deps)
+
+        # Third pass: build depended_by (reverse of depends_on)
+        for subtask_id, info in self._dependency_graph.items():
+            for dep_id in info.depends_on:
+                if dep_id in self._dependency_graph:
+                    if subtask_id not in self._dependency_graph[dep_id].depended_by:
+                        self._dependency_graph[dep_id].depended_by.append(subtask_id)
 
     def get_subtask_dependencies(self, subtask_id: str) -> DependencyInfo | None:
         """Get dependency info for a specific subtask."""
@@ -228,6 +235,135 @@ class DependencyAnalyzer:
                 )
 
         return ready
+
+    def get_wave_groups(self, subtask_ids: list[str] | None = None) -> list[list[str]]:
+        """
+        Group subtasks into dependency waves for wave-based execution.
+
+        Wave 0: Subtasks with no dependencies
+        Wave N: Subtasks that depend only on subtasks in waves < N
+
+        This is useful for understanding the minimum number of sequential steps
+        required to complete all subtasks when maximizing parallelism.
+
+        Args:
+            subtask_ids: Optional list of subtask IDs to analyze.
+                        If None, uses all subtasks in the graph.
+
+        Returns:
+            List of waves, where each wave is a list of subtask IDs that can
+            run in parallel once all previous waves are complete.
+
+        Raises:
+            ValueError: If circular dependencies are detected
+        """
+        if subtask_ids is None:
+            subtask_ids = list(self._dependency_graph.keys())
+
+        # Filter to only requested subtasks
+        remaining = {
+            st_id: set(self._dependency_graph[st_id].depends_on) & set(subtask_ids)
+            for st_id in subtask_ids
+            if st_id in self._dependency_graph
+        }
+        completed: set[str] = set()
+        waves: list[list[str]] = []
+
+        while remaining:
+            # Find subtasks whose dependencies are all completed
+            current_wave = [
+                st_id
+                for st_id, deps in remaining.items()
+                if deps.issubset(completed)
+            ]
+
+            if not current_wave:
+                # No progress possible - circular dependency detected
+                cycle_nodes = list(remaining.keys())
+                raise ValueError(
+                    f"Circular dependency detected among subtasks: {cycle_nodes}"
+                )
+
+            waves.append(current_wave)
+
+            # Move current wave to completed
+            for st_id in current_wave:
+                completed.add(st_id)
+                del remaining[st_id]
+
+        return waves
+
+    def get_subtask_wave(self, subtask_id: str) -> int:
+        """
+        Get the wave number for a specific subtask.
+
+        Wave 0 means no dependencies, higher wave means more dependencies.
+
+        Args:
+            subtask_id: The subtask ID to check
+
+        Returns:
+            Wave number (0-based), or -1 if subtask not found
+        """
+        if subtask_id not in self._dependency_graph:
+            return -1
+
+        try:
+            waves = self.get_wave_groups()
+            for wave_num, wave in enumerate(waves):
+                if subtask_id in wave:
+                    return wave_num
+            return -1
+        except ValueError:
+            # Circular dependency - can't compute wave
+            return -1
+
+    def get_phase_subtask_dependencies(self, phase_num: int) -> dict[str, DependencyInfo]:
+        """
+        Get dependency info for all subtasks in a specific phase.
+
+        This is useful for analyzing dependencies within a single phase,
+        ignoring cross-phase dependencies.
+
+        Args:
+            phase_num: The phase number to analyze
+
+        Returns:
+            Dictionary mapping subtask IDs to their DependencyInfo
+        """
+        phases = self.plan.get("phases", [])
+        result: dict[str, DependencyInfo] = {}
+
+        # Find the phase
+        for phase in phases:
+            if phase.get("phase") == phase_num:
+                subtasks = phase.get("subtasks", phase.get("chunks", []))
+                phase_subtask_ids = {s.get("id") for s in subtasks if s.get("id")}
+
+                for subtask in subtasks:
+                    subtask_id = subtask.get("id", "")
+                    if subtask_id and subtask_id in self._dependency_graph:
+                        info = self._dependency_graph[subtask_id]
+                        # Filter dependencies to only those within this phase
+                        within_phase_deps = [
+                            dep for dep in info.depends_on
+                            if dep in phase_subtask_ids
+                        ]
+                        within_phase_depended_by = [
+                            dep for dep in info.depended_by
+                            if dep in phase_subtask_ids
+                        ]
+                        result[subtask_id] = DependencyInfo(
+                            subtask_id=subtask_id,
+                            depends_on=within_phase_deps,
+                            depended_by=within_phase_depended_by,
+                            files_touched=info.files_touched,
+                            service=info.service,
+                            can_parallelize=info.can_parallelize,
+                        )
+                break
+
+        return result
 
 
 def can_run_in_parallel(
