@@ -106,10 +106,36 @@ export function Insights({ projectId }: InsightsProps) {
   const [creatingTask, setCreatingTask] = useState<string | null>(null);
   const [taskCreated, setTaskCreated] = useState<Set<string>>(new Set());
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+  const [viewportEl, setViewportEl] = useState<HTMLElement | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const scrollAreaViewportRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll threshold in pixels - user is considered "at bottom" if within this distance
+  const SCROLL_BOTTOM_THRESHOLD = 100;
+
+  // Check if user is near the bottom of scroll area
+  const checkIfAtBottom = useCallback((viewport: HTMLElement) => {
+    const { scrollTop, scrollHeight, clientHeight } = viewport;
+    return scrollHeight - scrollTop - clientHeight <= SCROLL_BOTTOM_THRESHOLD;
+  }, []);
+
+  // Handle scroll events to track user position
+  const handleScroll = useCallback(() => {
+    if (viewportEl) {
+      setIsUserAtBottom(checkIfAtBottom(viewportEl));
+    }
+  }, [viewportEl, checkIfAtBottom]);
+
+  // Set up scroll listener and check initial position when viewport becomes available
+  useEffect(() => {
+    if (viewportEl) {
+      // Check initial scroll position
+      setIsUserAtBottom(checkIfAtBottom(viewportEl));
+      viewportEl.addEventListener('scroll', handleScroll, { passive: true });
+      return () => viewportEl.removeEventListener('scroll', handleScroll);
+    }
+  }, [viewportEl, handleScroll, checkIfAtBottom]);
 
   // Load session and set up listeners on mount
   useEffect(() => {
@@ -118,48 +144,15 @@ export function Insights({ projectId }: InsightsProps) {
     return cleanup;
   }, [projectId]);
 
-  // Auto-scroll to bottom when messages change
-  // Uses requestAnimationFrame to ensure DOM layout is complete before scrolling
-  // and direct scrollTop manipulation for more predictable behavior than scrollIntoView
+  // Smart auto-scroll: only scroll if user is already at bottom
+  // This allows users to scroll up to read previous messages without being
+  // yanked back down during streaming responses
   // biome-ignore lint/correctness/useExhaustiveDependencies: deps intentionally trigger scroll on message/content changes
   useEffect(() => {
-    const scrollToBottom = () => {
-      const viewport = scrollAreaViewportRef.current;
-      if (viewport) {
-        // Use direct scrollTop manipulation for immediate, predictable scrolling
-        // This avoids race conditions with smooth scrolling animation on macOS
-        viewport.scrollTop = viewport.scrollHeight;
-      } else {
-        // Fallback to scrollIntoView for the sentinel element
-        messagesEndRef.current?.scrollIntoView({ block: 'end' });
-      }
-    };
-
-    // During streaming, use requestAnimationFrame to ensure DOM is updated
-    // After streaming completes, scroll immediately without animation
-    const isStreaming = !!streamingContent;
-    let rafId: number | undefined;
-    if (isStreaming) {
-      rafId = requestAnimationFrame(scrollToBottom);
-    } else {
-      // Small delay for non-streaming updates to allow layout to settle
-      const timeoutId = setTimeout(() => {
-        rafId = requestAnimationFrame(scrollToBottom);
-      }, 10);
-      return () => {
-        clearTimeout(timeoutId);
-        if (rafId !== undefined) {
-          cancelAnimationFrame(rafId);
-        }
-      };
+    if (isUserAtBottom && viewportEl) {
+      viewportEl.scrollTop = viewportEl.scrollHeight;
     }
-
-    return () => {
-      if (rafId !== undefined) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [session?.messages, streamingContent]);
+  }, [isUserAtBottom, viewportEl]);
 
   // Focus textarea on mount
   useEffect(() => {
@@ -170,11 +163,6 @@ export function Insights({ projectId }: InsightsProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when session changes
   useEffect(() => {
     setTaskCreated(new Set());
-  }, [session?.id]);
-
-  // Stable callback for viewport ref to avoid creating new function on each render
-  const handleViewportRef = useCallback((ref: HTMLDivElement | null) => {
-    scrollAreaViewportRef.current = ref;
   }, []);
 
   const handleSend = () => {
@@ -183,6 +171,7 @@ export function Insights({ projectId }: InsightsProps) {
 
     setInputValue('');
     sendMessage(projectId, message);
+    setIsUserAtBottom(true); // Resume auto-scroll when user sends a message
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -307,7 +296,7 @@ export function Insights({ projectId }: InsightsProps) {
       {/* Messages */}
       <ScrollArea
         className="flex-1 px-6 py-4"
-        onViewportRef={handleViewportRef}
+        onViewportRef={setViewportEl}
       >
         {messages.length === 0 && !streamingContent ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
@@ -402,7 +391,6 @@ export function Insights({ projectId }: InsightsProps) {
               </div>
             )}
 
-            <div ref={messagesEndRef} />
           </div>
         )}
       </ScrollArea>

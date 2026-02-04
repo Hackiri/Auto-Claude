@@ -1,6 +1,6 @@
 import { ChildProcess } from 'child_process';
-import type { IdeationConfig } from '../../shared/types';
-import type { CompletablePhase } from '../../shared/constants/phase-protocol';
+import type { CompletablePhase, ExecutionPhase } from '../../shared/constants/phase-protocol';
+import type { TaskEventPayload } from './task-event-schema';
 
 /**
  * Agent-specific types for process and state management
@@ -18,7 +18,7 @@ export interface AgentProcess {
 }
 
 export interface ExecutionProgressData {
-  phase: 'idle' | 'planning' | 'coding' | 'qa_review' | 'qa_fixing' | 'complete' | 'failed';
+  phase: ExecutionPhase;
   phaseProgress: number;
   overallProgress: number;
   currentSubtask?: string;
@@ -30,10 +30,11 @@ export interface ExecutionProgressData {
 export type ProcessType = 'spec-creation' | 'task-execution' | 'qa-process';
 
 export interface AgentManagerEvents {
-  log: (taskId: string, log: string) => void;
-  error: (taskId: string, error: string) => void;
-  exit: (taskId: string, code: number | null, processType: ProcessType) => void;
-  'execution-progress': (taskId: string, progress: ExecutionProgressData) => void;
+  log: (taskId: string, log: string, projectId?: string) => void;
+  error: (taskId: string, error: string, projectId?: string) => void;
+  exit: (taskId: string, code: number | null, processType: ProcessType, projectId?: string) => void;
+  'execution-progress': (taskId: string, progress: ExecutionProgressData, projectId?: string) => void;
+  'task-event': (taskId: string, event: TaskEventPayload, projectId?: string) => void;
 }
 
 // IdeationConfig now imported from shared types to maintain consistency
@@ -54,6 +55,7 @@ export interface TaskExecutionOptions {
   workers?: number;
   baseBranch?: string;
   useWorktree?: boolean; // If false, use --direct mode (no worktree isolation)
+  useLocalBranch?: boolean; // If true, use local branch directly instead of preferring origin/branch
 }
 
 export interface SpecCreationMetadata {
@@ -77,6 +79,7 @@ export interface SpecCreationMetadata {
   thinkingLevel?: 'none' | 'low' | 'medium' | 'high' | 'ultrathink';
   // Workspace mode - whether to use worktree isolation
   useWorktree?: boolean; // If false, use --direct mode (no worktree isolation)
+  useLocalBranch?: boolean; // If true, use local branch directly instead of preferring origin/branch
 }
 
 export interface IdeationProgressData {

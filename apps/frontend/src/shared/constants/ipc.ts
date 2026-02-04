@@ -16,6 +16,10 @@ export const IPC_CHANNELS = {
   TAB_STATE_GET: 'tabState:get',
   TAB_STATE_SAVE: 'tabState:save',
 
+  // Kanban preferences (per-project column collapse state)
+  KANBAN_PREFS_GET: 'kanbanPrefs:get',
+  KANBAN_PREFS_SAVE: 'kanbanPrefs:save',
+
   // Task operations
   TASK_LIST: 'task:list',
   TASK_CREATE: 'task:create',
@@ -27,6 +31,7 @@ export const IPC_CHANNELS = {
   TASK_UPDATE_STATUS: 'task:updateStatus',
   TASK_RECOVER_STUCK: 'task:recoverStuck',
   TASK_CHECK_RUNNING: 'task:checkRunning',
+  TASK_RESUME_PAUSED: 'task:resumePaused',  // Resume a rate-limited or auth-paused task
   TASK_LOAD_IMAGE_THUMBNAIL: 'task:loadImageThumbnail',
   TASK_SWARM_STATUS: 'task:swarmStatus',
 
@@ -37,6 +42,7 @@ export const IPC_CHANNELS = {
   TASK_WORKTREE_MERGE: 'task:worktreeMerge',
   TASK_WORKTREE_MERGE_PREVIEW: 'task:worktreeMergePreview',  // Preview merge conflicts before merging
   TASK_WORKTREE_DISCARD: 'task:worktreeDiscard',
+  TASK_WORKTREE_DISCARD_ORPHAN: 'task:worktreeDiscardOrphan',  // Delete orphaned worktree by spec name (no task association)
   TASK_WORKTREE_CREATE_PR: 'task:worktreeCreatePR',
   TASK_WORKTREE_OPEN_IN_IDE: 'task:worktreeOpenInIDE',
   TASK_WORKTREE_OPEN_IN_TERMINAL: 'task:worktreeOpenInTerminal',
@@ -59,6 +65,7 @@ export const IPC_CHANNELS = {
   TASK_LOGS_UNWATCH: 'task:logsUnwatch',   // Stop watching for log changes
   TASK_LOGS_CHANGED: 'task:logsChanged',   // Event: logs changed (main -> renderer)
   TASK_LOGS_STREAM: 'task:logsStream',     // Event: streaming log chunk (main -> renderer)
+  TASK_MERGE_PROGRESS: 'task:mergeProgress',  // Event: merge progress update (main -> renderer)
 
   // Terminal operations
   TERMINAL_CREATE: 'terminal:create',
@@ -383,6 +390,7 @@ export const IPC_CHANNELS = {
 
   // GitHub PR Review operations
   GITHUB_PR_LIST: 'github:pr:list',
+  GITHUB_PR_LIST_MORE: 'github:pr:listMore',  // Load more PRs (pagination)
   GITHUB_PR_GET: 'github:pr:get',
   GITHUB_PR_GET_DIFF: 'github:pr:getDiff',
   GITHUB_PR_REVIEW: 'github:pr:review',
@@ -522,6 +530,7 @@ export const IPC_CHANNELS = {
 
   // Git operations
   GIT_GET_BRANCHES: 'git:getBranches',
+  GIT_GET_BRANCHES_WITH_INFO: 'git:getBranchesWithInfo',
   GIT_GET_CURRENT_BRANCH: 'git:getCurrentBranch',
   GIT_DETECT_MAIN_BRANCH: 'git:detectMainBranch',
   GIT_CHECK_STATUS: 'git:checkStatus',
@@ -557,6 +566,7 @@ export const IPC_CHANNELS = {
   DEBUG_COPY_DEBUG_INFO: 'debug:copyDebugInfo',
   DEBUG_GET_RECENT_ERRORS: 'debug:getRecentErrors',
   DEBUG_LIST_LOG_FILES: 'debug:listLogFiles',
+  DEBUG_SIMULATE_RATE_LIMIT: 'debug:simulateRateLimit',  // Simulate rate limit for testing auto-swap
 
   // Claude Code CLI operations
   CLAUDE_CODE_CHECK_VERSION: 'claudeCode:checkVersion',
@@ -574,6 +584,9 @@ export const IPC_CHANNELS = {
   SENTRY_STATE_CHANGED: 'sentry:state-changed',  // Notify main process when setting changes
   GET_SENTRY_DSN: 'sentry:get-dsn',              // Get DSN from main process (env var)
   GET_SENTRY_CONFIG: 'sentry:get-config',        // Get full Sentry config (DSN + sample rates)
+
+  // Spell check
+  SPELLCHECK_SET_LANGUAGES: 'spellcheck:setLanguages',  // Set spell check language (syncs with i18n)
 
   // Screenshot capture
   SCREENSHOT_GET_SOURCES: 'screenshot:getSources',  // Get available screens/windows

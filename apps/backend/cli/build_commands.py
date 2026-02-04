@@ -91,7 +91,10 @@ def handle_build_command(
         debug_success,
     )
     from phase_config import get_phase_model
-    from prompts_pkg.prompts import get_base_branch_from_metadata
+    from prompts_pkg.prompts import (
+        get_base_branch_from_metadata,
+        get_use_local_branch_from_metadata,
+    )
     from qa_loop import run_qa_validation_loop, should_run_qa
     from ralph_loop.config import is_ralph_loop_enabled, load_ralph_config
     from swarm.config import is_swarm_mode_enabled, load_swarm_config
@@ -227,6 +230,9 @@ def handle_build_command(
             base_branch = metadata_branch
             debug("run.py", f"Using base branch from task metadata: {base_branch}")
 
+    # Check if user requested local branch (preserves gitignored files like .env)
+    use_local_branch = get_use_local_branch_from_metadata(spec_dir)
+
     if workspace_mode == WorkspaceMode.ISOLATED:
         # Keep reference to original spec directory for syncing progress back
         source_spec_dir = spec_dir
@@ -237,6 +243,7 @@ def handle_build_command(
             workspace_mode,
             source_spec_dir=spec_dir,
             base_branch=base_branch,
+            use_local_branch=use_local_branch,
         )
         # Use the localized spec directory (inside worktree) for AI access
         if localized_spec_dir:

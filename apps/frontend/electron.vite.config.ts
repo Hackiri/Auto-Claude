@@ -45,7 +45,9 @@ export default defineConfig({
         // Minimatch for glob pattern matching in worktree handlers
         'minimatch',
         // gray-matter for parsing SKILL.md frontmatter in skills handlers
-        'gray-matter'
+        'gray-matter',
+        // XState for task state machine
+        'xstate'
       ]
     })],
     build: {

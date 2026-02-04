@@ -17,6 +17,32 @@ import type { SupportedTerminal } from '../../shared/types/settings';
 // Windows shell paths are now imported from the platform module via getWindowsShellPaths()
 
 /**
+ * Shutdown flag to prevent PTY handlers from accessing destroyed resources
+ * (e.g., BrowserWindow.webContents) during app shutdown.
+ * Follows the same pattern as isShuttingDown in pty-daemon-client.ts.
+ *
+ * Part of the shutdown guard pattern for GitHub issue #1469: without this flag,
+ * PTY onData/onExit callbacks can fire after BrowserWindow is destroyed,
+ * causing pty.node's native ThreadSafeFunction to SIGABRT.
+ */
+let isShuttingDown = false;
+
+/**
+ * Set the shutting down flag. Call this during app quit/before-quit
+ * to prevent PTY handlers from accessing destroyed resources.
+ */
+export function setShuttingDown(value: boolean): void {
+  isShuttingDown = value;
+}
+
+/**
+ * Check if the PTY manager is in shutting down state.
+ */
+export function getIsShuttingDown(): boolean {
+  return isShuttingDown;
+}
+
+/**
  * Result of spawning a PTY process
  */
 export interface SpawnPtyResult {
@@ -142,6 +168,7 @@ export function spawnPtyProcess(
   const shellArgs = isWindows() ? [] : ['-l'];
 
   debugLog('[PtyManager] Spawning shell:', shell, shellArgs, '(preferred:', preferredTerminal || 'system', ', shellType:', shellType, ')');
+  debugLog('[PtyManager] PTY dimensions requested - cols:', cols, 'rows:', rows, 'cwd:', cwd || os.homedir());
 
   // Create a clean environment without DEBUG to prevent Claude Code from
   // enabling debug mode when the Electron app is run in development mode.
@@ -184,6 +211,10 @@ export function setupPtyHandlers(
 
   // Handle data from terminal
   ptyProcess.onData((data) => {
+    // Shutdown guard (GitHub #1469): skip processing to avoid accessing
+    // destroyed BrowserWindow.webContents, which triggers pty.node SIGABRT
+    if (isShuttingDown) return;
+
     // Append to output buffer (limit to 100KB)
     terminal.outputBuffer = (terminal.outputBuffer + data).slice(-100000);
 
@@ -201,13 +232,18 @@ export function setupPtyHandlers(
   ptyProcess.onExit(({ exitCode }) => {
     debugLog('[PtyManager] Terminal exited:', id, 'code:', exitCode);
 
-    // Resolve any pending exit promise FIRST (before other cleanup)
+    // Always resolve pending exit promises, even during shutdown
+    // (needed for waitForPtyExit callers to complete)
     const pendingExit = pendingExitPromises.get(id);
     if (pendingExit) {
       clearTimeout(pendingExit.timeoutId);
       pendingExitPromises.delete(id);
       pendingExit.resolve();
     }
+
+    // Shutdown guard (GitHub #1469): skip accessing win.webContents and callbacks
+    // to avoid pty.node SIGABRT from destroyed BrowserWindow resources
+    if (isShuttingDown) return;
 
     const win = getWindow();
     if (win) {
@@ -320,10 +356,30 @@ export function writeToPty(terminal: TerminalProcess, data: string): void {
 }
 
 /**
- * Resize a PTY process
+ * Resize a PTY process with validation and error handling.
+ * @param terminal The terminal process to resize
+ * @param cols New column count
+ * @param rows New row count
+ * @returns true if resize was successful, false otherwise
  */
-export function resizePty(terminal: TerminalProcess, cols: number, rows: number): void {
-  terminal.pty.resize(cols, rows);
+export function resizePty(terminal: TerminalProcess, cols: number, rows: number): boolean {
+  // Validate dimensions
+  if (cols <= 0 || rows <= 0 || !Number.isFinite(cols) || !Number.isFinite(rows)) {
+    debugError('[PtyManager] Invalid resize dimensions - terminal:', terminal.id, 'cols:', cols, 'rows:', rows);
+    return false;
+  }
+
+  try {
+    const prevCols = terminal.pty.cols;
+    const prevRows = terminal.pty.rows;
+    debugLog('[PtyManager] Resizing PTY - terminal:', terminal.id, 'from:', prevCols, 'x', prevRows, 'to:', cols, 'x', rows);
+    terminal.pty.resize(cols, rows);
+    debugLog('[PtyManager] PTY resized - actual dimensions now:', terminal.pty.cols, 'x', terminal.pty.rows);
+    return true;
+  } catch (error) {
+    debugError('[PtyManager] Resize failed for terminal:', terminal.id, 'error:', error);
+    return false;
+  }
 }
 
 /**

@@ -74,6 +74,8 @@ export const taskMock = {
 
   checkTaskRunning: async () => ({ success: true, data: false }),
 
+  resumePausedTask: async () => ({ success: true }),
+
   // Image operations
   loadImageThumbnail: async (_projectPath: string, _specId: string, _imagePath: string) => ({
     success: false,
@@ -109,5 +111,6 @@ export const taskMock = {
   onTaskExecutionProgress: () => () => {},
   onTaskSwarmStatus: () => () => {},
   onTaskLogsChanged: () => () => {},
-  onTaskLogsStream: () => () => {}
+  onTaskLogsStream: () => () => {},
+  onMergeProgress: () => () => {}
 };
