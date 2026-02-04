@@ -31,6 +31,10 @@ class Subtask:
     files_to_create: list[str] = field(default_factory=list)
     patterns_from: list[str] = field(default_factory=list)
 
+    # Dependencies
+    blocks: list[str] = field(default_factory=list)  # Subtask IDs this must complete before
+    blocked_by: list[str] = field(default_factory=list)  # Subtask IDs waiting on this (computed)
+
     # Verification
     verification: Verification | None = None
 
@@ -63,6 +67,10 @@ class Subtask:
             result["files_to_create"] = self.files_to_create
         if self.patterns_from:
             result["patterns_from"] = self.patterns_from
+        if self.blocks:
+            result["blocks"] = self.blocks
+        if self.blocked_by:
+            result["blocked_by"] = self.blocked_by
         if self.verification:
             result["verification"] = self.verification.to_dict()
         if self.expected_output:
@@ -95,6 +103,8 @@ class Subtask:
             files_to_modify=data.get("files_to_modify", []),
             files_to_create=data.get("files_to_create", []),
             patterns_from=data.get("patterns_from", []),
+            blocks=data.get("blocks", []),
+            blocked_by=data.get("blocked_by", []),
             verification=verification,
             expected_output=data.get("expected_output"),
             actual_output=data.get("actual_output"),

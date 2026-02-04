@@ -84,14 +84,21 @@ class ImplementationPlan:
         # Support both 'feature' and 'title' fields for task name
         feature_name = data.get("feature") or data.get("title") or "Unnamed Feature"
 
+        # Parse phases
+        phases = [
+            Phase.from_dict(p, idx + 1)
+            for idx, p in enumerate(data.get("phases", []))
+        ]
+
+        # Compute blocked_by for each phase (reverse of blocks)
+        for phase in phases:
+            phase.compute_blocked_by()
+
         return cls(
             feature=feature_name,
             workflow_type=workflow_type,
             services_involved=data.get("services_involved", []),
-            phases=[
-                Phase.from_dict(p, idx + 1)
-                for idx, p in enumerate(data.get("phases", []))
-            ],
+            phases=phases,
             final_acceptance=data.get("final_acceptance", []),
             created_at=data.get("created_at"),
             updated_at=data.get("updated_at"),
@@ -233,12 +240,36 @@ class ImplementationPlan:
         return available
 
     def get_next_subtask(self) -> tuple[Phase, Subtask] | None:
-        """Get the next subtask to work on, respecting dependencies."""
+        """Get the next subtask to work on, respecting both phase and subtask dependencies."""
+        # Build set of all completed subtask IDs across all phases
+        completed_ids: set[str] = set()
+        for phase in self.phases:
+            for subtask in phase.subtasks:
+                if subtask.status == SubtaskStatus.COMPLETED:
+                    completed_ids.add(subtask.id)
+
         for phase in self.get_available_phases():
             pending = phase.get_pending_subtasks()
-            if pending:
-                return phase, pending[0]
+            # Filter to only subtasks whose dependencies are satisfied
+            for subtask in pending:
+                # Check if all dependencies (blocks field) are completed
+                if all(dep_id in completed_ids for dep_id in subtask.blocks):
+                    return phase, subtask
         return None
+
+    def validate_all_dependencies(self) -> tuple[bool, list[str]]:
+        """
+        Validate all subtask dependencies across all phases.
+
+        Returns:
+            (is_valid, error_messages) tuple
+        """
+        all_errors: list[str] = []
+        for phase in self.phases:
+            is_valid, errors = phase.validate_dependencies()
+            if not is_valid:
+                all_errors.extend([f"Phase {phase.phase} ({phase.name}): {e}" for e in errors])
+        return len(all_errors) == 0, all_errors
 
     def get_progress(self) -> dict:
         """Get overall progress statistics."""
