@@ -101,7 +101,7 @@ function computeTrendData(entries: SessionHistoryEntry[]): TrendDataPoint[] {
   const dayMap = new Map<string, SessionHistoryEntry[]>();
 
   for (const entry of completed) {
-    const day = entry.completedAt!.substring(0, 10); // YYYY-MM-DD
+    const day = entry.completedAt?.substring(0, 10); // YYYY-MM-DD
     const existing = dayMap.get(day);
     if (existing) {
       existing.push(entry);

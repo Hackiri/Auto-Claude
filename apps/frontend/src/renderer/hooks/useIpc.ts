@@ -422,6 +422,7 @@ export function useIpcListeners(): void {
       cleanupSDKRateLimit();
       cleanupAuthFailure();
     };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: storeActionsRef pattern requires all action refs to stay current
   }, [updateTaskFromPlan, updateTaskStatus, updateExecutionProgress, appendLog, batchAppendLogs, setError, updateSessionFromPlan, updateSessionPhase, appendSessionLogs]);
 }
 

@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play, Pause, CheckCircle2, XCircle, Clock, Archive, Loader2 } from 'lucide-react';
 import { useAgentSessionsStore } from '../../../stores/agent-sessions-store';
-import { Badge } from '../../ui/badge';
 import { Progress } from '../../ui/progress';
 import { cn } from '../../../lib/utils';
 import type { AgentSession } from '../../../../shared/types';
@@ -130,7 +129,6 @@ function getStatusConfig(status: AgentSession['status'], t: (key: string) => str
         textClass: 'text-muted-foreground',
         bgClass: 'bg-muted'
       };
-    case 'pending':
     default:
       return {
         icon: Clock,

@@ -132,7 +132,6 @@ function getStatusConfig(status: SessionTask['status']) {
         iconClass: 'text-red-600 dark:text-red-400',
         bgClass: 'bg-red-500/10'
       };
-    case 'pending':
     default:
       return {
         icon: Clock,

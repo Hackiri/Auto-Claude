@@ -94,8 +94,8 @@ export function SDKRateLimitModal() {
         });
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSDKModalOpen, sdkRateLimitInfo, profiles]);
+  // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: loadAutoSwitchSettings is hoisted
+  }, [isSDKModalOpen, sdkRateLimitInfo, profiles, loadAutoSwitchSettings]);
 
   // Reset selection when modal closes
   useEffect(() => {

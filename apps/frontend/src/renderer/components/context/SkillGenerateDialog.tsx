@@ -24,7 +24,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { useSkillsStore } from '../../stores/skills-store';
-import type { Skill, SkillSource } from '../../../shared/types/skills';
+import type { Skill, } from '../../../shared/types/skills';
 
 interface SkillGenerateDialogProps {
   /** Whether the dialog is open */

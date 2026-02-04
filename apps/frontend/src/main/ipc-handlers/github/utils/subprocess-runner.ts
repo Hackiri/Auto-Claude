@@ -41,8 +41,9 @@ function createFallbackRunnerEnv(): Record<string, string> {
   const fallbackEnv: Record<string, string> = {};
 
   for (const key of safeEnvVars) {
-    if (process.env[key]) {
-      fallbackEnv[key] = process.env[key]!;
+    const value = process.env[key];
+    if (value) {
+      fallbackEnv[key] = value;
     }
   }
 
@@ -174,6 +175,7 @@ export function runPythonSubprocess<T = unknown>(
               execFile('taskkill', ['/pid', String(child.pid), '/T', '/F'], () => {});
             }
           } catch {
+            // Process group kill failed, try direct kill
             child.kill('SIGTERM');
           }
         }

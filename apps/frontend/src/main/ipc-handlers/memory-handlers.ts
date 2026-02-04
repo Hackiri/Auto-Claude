@@ -74,6 +74,7 @@ interface OllamaEmbeddingModel {
  * Recommended Embedding Model Card
  * Pre-curated models suitable for Auto Claude memory system
  */
+// biome-ignore lint/correctness/noUnusedVariables: Reserved for future model recommendation feature
 interface OllamaRecommendedModel {
   name: string;          // Model identifier
   description: string;   // Human-readable description

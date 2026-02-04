@@ -108,8 +108,8 @@ export function GitHubOAuthFlow({ onSuccess, onCancel }: GitHubOAuthFlowProps) {
     return () => {
       clearAuthTimeout();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run once on mount, checkGitHubStatus is intentionally excluded
-  }, [clearAuthTimeout]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: checkGitHubStatus is hoisted and available
+  }, [clearAuthTimeout, checkGitHubStatus]);
 
   // Listen for device code events from the main process
   // This allows us to display the code IMMEDIATELY when extracted, not after the auth completes

@@ -31,7 +31,7 @@ import {
 } from '../ui/alert-dialog';
 import { cn } from '../../lib/utils';
 import { useProjectStore } from '../../stores/project-store';
-import type { Task, MergeHistoryEntry, MergeConflictRecord } from '../../../shared/types';
+import type { Task, MergeHistoryEntry, } from '../../../shared/types';
 
 interface TaskMergeHistoryProps {
   task: Task;

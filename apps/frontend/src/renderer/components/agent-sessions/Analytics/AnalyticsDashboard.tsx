@@ -78,7 +78,7 @@ function MetricsSummary() {
 
   const avgMinutes = Math.floor(metrics.averageDurationMs / 60000);
   const avgSeconds = Math.floor((metrics.averageDurationMs % 60000) / 1000);
-  const successPct = Math.round(metrics.successRate * 100);
+  const _successPct = Math.round(metrics.successRate * 100);
 
   return (
     <div className="grid grid-cols-4 gap-3 mb-4">

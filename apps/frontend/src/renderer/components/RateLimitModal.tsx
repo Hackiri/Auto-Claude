@@ -49,8 +49,8 @@ export function RateLimitModal() {
         setSelectedProfileId(rateLimitInfo.suggestedProfileId);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen, rateLimitInfo?.suggestedProfileId]);
+  // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: loadAutoSwitchSettings is hoisted
+  }, [isModalOpen, rateLimitInfo?.suggestedProfileId, loadAutoSwitchSettings]);
 
   // Reset selection when modal closes
   useEffect(() => {

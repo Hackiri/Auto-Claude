@@ -609,7 +609,7 @@ export function TaskFormFields({
                     min={1}
                     max={20}
                     value={ralphLoopMaxCoderIterations ?? 5}
-                    onChange={(e) => onRalphLoopMaxCoderIterationsChange?.(parseInt(e.target.value) || 5)}
+                    onChange={(e) => onRalphLoopMaxCoderIterationsChange?.(parseInt(e.target.value, 10) || 5)}
                     disabled={disabled}
                     className="h-8 text-sm"
                   />
@@ -624,7 +624,7 @@ export function TaskFormFields({
                     min={1}
                     max={20}
                     value={ralphLoopMaxQaIterations ?? 3}
-                    onChange={(e) => onRalphLoopMaxQaIterationsChange?.(parseInt(e.target.value) || 3)}
+                    onChange={(e) => onRalphLoopMaxQaIterationsChange?.(parseInt(e.target.value, 10) || 3)}
                     disabled={disabled}
                     className="h-8 text-sm"
                   />
@@ -719,7 +719,7 @@ export function TaskFormFields({
                   min={1}
                   max={10}
                   value={swarmMaxWorkers ?? 3}
-                  onChange={(e) => onSwarmMaxWorkersChange?.(parseInt(e.target.value) || 3)}
+                  onChange={(e) => onSwarmMaxWorkersChange?.(parseInt(e.target.value, 10) || 3)}
                   disabled={disabled}
                   className="h-8 text-sm w-24"
                 />

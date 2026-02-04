@@ -40,7 +40,7 @@ export function SessionLogViewer({ sessionId }: SessionLogViewerProps) {
     if (isExpanded && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [filteredLogs, isExpanded]);
+  }, [isExpanded]);
 
   const displayLogs = hasActiveFilter ? filteredLogs : logs;
 

@@ -19,7 +19,6 @@ function mapLogType(type: TaskLogEntry['type']): LogEntryType {
     case 'success':
     case 'info':
       return 'info';
-    case 'text':
     default:
       return 'info';
   }

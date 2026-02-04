@@ -26,7 +26,7 @@ export function SessionSidebar() {
   const historyEntries = getFilteredEntries();
 
   const selectSession = useAgentSessionsStore((state) => state.selectSession);
-  const selectedSessionId = useAgentSessionsStore((state) => state.selectedSessionId);
+  const _selectedSessionId = useAgentSessionsStore((state) => state.selectedSessionId);
 
   // Count running sessions
   const runningSessions = activeSessions.filter(s => s.status === 'running').length;
@@ -39,7 +39,7 @@ export function SessionSidebar() {
   // Reset focused index when tab or sessions change
   useEffect(() => {
     setFocusedIndex(-1);
-  }, [activeTab, currentSessions.length]);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // Don't handle if inside an input
@@ -83,7 +83,6 @@ export function SessionSidebar() {
     <div
       ref={sidebarRef}
       className="flex flex-col h-full bg-card/30"
-      tabIndex={0}
       onKeyDown={handleKeyDown}
       role="navigation"
       aria-label={t('title')}

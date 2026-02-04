@@ -17,8 +17,8 @@ export function AgentSessions() {
   const comparisonSessionIds = useAgentSessionsStore((state) => state.comparisonSessionIds);
   const selectSession = useAgentSessionsStore((state) => state.selectSession);
   const clearComparison = useAgentSessionsStore((state) => state.clearComparison);
-  const activeProjectId = useProjectStore((state) => state.activeProjectId);
-  const selectedProjectId = useProjectStore((state) => state.selectedProjectId);
+  const _activeProjectId = useProjectStore((state) => state.activeProjectId);
+  const _selectedProjectId = useProjectStore((state) => state.selectedProjectId);
   const [activeTab, setActiveTab] = useState<string>('sessions');
 
   // Sync sessions from tasks whenever tasks change
@@ -30,7 +30,7 @@ export function AgentSessions() {
   useEffect(() => {
     selectSession(null);
     clearComparison();
-  }, [activeProjectId, selectedProjectId, selectSession, clearComparison]);
+  }, [selectSession, clearComparison]);
 
   const isComparing = comparisonSessionIds !== null;
 

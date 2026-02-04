@@ -138,7 +138,7 @@ export function WorktreeSelector({
       fetchWorktrees();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchWorktrees is intentionally excluded to prevent infinite loop
-  }, [isOpen, projectPath]);
+  }, [isOpen, projectPath, fetchWorktrees]);
 
   // Handle delete worktree
   const handleDeleteWorktree = async () => {

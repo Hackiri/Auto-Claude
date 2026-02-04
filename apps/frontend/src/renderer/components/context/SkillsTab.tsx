@@ -23,7 +23,7 @@ import { SkillCard } from './SkillCard';
 import { SkillPreviewDialog } from './SkillPreviewDialog';
 import { SkillEditDialog } from './SkillEditDialog';
 import { SkillGenerateDialog } from './SkillGenerateDialog';
-import { useSkillsStore, exportSingleSkill, loadSkills, exportSkills } from '../../stores/skills-store';
+import { useSkillsStore, exportSingleSkill, loadSkills, } from '../../stores/skills-store';
 // Note: useContextStore no longer needed - AI analyzes project directly without projectIndex
 import { useTranslation } from 'react-i18next';
 import { skillFilterCategories } from './constants';

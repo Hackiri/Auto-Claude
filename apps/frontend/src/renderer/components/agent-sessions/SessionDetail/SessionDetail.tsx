@@ -1,11 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { Bot, ExternalLink } from 'lucide-react';
+import { Bot, } from 'lucide-react';
 import { useSessionProgress } from '../../../hooks/useSessionProgress';
 import { SessionHeader } from './SessionHeader';
 import { SessionKanban } from './SessionKanban';
 import { SessionLogViewer } from '../SessionLogs/SessionLogViewer';
-import { Button } from '../../ui/button';
-import { cn } from '../../../lib/utils';
 
 interface SessionDetailProps {
   sessionId: string | null;

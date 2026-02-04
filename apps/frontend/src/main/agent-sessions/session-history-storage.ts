@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, } from 'fs';
 import path from 'path';
 import type { SessionHistoryEntry } from '../../shared/types';
 import { SessionHistoryPaths } from './session-history-paths';

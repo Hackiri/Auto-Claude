@@ -20,8 +20,9 @@ export class SessionManager {
    */
   loadSession(projectId: string, projectPath: string): InsightsSession | null {
     // Check in-memory cache first
-    if (this.sessions.has(projectId)) {
-      return this.sessions.get(projectId)!;
+    const cached = this.sessions.get(projectId);
+    if (cached) {
+      return cached;
     }
 
     // Migrate old format if needed

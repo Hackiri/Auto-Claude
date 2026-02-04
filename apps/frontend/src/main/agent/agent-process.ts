@@ -617,7 +617,7 @@ export class AgentProcessManager {
 
     // Parse Python commandto handle space-separated commands like "py -3"
     const [pythonCommand, pythonBaseArgs] = parsePythonCommand(this.getPythonPath());
-    let childProcess;
+    let childProcess: ReturnType<typeof spawn> | undefined;
     try {
       childProcess = spawn(pythonCommand, [...pythonBaseArgs, ...args], {
         cwd,

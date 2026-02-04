@@ -255,8 +255,8 @@ export function AccountSettings({ settings, onSettingsChange, isOpen }: AccountS
       // This bypasses the 1-minute cache to ensure accurate duplicate detection
       loadProfileUsageData(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, loadProfileUsageData]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: functions are hoisted and available
+  }, [isOpen, loadProfileUsageData, loadAutoSwitchSettings, loadClaudeProfiles, loadPriorityOrder]);
 
   // Subscribe to usage updates for real-time data
   useEffect(() => {

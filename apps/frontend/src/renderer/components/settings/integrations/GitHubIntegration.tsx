@@ -79,8 +79,8 @@ export function GitHubIntegration({
     if (authMode === 'oauth-success') {
       fetchUserRepos();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authMode]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchUserRepos is hoisted and available
+  }, [authMode, fetchUserRepos]);
 
   // Fetch branches when GitHub is enabled and project path is available
   useEffect(() => {
@@ -91,8 +91,8 @@ export function GitHubIntegration({
     } else {
       debugLog('useEffect[branches] - Skipping fetchBranches (conditions not met)');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envConfig?.githubEnabled, projectPath]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchBranches is hoisted and available
+  }, [envConfig?.githubEnabled, projectPath, fetchBranches]);
 
   /**
    * Handler for branch selection changes.

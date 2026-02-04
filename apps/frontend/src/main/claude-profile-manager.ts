@@ -898,7 +898,8 @@ export async function initializeClaudeProfileManager(): Promise<ClaudeProfileMan
   if (!initPromise) {
     initPromise = profileManager.initialize()
       .then(() => {
-        return profileManager!;
+        // profileManager is guaranteed to exist here since we're in its initialize() callback
+        return profileManager as ClaudeProfileManager;
       })
       .catch((error) => {
         // Reset cached promise on failure so retries can succeed

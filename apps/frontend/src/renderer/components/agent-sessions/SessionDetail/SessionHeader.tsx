@@ -135,7 +135,6 @@ function getStatusConfig(status: AgentSession['status'], t: (key: string) => str
         label: t('status.archived'),
         className: 'text-muted-foreground border-muted-foreground/30 bg-muted'
       };
-    case 'pending':
     default:
       return {
         icon: Clock,

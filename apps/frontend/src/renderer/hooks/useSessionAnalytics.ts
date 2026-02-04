@@ -89,8 +89,8 @@ function computeExecutionTimeData(sessions: AgentSession[]): ExecutionTimeDataPo
     .map((s) => ({
       sessionId: s.id,
       title: s.title || s.specId || s.id,
-      durationMs: s.completedAt!.getTime() - s.startedAt!.getTime(),
-      completedAt: s.completedAt!.toISOString(),
+      durationMs: s.completedAt?.getTime() - s.startedAt?.getTime(),
+      completedAt: s.completedAt?.toISOString(),
       success: s.status === 'completed',
     }))
     .sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime());
@@ -146,7 +146,7 @@ function computeTrendData(sessions: AgentSession[]): TrendDataPoint[] {
   const byDay = new Map<string, { durations: number[]; successes: number; total: number }>();
 
   for (const s of completed) {
-    const day = s.completedAt!.toISOString().slice(0, 10); // YYYY-MM-DD
+    const day = s.completedAt?.toISOString().slice(0, 10); // YYYY-MM-DD
     if (!byDay.has(day)) {
       byDay.set(day, { durations: [], successes: 0, total: 0 });
     }
@@ -154,7 +154,7 @@ function computeTrendData(sessions: AgentSession[]): TrendDataPoint[] {
     bucket.total++;
     if (s.status === 'completed') bucket.successes++;
     if (s.startedAt) {
-      const dur = s.completedAt!.getTime() - s.startedAt.getTime();
+      const dur = s.completedAt?.getTime() - s.startedAt.getTime();
       if (dur > 0) bucket.durations.push(dur);
     }
   }

@@ -2,7 +2,7 @@ import { Zap, Loader2 } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { cn, calculateProgress } from '../../lib/utils';
 import { EXECUTION_PHASE_BADGE_COLORS, EXECUTION_PHASE_LABELS } from '../../../shared/constants';
-import type { Task, ExecutionPhase, SwarmState } from '../../../shared/types';
+import type { Task, ExecutionPhase, } from '../../../shared/types';
 import { useTaskStore } from '../../stores/task-store';
 import { SwarmMonitor } from './SwarmMonitor';
 

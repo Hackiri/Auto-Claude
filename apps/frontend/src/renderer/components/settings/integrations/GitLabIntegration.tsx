@@ -84,8 +84,8 @@ export function GitLabIntegration({
     if (authMode === 'oauth-success') {
       fetchUserProjects();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authMode]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchUserProjects is hoisted and available
+  }, [authMode, fetchUserProjects]);
 
   // Check glab CLI on mount
   useEffect(() => {
@@ -119,8 +119,8 @@ export function GitLabIntegration({
     } else {
       debugLog('useEffect[branches] - Skipping fetchBranches (conditions not met)');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envConfig?.gitlabEnabled, projectPath]);
+    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchBranches is hoisted and available
+  }, [envConfig?.gitlabEnabled, projectPath, fetchBranches]);
 
   /**
    * Handler for branch selection changes.
