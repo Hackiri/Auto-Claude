@@ -363,6 +363,70 @@ Use ONLY these values for the `type` field in phases:
 3. **Clear verification** - Every subtask must have a way to verify it works
 4. **Explicit dependencies** - Phases block until dependencies complete
 
+### Subtask-Level Dependencies
+
+For fine-grained control within a phase, use the `blocks` field to specify which subtasks must complete before others can start.
+
+**When to use subtask dependencies:**
+- **File dependencies**: If subtask B modifies files created by subtask A
+- **Service dependencies**: If subtask B needs data/APIs from subtask A
+- **Logical dependencies**: Schema before migration, types before implementation, base class before derived
+
+**Dependency fields:**
+- `blocks`: Array of subtask IDs that THIS subtask must complete BEFORE (these are the prerequisites)
+- `blocked_by`: (Computed automatically) Array of subtask IDs waiting on THIS subtask
+
+**Example with dependencies:**
+
+```json
+{
+  "id": "phase-1-backend",
+  "name": "Backend API",
+  "parallel_safe": true,
+  "subtasks": [
+    {
+      "id": "subtask-1-1",
+      "description": "Create User model",
+      "blocks": [],
+      "files_to_create": ["models/user.py"],
+      "status": "pending"
+    },
+    {
+      "id": "subtask-1-2",
+      "description": "Create UserService that uses User model",
+      "blocks": ["subtask-1-1"],
+      "files_to_create": ["services/user_service.py"],
+      "status": "pending"
+    },
+    {
+      "id": "subtask-1-3",
+      "description": "Create User API endpoints using UserService",
+      "blocks": ["subtask-1-2"],
+      "files_to_create": ["routes/users.py"],
+      "status": "pending"
+    },
+    {
+      "id": "subtask-1-4",
+      "description": "Create Product model (independent)",
+      "blocks": [],
+      "files_to_create": ["models/product.py"],
+      "status": "pending"
+    }
+  ]
+}
+```
+
+In this example:
+- `subtask-1-1` and `subtask-1-4` can run in parallel (no dependencies)
+- `subtask-1-2` waits for `subtask-1-1` (needs User model)
+- `subtask-1-3` waits for `subtask-1-2` (needs UserService)
+
+**Dependency rules:**
+1. Dependencies MUST be within the same phase (cross-phase uses `depends_on` on phases)
+2. Avoid circular dependencies (A -> B -> A is invalid)
+3. Only specify direct dependencies (transitive deps are handled automatically)
+4. Empty `blocks` array means no dependencies (can start immediately when phase is ready)
+
 ### Verification Types
 
 **CRITICAL: ONLY these 6 verification types are valid. Any other type will cause validation failure.**
