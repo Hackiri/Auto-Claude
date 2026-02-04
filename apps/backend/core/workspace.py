@@ -320,6 +320,11 @@ def merge_existing_build(
     )
 
     if success_result:
+        # Record merge history for standard git merges
+        changed_files = _get_merge_changed_files(project_dir, no_commit)
+        if changed_files:
+            _record_merge_completion(project_dir, spec_name, changed_files)
+
         print()
         if no_commit:
             print_status("Changes are staged in your working directory.", "success")
@@ -1713,6 +1718,30 @@ def _record_merge_completion(
 
         traceback.print_exc()
         # Don't fail the merge if recording fails
+
+
+def _get_merge_changed_files(project_dir: Path, no_commit: bool = False) -> list[str]:
+    """
+    Get files changed in the most recent merge.
+
+    Args:
+        project_dir: Project directory
+        no_commit: If True, get staged files. If False, get files from merge commit.
+
+    Returns:
+        List of changed file paths
+    """
+    if no_commit:
+        # Get staged files (merge not committed yet)
+        result = run_git(["diff", "--cached", "--name-only"], cwd=project_dir)
+    else:
+        # Get files from the merge commit (HEAD vs HEAD~1)
+        result = run_git(["diff", "--name-only", "HEAD~1", "HEAD"], cwd=project_dir)
+
+    if result.returncode != 0:
+        return []
+
+    return [f for f in result.stdout.strip().split("\n") if f]
 
 
 # Note: All constants, classes and helper functions are imported from the refactored modules above
