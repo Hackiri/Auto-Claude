@@ -333,7 +333,15 @@
     }
   },
   "subtasks": {
-    "untitled": "Sous-tâche sans titre"
+    "untitled": "Sous-tâche sans titre",
+    "blockedBy": "Bloqué par {{count}}",
+    "blockedBy_one": "Bloqué par {{count}}",
+    "blockedBy_other": "Bloqué par {{count}}",
+    "blocks": "Bloque {{count}}",
+    "blocks_one": "Bloque {{count}}",
+    "blocks_other": "Bloque {{count}}",
+    "waitingFor": "En attente de :",
+    "blocking": "Bloque :"
   },
   "bulkPR": {
     "selectAllInColumn": "Sélectionner toutes les tâches de la colonne",

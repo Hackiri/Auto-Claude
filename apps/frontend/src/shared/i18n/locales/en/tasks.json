@@ -334,7 +334,15 @@
     }
   },
   "subtasks": {
-    "untitled": "Untitled subtask"
+    "untitled": "Untitled subtask",
+    "blockedBy": "Blocked by {{count}}",
+    "blockedBy_one": "Blocked by {{count}}",
+    "blockedBy_other": "Blocked by {{count}}",
+    "blocks": "Blocks {{count}}",
+    "blocks_one": "Blocks {{count}}",
+    "blocks_other": "Blocks {{count}}",
+    "waitingFor": "Waiting for:",
+    "blocking": "Blocking:"
   },
   "bulkPR": {
     "selectAllInColumn": "Select all tasks in column",

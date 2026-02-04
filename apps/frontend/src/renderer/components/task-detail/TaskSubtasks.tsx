@@ -1,16 +1,23 @@
-import { CheckCircle2, Clock, XCircle, AlertCircle, ListChecks, FileCode } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, AlertCircle, ListChecks, FileCode, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { cn, calculateProgress } from '../../lib/utils';
 import type { Task } from '../../../shared/types';
+import { useSubtaskDependencies } from '../../hooks/useSubtaskDependencies';
+import { SubtaskDependencyBadge } from './SubtaskDependencyBadge';
 
 interface TaskSubtasksProps {
   task: Task;
 }
 
-function getSubtaskStatusIcon(status: string) {
+function getSubtaskStatusIcon(status: string, isBlocked: boolean = false) {
+  // If blocked, show lock icon regardless of status
+  if (isBlocked && status === 'pending') {
+    return <Lock className="h-4 w-4 text-[var(--warning)]" />;
+  }
+
   switch (status) {
     case 'completed':
       return <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />;
@@ -26,6 +33,7 @@ function getSubtaskStatusIcon(status: string) {
 export function TaskSubtasks({ task }: TaskSubtasksProps) {
   const { t } = useTranslation(['tasks']);
   const progress = calculateProgress(task.subtasks);
+  const dependencyMetadata = useSubtaskDependencies(task.subtasks);
 
   return (
     <ScrollArea className="h-full">
@@ -45,76 +53,90 @@ export function TaskSubtasks({ task }: TaskSubtasksProps) {
               <span>{task.subtasks.filter(c => c.status === 'completed').length} of {task.subtasks.length} completed</span>
               <span className="tabular-nums">{progress}%</span>
             </div>
-            {task.subtasks.map((subtask, index) => (
-              <div
-                key={subtask.id}
-                className={cn(
-                  'rounded-xl border border-border bg-secondary/30 p-3 transition-all duration-200 hover:bg-secondary/50',
-                  subtask.status === 'in_progress' && 'border-[var(--info)]/50 bg-[var(--info-light)] ring-1 ring-info/20',
-                  subtask.status === 'completed' && 'border-[var(--success)]/50 bg-[var(--success-light)]',
-                  subtask.status === 'failed' && 'border-[var(--error)]/50 bg-[var(--error-light)]'
-                )}
-              >
-                <div className="flex items-start gap-2">
-                  {getSubtaskStatusIcon(subtask.status)}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        'text-[10px] font-medium px-1.5 py-0.5 rounded-full',
-                        subtask.status === 'completed' ? 'bg-success/20 text-success' :
-                        subtask.status === 'in_progress' ? 'bg-info/20 text-info' :
-                        subtask.status === 'failed' ? 'bg-destructive/20 text-destructive' :
-                        'bg-muted text-muted-foreground'
-                      )}>
-                        #{index + 1}
-                      </span>
+            {task.subtasks.map((subtask, index) => {
+              const depInfo = dependencyMetadata.get(subtask.id);
+              const isBlocked = depInfo?.isBlocked ?? false;
+
+              return (
+                <div
+                  key={subtask.id}
+                  className={cn(
+                    'rounded-xl border border-border bg-secondary/30 p-3 transition-all duration-200 hover:bg-secondary/50',
+                    subtask.status === 'in_progress' && 'border-[var(--info)]/50 bg-[var(--info-light)] ring-1 ring-info/20',
+                    subtask.status === 'completed' && 'border-[var(--success)]/50 bg-[var(--success-light)]',
+                    subtask.status === 'failed' && 'border-[var(--error)]/50 bg-[var(--error-light)]',
+                    isBlocked && subtask.status === 'pending' && 'border-[var(--warning)]/30 bg-[var(--warning)]/5 opacity-75'
+                  )}
+                >
+                  <div className="flex items-start gap-2">
+                    {getSubtaskStatusIcon(subtask.status, isBlocked)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          'text-[10px] font-medium px-1.5 py-0.5 rounded-full',
+                          subtask.status === 'completed' ? 'bg-success/20 text-success' :
+                          subtask.status === 'in_progress' ? 'bg-info/20 text-info' :
+                          subtask.status === 'failed' ? 'bg-destructive/20 text-destructive' :
+                          isBlocked ? 'bg-warning/20 text-warning' :
+                          'bg-muted text-muted-foreground'
+                        )}>
+                          #{index + 1}
+                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-sm font-medium text-foreground truncate cursor-default">
+                              {subtask.title || t('tasks:subtasks.untitled')}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="text-xs">{subtask.title || t('tasks:subtasks.untitled')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="text-sm font-medium text-foreground truncate cursor-default">
-                            {subtask.title || t('tasks:subtasks.untitled')}
-                          </span>
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2 cursor-default">
+                            {subtask.description}
+                          </p>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p className="text-xs">{subtask.title || t('tasks:subtasks.untitled')}</p>
-                        </TooltipContent>
+                        {subtask.description && subtask.description.length > 80 && (
+                          <TooltipContent side="bottom" className="max-w-sm">
+                            <p className="text-xs">{subtask.description}</p>
+                          </TooltipContent>
+                        )}
                       </Tooltip>
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2 cursor-default">
-                          {subtask.description}
-                        </p>
-                      </TooltipTrigger>
-                      {subtask.description && subtask.description.length > 80 && (
-                        <TooltipContent side="bottom" className="max-w-sm">
-                          <p className="text-xs">{subtask.description}</p>
-                        </TooltipContent>
+                      {/* Dependency badges */}
+                      {depInfo && (
+                        <SubtaskDependencyBadge
+                          dependencyInfo={depInfo}
+                          allSubtasks={task.subtasks}
+                        />
                       )}
-                    </Tooltip>
-                    {subtask.files && subtask.files.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {subtask.files.map((file) => (
-                          <Tooltip key={file}>
-                            <TooltipTrigger asChild>
-                              <Badge
-                                variant="secondary"
-                                className="text-xs font-mono cursor-help"
-                              >
-                                <FileCode className="mr-1 h-3 w-3" />
-                                {file.split('/').pop()}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="font-mono text-xs">
-                              {file}
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    )}
+                      {subtask.files && subtask.files.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {subtask.files.map((file) => (
+                            <Tooltip key={file}>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs font-mono cursor-help"
+                                >
+                                  <FileCode className="mr-1 h-3 w-3" />
+                                  {file.split('/').pop()}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="font-mono text-xs">
+                                {file}
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>

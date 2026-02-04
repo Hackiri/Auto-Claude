@@ -47,6 +47,9 @@ export interface Subtask {
     run?: string;
     scenario?: string;
   };
+  // Subtask-level dependencies (within same phase)
+  blocks?: string[];      // Subtask IDs this must complete before
+  blockedBy?: string[];   // Subtask IDs waiting on this (computed from blocks)
 }
 
 export interface QAReport {
@@ -345,6 +348,21 @@ export interface PlanSubtask {
     run?: string;
     scenario?: string;
   };
+  // Subtask-level dependencies (within same phase)
+  blocks?: string[];      // Subtask IDs this must complete before
+  blockedBy?: string[];   // Subtask IDs waiting on this (computed from blocks)
+}
+
+/**
+ * Computed dependency metadata for a subtask (used by UI hooks)
+ */
+export interface SubtaskDependencyInfo {
+  subtaskId: string;
+  isBlocked: boolean;                   // Has unresolved dependencies
+  isBlocking: boolean;                  // Has subtasks waiting on this
+  unresolvedDependencies: string[];     // Subtask IDs still pending
+  dependentSubtasks: string[];          // Subtask IDs waiting on this
+  wave: number;                         // Dependency level (0 = no deps, higher = later execution)
 }
 
 // Workspace management types (for human review)
