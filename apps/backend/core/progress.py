@@ -402,7 +402,7 @@ def get_current_phase(spec_dir: Path) -> dict | None:
 
 def get_next_subtask(spec_dir: Path) -> dict | None:
     """
-    Find the next subtask to work on, respecting phase dependencies.
+    Find the next subtask to work on, respecting both phase and subtask-level dependencies.
 
     Args:
         spec_dir: Directory containing implementation_plan.json
@@ -436,6 +436,20 @@ def get_next_subtask(spec_dir: Path) -> dict | None:
                 s.get("status") == "completed" for s in subtasks
             )
 
+        # Build a set of all completed subtask IDs (across all phases)
+        completed_subtask_ids: set[str] = set()
+        for phase in phases:
+            for subtask in phase.get("subtasks", phase.get("chunks", [])):
+                if subtask.get("status") == "completed":
+                    subtask_id = subtask.get("id")
+                    if subtask_id:
+                        completed_subtask_ids.add(subtask_id)
+
+        # Use DependencyAnalyzer to get ready subtasks
+        from agents.parallel.dependency import DependencyAnalyzer
+
+        analyzer = DependencyAnalyzer(plan)
+
         # Find next available subtask
         for phase in phases:
             phase_id_value = phase.get("id")
@@ -450,15 +464,28 @@ def get_next_subtask(spec_dir: Path) -> dict | None:
             else:
                 depends_on = [str(depends_on_raw)]
 
-            # Check if dependencies are satisfied
+            # Check if phase-level dependencies are satisfied
             deps_satisfied = all(phase_complete.get(dep, False) for dep in depends_on)
             if not deps_satisfied:
                 continue
 
-            # Find first pending subtask in this phase
+            # Collect pending subtask IDs in this phase
+            pending_ids = []
+            subtask_by_id = {}
             for subtask in phase.get("subtasks", phase.get("chunks", [])):
                 status = subtask.get("status", "pending")
-                if status in {"pending", "not_started", "not started"}:
+                subtask_id = subtask.get("id")
+                if status in {"pending", "not_started", "not started"} and subtask_id:
+                    pending_ids.append(subtask_id)
+                    subtask_by_id[subtask_id] = subtask
+
+            # Use DependencyAnalyzer to find which pending subtasks are ready
+            ready_ids = analyzer.get_ready_subtasks(pending_ids, completed_subtask_ids)
+
+            # Return the first ready subtask
+            for subtask_id in ready_ids:
+                subtask = subtask_by_id.get(subtask_id)
+                if subtask:
                     subtask_out, _changed = normalize_subtask_aliases(subtask)
                     subtask_out["status"] = "pending"
                     return {
