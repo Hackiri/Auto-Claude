@@ -82,7 +82,7 @@ export const terminalMock = {
     }
   }),
 
-  saveTerminalBuffer: async () => {},
+  saveTerminalBuffer: async () => { /* no-op */ },
 
   checkTerminalPtyAlive: async () => ({
     success: true,
@@ -94,20 +94,20 @@ export const terminalMock = {
   }),
 
   // Terminal Event Listeners (no-op in browser)
-  onTerminalOutput: () => () => {},
-  onTerminalExit: () => () => {},
-  onTerminalTitleChange: () => () => {},
-  onTerminalWorktreeConfigChange: () => () => {},
-  onTerminalClaudeSession: () => () => {},
-  onTerminalRateLimit: () => () => {},
-  onTerminalOAuthToken: () => () => {},
-  onTerminalAuthCreated: () => () => {},
-  onTerminalClaudeBusy: () => () => {},
-  onTerminalClaudeExit: () => () => {},
-  onTerminalOnboardingComplete: () => () => {},
-  onTerminalPendingResume: () => () => {},
-  onTerminalProfileChanged: () => () => {},
-  onTerminalOAuthCodeNeeded: () => () => {},
+  onTerminalOutput: () => () => { /* no-op */ },
+  onTerminalExit: () => () => { /* no-op */ },
+  onTerminalTitleChange: () => () => { /* no-op */ },
+  onTerminalWorktreeConfigChange: () => () => { /* no-op */ },
+  onTerminalClaudeSession: () => () => { /* no-op */ },
+  onTerminalRateLimit: () => () => { /* no-op */ },
+  onTerminalOAuthToken: () => () => { /* no-op */ },
+  onTerminalAuthCreated: () => () => { /* no-op */ },
+  onTerminalClaudeBusy: () => () => { /* no-op */ },
+  onTerminalClaudeExit: () => () => { /* no-op */ },
+  onTerminalOnboardingComplete: () => () => { /* no-op */ },
+  onTerminalPendingResume: () => () => { /* no-op */ },
+  onTerminalProfileChanged: () => () => { /* no-op */ },
+  onTerminalOAuthCodeNeeded: () => () => { /* no-op */ },
 
   // OAuth code submission
   submitOAuthCode: async () => ({

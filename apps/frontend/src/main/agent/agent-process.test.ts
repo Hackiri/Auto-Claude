@@ -403,10 +403,10 @@ describe('AgentProcessManager - API Profile Env Injection (Story 2.3)', () => {
       vi.mocked(profileService.getAPIProfileEnv).mockResolvedValue(mockApiProfileEnv);
 
       // Mock ALL console methods to capture any debug/error output
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { /* no-op */ });
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { /* no-op */ });
+      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => { /* no-op */ });
 
       await processManager.spawnProcess('task-1', '/fake/cwd', ['run.py'], {}, 'task-execution');
 
@@ -444,8 +444,8 @@ describe('AgentProcessManager - API Profile Env Injection (Story 2.3)', () => {
       vi.mocked(profileService.getAPIProfileEnv).mockResolvedValue(mockApiProfileEnv);
 
       // Mock console methods
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { /* no-op */ });
 
       await processManager.spawnProcess('task-1', '/fake/cwd', ['run.py'], {}, 'task-execution');
 

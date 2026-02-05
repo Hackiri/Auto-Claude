@@ -135,9 +135,9 @@ export const integrationMock = {
     }
   }),
 
-  onGitHubInvestigationProgress: () => () => {},
-  onGitHubInvestigationComplete: () => () => {},
-  onGitHubInvestigationError: () => () => {},
+  onGitHubInvestigationProgress: () => () => { /* no-op */ },
+  onGitHubInvestigationComplete: () => () => { /* no-op */ },
+  onGitHubInvestigationError: () => () => { /* no-op */ },
 
   // GitHub OAuth Operations (gh CLI)
   checkGitHubCli: async () => ({
@@ -288,8 +288,8 @@ export const integrationMock = {
 
   // GitLab MR Review Operations (AI-powered)
   getGitLabMRReview: async () => null,
-  runGitLabMRReview: () => {},
-  runGitLabMRFollowupReview: () => {},
+  runGitLabMRReview: () => { /* no-op */ },
+  runGitLabMRFollowupReview: () => { /* no-op */ },
   postGitLabMRReview: async () => false,
   postGitLabMRNote: async () => false,
   mergeGitLabMR: async () => false,
@@ -299,9 +299,9 @@ export const integrationMock = {
   checkGitLabMRNewCommits: async () => ({ hasNewCommits: false }),
 
   // GitLab MR Review Event Listeners
-  onGitLabMRReviewProgress: () => () => {},
-  onGitLabMRReviewComplete: () => () => {},
-  onGitLabMRReviewError: () => () => {},
+  onGitLabMRReviewProgress: () => () => { /* no-op */ },
+  onGitLabMRReviewComplete: () => () => { /* no-op */ },
+  onGitLabMRReviewError: () => () => { /* no-op */ },
 
   // GitLab OAuth Operations (glab CLI)
   checkGitLabCli: async () => ({
@@ -381,10 +381,10 @@ export const integrationMock = {
   }),
 
   // GitLab Event Listeners
-  onGitLabInvestigationProgress: () => () => {},
-  onGitLabInvestigationComplete: () => () => {},
-  onGitLabInvestigationError: () => () => {},
+  onGitLabInvestigationProgress: () => () => { /* no-op */ },
+  onGitLabInvestigationComplete: () => () => { /* no-op */ },
+  onGitLabInvestigationError: () => () => { /* no-op */ },
 
   // OAuth device code event listener (for streaming device code during auth)
-  onGitHubAuthDeviceCode: () => () => {}
+  onGitHubAuthDeviceCode: () => () => { /* no-op */ }
 };

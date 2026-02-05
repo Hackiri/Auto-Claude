@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow, shell, app } from 'electron';
 import { IPC_CHANNELS, AUTO_BUILD_PATHS, DEFAULT_APP_SETTINGS, DEFAULT_FEATURE_MODELS, DEFAULT_FEATURE_THINKING, MODEL_ID_MAP, THINKING_BUDGET_MAP, getSpecsDir } from '../../../shared/constants';
-import type { IPCResult, WorktreeStatus, WorktreeDiff, WorktreeDiffFile, WorktreeMergeResult, WorktreeDiscardResult, WorktreeListResult, WorktreeListItem, WorktreeCreatePROptions, WorktreeCreatePRResult, SupportedIDE, SupportedTerminal, AppSettings } from '../../../shared/types';
+import type { IPCResult, WorktreeStatus, WorktreeDiff, WorktreeDiffFile, WorktreeMergeResult, WorktreeDiscardResult, WorktreeListResult, WorktreeListItem, WorktreeCreatePROptions, WorktreeCreatePRResult, SupportedIDE, SupportedTerminal, AppSettings, TaskStatus } from '../../../shared/types';
 import path from 'path';
 import { minimatch } from 'minimatch';
 import { existsSync, readdirSync, statSync, readFileSync, promises as fsPromises } from 'fs';
@@ -2264,7 +2264,7 @@ export function registerWorktreeHandlers(
               }
 
               // Determine actual status based on verification
-              let newStatus: string;
+              let newStatus: TaskStatus;
               let planStatus: string;
               let message: string;
               let staged: boolean;
@@ -2438,7 +2438,7 @@ export function registerWorktreeHandlers(
               }
 
               // Route status change through TaskStateManager (XState) to avoid dual emission
-              taskStateManager.handleManualStatusChange(taskId, newStatus as any, task, project);
+              taskStateManager.handleManualStatusChange(taskId, newStatus, task, project);
 
               resolve({
                 success: true,

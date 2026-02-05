@@ -289,6 +289,15 @@ export interface PRReviewResult {
 }
 
 /**
+ * Legacy snake_case format for backwards compatibility with old saved files.
+ * When reading review files from disk, older versions may have snake_case keys.
+ */
+interface LegacyPRReviewResult extends PRReviewResult {
+  reviewed_commit_sha?: string;
+  posted_at?: string;
+}
+
+/**
  * Result of checking for new commits since last review
  */
 export interface NewCommitsCheck {
@@ -1272,11 +1281,11 @@ async function runPRReview(
   // Comprehensive validation of GitHub module
   const validation = await validateGitHubModule(project);
 
-  if (!validation.valid) {
-    throw new Error(validation.error);
+  if (!validation.valid || !validation.backendPath) {
+    throw new Error(validation.error ?? "GitHub module validation failed");
   }
 
-  const backendPath = validation.backendPath!;
+  const backendPath = validation.backendPath;
 
   const { sendProgress } = createIPCCommunicators<PRReviewProgress, PRReviewResult>(
     mainWindow,
@@ -1372,11 +1381,17 @@ async function runPRReview(
     logCollector.finalize(true);
 
     // Save PR review insights to memory (async, non-blocking)
-    savePRReviewToMemory(result.data!, repo, false).catch((err) => {
-      debugLog("Failed to save PR review to memory", { error: err.message });
-    });
+    if (result.data) {
+      savePRReviewToMemory(result.data, repo, false).catch((err: unknown) => {
+        const errMessage = err instanceof Error ? err.message : String(err);
+        debugLog("Failed to save PR review to memory", { error: errMessage });
+      });
+    }
 
-    return result.data!;
+    if (!result.data) {
+      throw new Error("Review completed but result data is missing");
+    }
+    return result.data;
   } finally {
     // Clean up the registry when done (success or error)
     runningReviews.delete(reviewKey);
@@ -2266,18 +2281,18 @@ export function registerPRHandlers(getMainWindow: () => BrowserWindow | null): v
         const githubDir = path.join(project.path, ".auto-claude", "github");
         const reviewPath = path.join(githubDir, "pr", `review_${prNumber}.json`);
 
-        let review: PRReviewResult;
+        let review: LegacyPRReviewResult;
         try {
           const rawData = fs.readFileSync(reviewPath, "utf-8");
           const sanitizedData = sanitizeNetworkData(rawData);
-          review = JSON.parse(sanitizedData);
+          review = JSON.parse(sanitizedData) as LegacyPRReviewResult;
         } catch {
           // File doesn't exist or couldn't be read
           return { hasNewCommits: false, newCommitCount: 0 };
         }
 
         // Normalize snake_case to camelCase for backwards compatibility with old saved files
-        const reviewedCommitSha = review.reviewedCommitSha ?? (review as any).reviewed_commit_sha;
+        const reviewedCommitSha = review.reviewedCommitSha ?? review.reviewed_commit_sha;
         if (!reviewedCommitSha) {
           debugLog("No reviewedCommitSha in review", { prNumber });
           return { hasNewCommits: false, newCommitCount: 0 };
@@ -2333,7 +2348,7 @@ export function registerPRHandlers(getMainWindow: () => BrowserWindow | null): v
           };
 
           // Check if findings have been posted and if new commits are after the posting date
-          const postedAt = review.postedAt || (review as any).posted_at;
+          const postedAt = review.postedAt || review.posted_at;
           let hasCommitsAfterPosting = true; // Default to true if we can't determine
 
           if (postedAt && comparison.commits && comparison.commits.length > 0) {
@@ -2655,12 +2670,12 @@ export function registerPRHandlers(getMainWindow: () => BrowserWindow | null): v
 
           // Comprehensive validation of GitHub module
           const validation = await validateGitHubModule(project);
-          if (!validation.valid) {
+          if (!validation.valid || !validation.backendPath) {
             sendError({ prNumber, error: validation.error || "GitHub module validation failed" });
             return;
           }
 
-          const backendPath = validation.backendPath!;
+          const backendPath = validation.backendPath;
           const reviewKey = getReviewKey(projectId, prNumber);
 
           // Check if already running
@@ -2782,9 +2797,12 @@ export function registerPRHandlers(getMainWindow: () => BrowserWindow | null): v
             logCollector.finalize(true);
 
             // Save follow-up PR review insights to memory (async, non-blocking)
-            savePRReviewToMemory(result.data!, repo, true).catch((err) => {
-              debugLog("Failed to save follow-up PR review to memory", { error: err.message });
-            });
+            if (result.data) {
+              savePRReviewToMemory(result.data, repo, true).catch((err: unknown) => {
+                const errMessage = err instanceof Error ? err.message : String(err);
+                debugLog("Failed to save follow-up PR review to memory", { error: errMessage });
+              });
+            }
 
             debugLog("Follow-up review completed", {
               prNumber,
@@ -2797,7 +2815,10 @@ export function registerPRHandlers(getMainWindow: () => BrowserWindow | null): v
               message: "Follow-up review complete!",
             });
 
-            sendComplete(result.data!);
+            if (!result.data) {
+              throw new Error("Follow-up review completed but result data is missing");
+            }
+            sendComplete(result.data);
           } finally {
             // Always clean up registry, whether we exit normally or via error
             runningReviews.delete(reviewKey);

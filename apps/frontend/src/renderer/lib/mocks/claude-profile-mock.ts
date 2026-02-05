@@ -64,9 +64,9 @@ export const claudeProfileMock = {
     data: null
   }),
 
-  onSDKRateLimit: () => () => {},
+  onSDKRateLimit: () => () => { /* no-op */ },
 
-  onAuthFailure: () => () => {},
+  onAuthFailure: () => () => { /* no-op */ },
 
   retryWithProfile: async () => ({ success: true }),
 
@@ -81,11 +81,11 @@ export const claudeProfileMock = {
     data: null
   }),
 
-  onUsageUpdated: () => () => {},
+  onUsageUpdated: () => () => { /* no-op */ },
 
-  onAllProfilesUsageUpdated: () => () => {},
+  onAllProfilesUsageUpdated: () => () => { /* no-op */ },
 
-  onProactiveSwapNotification: () => () => {},
+  onProactiveSwapNotification: () => () => { /* no-op */ },
 
   // Returns terminal config for embedded authentication
   authenticateClaudeProfile: async (profileId: string) => ({

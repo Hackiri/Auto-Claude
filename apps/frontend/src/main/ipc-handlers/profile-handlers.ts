@@ -321,7 +321,9 @@ export function registerProfileHandlers(): void {
         }
 
         // Extract error type if available
-        const errorType = (error as any).errorType;
+        // Service layer errors may have an errorType property for categorization
+        const errorWithType = error as Error & { errorType?: string };
+        const errorType = errorWithType.errorType;
         const errorMessage = error instanceof Error ? error.message : 'Failed to discover models';
 
         // Log for debugging

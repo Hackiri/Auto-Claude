@@ -374,6 +374,14 @@ function executeCredentialRead(
 }
 
 /**
+ * Validated credential data structure after passing validateCredentialData()
+ */
+type ValidatedCredentialData = {
+  claudeAiOauth?: { accessToken?: string; email?: string; emailAddress?: string };
+  email?: string;
+};
+
+/**
  * Parse and validate credential JSON from platform storage.
  * Shared helper to reduce code duplication across platforms.
  *
@@ -385,7 +393,7 @@ function executeCredentialRead(
 function parseCredentialJson<T extends PlatformCredentials>(
   credentialsJson: string | null,
   identifier: string,
-  extractFn: (data: any) => T
+  extractFn: (data: ValidatedCredentialData) => T
 ): T {
   if (!credentialsJson) {
     return extractFn({}) as T;

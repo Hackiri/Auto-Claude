@@ -228,7 +228,11 @@ async function runTriage(
     throw new Error(validation.error);
   }
 
-  const backendPath = validation.backendPath!;
+  if (!validation.backendPath) {
+    throw new Error('Backend path not found after validation');
+  }
+
+  const backendPath = validation.backendPath;
 
   const { sendProgress } = createIPCCommunicators<TriageProgress, TriageResult[]>(
     mainWindow,
@@ -293,7 +297,11 @@ async function runTriage(
     throw new Error(result.error ?? 'Triage failed');
   }
 
-  return result.data!;
+  if (!result.data) {
+    throw new Error('Triage completed but no data returned');
+  }
+
+  return result.data;
 }
 
 /**

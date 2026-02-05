@@ -16,7 +16,7 @@ vi.mock('child_process', async (importOriginal) => {
 
 // Mock parsePythonCommand
 vi.mock('../../../python-detector', () => ({
-  parsePythonCommand: vi.fn((path) => {
+  parsePythonCommand: vi.fn((_path) => {
     // specific behavior for spaced paths can be mocked here or overwridden in tests
     if (path.includes(' ')) {
         return [path, []]; // Simple pass-through for test
@@ -47,17 +47,26 @@ import { parsePythonCommand } from '../../../python-detector';
 import { detectAuthFailure } from '../../../rate-limit-detector';
 import { isWindows } from '../../../platform';
 
+// Type for mock child process that extends EventEmitter with required properties
+interface MockChildProcess extends EventEmitter {
+  stdout: EventEmitter;
+  stderr: EventEmitter;
+  kill: ReturnType<typeof vi.fn>;
+  pid?: number;
+}
+
 describe('runPythonSubprocess', () => {
-  let mockSpawn: any;
-  let mockChildProcess: any;
+  let mockSpawn: ReturnType<typeof vi.mocked<typeof childProcess.spawn>>;
+  let mockChildProcess: MockChildProcess;
 
   beforeEach(() => {
     mockSpawn = vi.mocked(childProcess.spawn);
-    mockChildProcess = new EventEmitter();
-    mockChildProcess.stdout = new EventEmitter();
-    mockChildProcess.stderr = new EventEmitter();
-    mockChildProcess.kill = vi.fn();
-    mockSpawn.mockReturnValue(mockChildProcess);
+    const proc = new EventEmitter() as MockChildProcess;
+    proc.stdout = new EventEmitter();
+    proc.stderr = new EventEmitter();
+    proc.kill = vi.fn();
+    mockChildProcess = proc;
+    mockSpawn.mockReturnValue(mockChildProcess as unknown as ReturnType<typeof childProcess.spawn>);
     vi.clearAllMocks();
   });
 
@@ -417,7 +426,7 @@ describe('runPythonSubprocess', () => {
       });
 
       mockChildProcess.pid = 12345;
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
       vi.spyOn(process, 'kill').mockImplementation(() => true);
 
       // Act

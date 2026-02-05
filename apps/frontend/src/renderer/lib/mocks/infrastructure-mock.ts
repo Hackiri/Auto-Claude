@@ -124,12 +124,15 @@ export const infrastructureMock = {
      total: number;
      percentage: number;
    }) => void) => {
-     // Store callback for test verification
-     (window as any).__downloadProgressCallback = callback;
+     // Store callback for test verification using a typed approach
+     interface WindowWithTestCallback extends Window {
+       __downloadProgressCallback?: typeof callback;
+     }
+     (window as WindowWithTestCallback).__downloadProgressCallback = callback;
 
      // Return cleanup function
      return () => {
-       delete (window as any).__downloadProgressCallback;
+       delete (window as WindowWithTestCallback).__downloadProgressCallback;
      };
    },
 
@@ -166,13 +169,13 @@ export const infrastructureMock = {
 
   deleteMultipleIdeas: async () => ({ success: true }),
 
-  onIdeationProgress: () => () => {},
-  onIdeationLog: () => () => {},
-  onIdeationComplete: () => () => {},
-  onIdeationError: () => () => {},
-  onIdeationStopped: () => () => {},
-  onIdeationTypeComplete: () => () => {},
-  onIdeationTypeFailed: () => () => {},
+  onIdeationProgress: () => () => { /* no-op */ },
+  onIdeationLog: () => () => { /* no-op */ },
+  onIdeationComplete: () => () => { /* no-op */ },
+  onIdeationError: () => () => { /* no-op */ },
+  onIdeationStopped: () => () => { /* no-op */ },
+  onIdeationTypeComplete: () => () => { /* no-op */ },
+  onIdeationTypeFailed: () => () => { /* no-op */ },
 
   // Shell Operations
   openExternal: async (url: string) => {

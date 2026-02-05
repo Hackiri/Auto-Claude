@@ -273,12 +273,16 @@ if sys.version_info >= (3, 12):
     }
 
     this.emit('status', 'Creating Python virtual environment...');
-    const venvPath = this.getVenvBasePath()!;
+    const venvPath = this.getVenvBasePath();
+    if (!venvPath) {
+      this.emit('error', 'Failed to determine virtual environment path');
+      return false;
+    }
     console.warn('[PythonEnvManager] Creating venv at:', venvPath, 'with:', systemPython);
 
     return new Promise((resolve) => {
       const proc = spawn(systemPython, ['-m', 'venv', venvPath], {
-        cwd: this.autoBuildSourcePath!,
+        cwd: this.autoBuildSourcePath ?? undefined,
         stdio: 'pipe',
         env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
       });
@@ -350,7 +354,7 @@ if sys.version_info >= (3, 12):
     console.warn('[PythonEnvManager] Bootstrapping pip...');
     return new Promise((resolve) => {
       const proc = spawn(venvPython, ['-m', 'ensurepip'], {
-        cwd: this.autoBuildSourcePath!,
+        cwd: this.autoBuildSourcePath ?? undefined,
         stdio: 'pipe',
         env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
       });
@@ -405,7 +409,7 @@ if sys.version_info >= (3, 12):
     return new Promise((resolve) => {
       // Use python -m pip for better compatibility across Python versions
       const proc = spawn(venvPython, ['-m', 'pip', 'install', '-r', requirementsPath], {
-        cwd: this.autoBuildSourcePath!,
+        cwd: this.autoBuildSourcePath ?? undefined,
         stdio: 'pipe',
         env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
       });

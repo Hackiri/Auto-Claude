@@ -290,12 +290,12 @@ export function isSecurePath(candidatePath: string): boolean {
   if (!candidatePath || !candidatePath.trim()) return false;
 
   // Security validation: reject paths with dangerous patterns
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally checking for null bytes (security validation)
   const dangerousPatterns = [
     /[;&|`${}[\]<>!"^]/,        // Shell metacharacters
     /%[^%]+%/,                   // Windows environment variable expansion
     /\.\.\//,                    // Unix directory traversal
     /\.\.\\/,                    // Windows directory traversal
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally checking for null bytes and newlines (security validation)
     /[\r\n\x00]/                 // Newlines (command injection), null bytes (path truncation)
   ];
 

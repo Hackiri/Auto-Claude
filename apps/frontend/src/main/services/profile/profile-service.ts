@@ -232,7 +232,11 @@ export async function updateProfile(input: UpdateProfileInput): Promise<APIProfi
   });
 
   // Find and return the updated profile
-  const updatedProfile = modifiedFile.profiles.find((p) => p.id === input.id)!;
+  // The profile is guaranteed to exist since we just updated it within the atomic operation
+  const updatedProfile = modifiedFile.profiles.find((p) => p.id === input.id);
+  if (!updatedProfile) {
+    throw new Error('Profile not found after update - this should never happen');
+  }
   return updatedProfile;
 }
 

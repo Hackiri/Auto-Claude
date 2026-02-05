@@ -343,7 +343,7 @@ describe('Task Store', () => {
         tasks: [createTestTask({ id: 'task-1', subtasks: [] })]
       });
 
-      const invalidPlan = { feature: 'Test' } as any;
+      const invalidPlan = { feature: 'Test' } as unknown as ImplementationPlan;
 
       useTaskStore.getState().updateTaskFromPlan('task-1', invalidPlan);
 

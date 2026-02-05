@@ -3,7 +3,8 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type * as pty from '@lydell/node-pty';
-import type { TerminalProcess } from '../types';
+import type { BrowserWindow } from 'electron';
+import type { TerminalProcess, WindowGetter } from '../types';
 import { buildCdCommand, escapeShellArg } from '../../../shared/utils/shell-escape';
 
 // Mock the platform module (main/platform/index.ts)
@@ -916,13 +917,14 @@ describe('claude-integration-handler - Helper Functions', () => {
       const mockWindow = {
         webContents: { send: vi.fn() }
       };
+      const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
       finalizeClaudeInvoke(
         terminal,
         { name: 'Default', isDefault: true },
         '/tmp/project',
         Date.now(),
-        () => mockWindow as any,
+        getWindow,
         vi.fn()
       );
 
@@ -936,13 +938,14 @@ describe('claude-integration-handler - Helper Functions', () => {
       const mockWindow = {
         webContents: { send: vi.fn() }
       };
+      const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
       finalizeClaudeInvoke(
         terminal,
         { name: 'Work Profile', isDefault: false },
         '/tmp/project',
         Date.now(),
-        () => mockWindow as any,
+        getWindow,
         vi.fn()
       );
 
@@ -957,13 +960,14 @@ describe('claude-integration-handler - Helper Functions', () => {
       const mockWindow = {
         webContents: { send: mockSend }
       };
+      const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
       finalizeClaudeInvoke(
         terminal,
         undefined,
         '/tmp/project',
         Date.now(),
-        () => mockWindow as any,
+        getWindow,
         vi.fn()
       );
 
@@ -982,13 +986,14 @@ describe('claude-integration-handler - Helper Functions', () => {
       const mockWindow = {
         webContents: { send: mockSend }
       };
+      const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
       finalizeClaudeInvoke(
         terminal,
         { name: 'Work Profile', isDefault: false },
         '/tmp/project',
         Date.now(),
-        () => mockWindow as any,
+        getWindow,
         vi.fn()
       );
 
@@ -1006,13 +1011,14 @@ describe('claude-integration-handler - Helper Functions', () => {
       const mockWindow = {
         webContents: { send: mockSend }
       };
+      const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
       finalizeClaudeInvoke(
         terminal,
         undefined,
         '/tmp/project',
         Date.now(),
-        () => mockWindow as any,
+        getWindow,
         vi.fn()
       );
 

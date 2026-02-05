@@ -487,8 +487,9 @@ export async function testConnection(
 
       // TypeError with ECONNREFUSED/ENOTFOUND → network error
       if (error instanceof TypeError) {
-        const errorCode = (error as any).code;
-        if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
+        // Node.js fetch errors have a 'code' property for network errors
+        const errorWithCode = error as TypeError & { code?: string };
+        if (errorWithCode.code === 'ECONNREFUSED' || errorWithCode.code === 'ENOTFOUND') {
           return {
             success: false,
             errorType: 'network',

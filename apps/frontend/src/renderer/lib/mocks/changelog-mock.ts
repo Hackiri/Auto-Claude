@@ -89,9 +89,9 @@ export const changelogMock = {
     data: []
   }),
 
-  onChangelogGenerationProgress: () => () => {},
-  onChangelogGenerationComplete: () => () => {},
-  onChangelogGenerationError: () => () => {},
+  onChangelogGenerationProgress: () => () => { /* no-op */ },
+  onChangelogGenerationComplete: () => () => { /* no-op */ },
+  onChangelogGenerationError: () => () => { /* no-op */ },
 
   // GitHub Release Operations
   getReleaseableVersions: async () => ({
@@ -136,7 +136,7 @@ export const changelogMock = {
     console.warn('[Browser Mock] createRelease called');
   },
 
-  onReleaseProgress: () => () => {},
-  onReleaseComplete: () => () => {},
-  onReleaseError: () => () => {}
+  onReleaseProgress: () => () => { /* no-op */ },
+  onReleaseComplete: () => () => { /* no-op */ },
+  onReleaseError: () => () => { /* no-op */ }
 };

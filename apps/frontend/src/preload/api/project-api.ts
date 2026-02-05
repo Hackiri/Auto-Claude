@@ -272,7 +272,14 @@ export const createProjectAPI = (): ProjectAPI => ({
     total: number;
     percentage: number;
   }) => void) => {
-    const listener = (_: any, data: any) => callback(data);
+    type ProgressData = {
+      modelName: string;
+      status: string;
+      completed: number;
+      total: number;
+      percentage: number;
+    };
+    const listener = (_event: Electron.IpcRendererEvent, data: ProgressData) => callback(data);
     ipcRenderer.on(IPC_CHANNELS.OLLAMA_PULL_PROGRESS, listener);
     return () => ipcRenderer.off(IPC_CHANNELS.OLLAMA_PULL_PROGRESS, listener);
   },

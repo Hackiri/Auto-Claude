@@ -115,28 +115,33 @@ export function hasOAuthUrl(data: string): boolean {
  * the email address during regex matching.
  */
 // eslint-disable-next-line no-control-regex
-// biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally matches ANSI escape sequences for terminal output parsing
+// All regexes in this array intentionally match ANSI escape sequences for terminal output parsing
 const ANSI_ESCAPE_PATTERNS = [
   // CSI sequences: \x1b[ followed by optional private mode indicator (?, >, !),
   // then parameters (numbers and semicolons), then a command letter
   // Examples: \x1b[0m (reset), \x1b[1;32m (bold green), \x1b[?25h (show cursor)
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally matches ANSI escape sequences
   /\x1b\[[?!>]?[0-9;]*[a-zA-Z]/g,
 
   // OSC sequences: \x1b] followed by content, terminated by BEL (\x07) or ST (\x1b\\)
   // Examples: \x1b]0;title\x07 (set window title), \x1b]8;;url\x07 (hyperlink)
   // The [^\x07]* matches any chars except BEL, allowing nested content
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally matches ANSI escape sequences
   /\x1b\][^\x07]*(?:\x07|\x1b\\)/g,
 
   // DCS sequences: \x1bP followed by content, terminated by ST (\x1b\\)
   // Used for device control strings (less common but should be handled)
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally matches ANSI escape sequences
   /\x1bP[^\x1b]*\x1b\\/g,
 
   // Single-character escapes: \x1b followed by specific characters
   // Examples: \x1b= (keypad mode), \x1b> (normal keypad), \x1bM (reverse index)
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally matches ANSI escape sequences
   /\x1b[=>ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz{|}~]/g,
 
   // APC, PM, SOS sequences (Application Program Command, Privacy Message, Start of String)
   // Format: \x1b_ or \x1b^ or \x1bX followed by content, terminated by ST
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally matches ANSI escape sequences
   /\x1b[_X^][^\x1b]*\x1b\\/g,
 ];
 

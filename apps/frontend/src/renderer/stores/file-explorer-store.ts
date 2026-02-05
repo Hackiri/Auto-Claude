@@ -98,16 +98,19 @@ export const useFileExplorerStore = create<FileExplorerState>((set, get) => ({
         throw new Error(result.error || 'Failed to load directory');
       }
 
+      // Capture the data before the callback to avoid non-null assertion
+      const loadedFiles = result.data;
+
       // Cache the result
       set((state) => {
         const newFiles = new Map(state.files);
-        newFiles.set(dirPath, result.data!);
+        newFiles.set(dirPath, loadedFiles);
         const newLoading = new Map(state.isLoading);
         newLoading.set(dirPath, false);
         return { files: newFiles, isLoading: newLoading };
       });
 
-      return result.data;
+      return loadedFiles;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       set((state) => {

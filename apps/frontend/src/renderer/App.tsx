@@ -894,16 +894,16 @@ export function App() {
                   />
                 </div>
                 {activeView === 'roadmap' && (activeProjectId || selectedProjectId) && (
-                  <Roadmap projectId={activeProjectId || selectedProjectId!} onGoToTask={handleGoToTask} />
+                  <Roadmap projectId={activeProjectId ?? selectedProjectId ?? ''} onGoToTask={handleGoToTask} />
                 )}
                 {activeView === 'context' && (activeProjectId || selectedProjectId) && (
-                  <Context projectId={activeProjectId || selectedProjectId!} />
+                  <Context projectId={activeProjectId ?? selectedProjectId ?? ''} />
                 )}
                 {activeView === 'ideation' && (activeProjectId || selectedProjectId) && (
-                  <Ideation projectId={activeProjectId || selectedProjectId!} onGoToTask={handleGoToTask} />
+                  <Ideation projectId={activeProjectId ?? selectedProjectId ?? ''} onGoToTask={handleGoToTask} />
                 )}
                 {activeView === 'insights' && (activeProjectId || selectedProjectId) && (
-                  <Insights projectId={activeProjectId || selectedProjectId!} />
+                  <Insights projectId={activeProjectId ?? selectedProjectId ?? ''} />
                 )}
                 {activeView === 'github-issues' && (activeProjectId || selectedProjectId) && (
                   <GitHubIssues
@@ -937,7 +937,7 @@ export function App() {
                 )}
                 {activeView === 'gitlab-merge-requests' && (activeProjectId || selectedProjectId) && (
                   <GitLabMergeRequests
-                    projectId={activeProjectId || selectedProjectId!}
+                    projectId={activeProjectId ?? selectedProjectId ?? ''}
                     onOpenSettings={() => {
                       setSettingsInitialProjectSection('gitlab');
                       setIsSettingsDialogOpen(true);
@@ -948,7 +948,7 @@ export function App() {
                   <Changelog />
                 )}
                 {activeView === 'worktrees' && (activeProjectId || selectedProjectId) && (
-                  <Worktrees projectId={activeProjectId || selectedProjectId!} />
+                  <Worktrees projectId={activeProjectId ?? selectedProjectId ?? ''} />
                 )}
                 {activeView === 'agent-tools' && <AgentTools />}
               </>
@@ -977,7 +977,7 @@ export function App() {
         {/* Dialogs */}
         {(activeProjectId || selectedProjectId) && (
           <TaskCreationWizard
-            projectId={activeProjectId || selectedProjectId!}
+            projectId={activeProjectId ?? selectedProjectId ?? ''}
             open={isNewTaskDialogOpen}
             onOpenChange={setIsNewTaskDialogOpen}
           />

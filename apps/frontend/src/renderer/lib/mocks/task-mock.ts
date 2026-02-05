@@ -104,13 +104,13 @@ export const taskMock = {
   }),
 
   // Event Listeners (no-op in browser)
-  onTaskProgress: () => () => {},
-  onTaskError: () => () => {},
-  onTaskLog: () => () => {},
-  onTaskStatusChange: () => () => {},
-  onTaskExecutionProgress: () => () => {},
-  onTaskSwarmStatus: () => () => {},
-  onTaskLogsChanged: () => () => {},
-  onTaskLogsStream: () => () => {},
-  onMergeProgress: () => () => {}
+  onTaskProgress: () => () => { /* no-op */ },
+  onTaskError: () => () => { /* no-op */ },
+  onTaskLog: () => () => { /* no-op */ },
+  onTaskStatusChange: () => () => { /* no-op */ },
+  onTaskExecutionProgress: () => () => { /* no-op */ },
+  onTaskSwarmStatus: () => () => { /* no-op */ },
+  onTaskLogsChanged: () => () => { /* no-op */ },
+  onTaskLogsStream: () => () => { /* no-op */ },
+  onMergeProgress: () => () => { /* no-op */ }
 };

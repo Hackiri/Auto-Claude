@@ -422,8 +422,9 @@ export function useIpcListeners(): void {
       cleanupSDKRateLimit();
       cleanupAuthFailure();
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: storeActionsRef pattern requires all action refs to stay current
-  }, [updateTaskFromPlan, updateTaskStatus, updateExecutionProgress, appendLog, batchAppendLogs, setError, updateSessionFromPlan, updateSessionPhase, appendSessionLogs]);
+    // The store action refs are passed to storeActionsRef at render time and used inside batch callbacks.
+    // They don't need to be useEffect dependencies since storeActionsRef is module-level and always current.
+  }, [appendLog, setError]);
 }
 
 /**

@@ -15,7 +15,7 @@ describe('os-detection', () => {
   let isLinux: typeof import('../os-detection').isLinux;
 
   const originalPlatform = navigator.platform;
-  const originalUserAgentData = (navigator as any).userAgentData;
+  const originalUserAgentData = (navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -42,7 +42,7 @@ describe('os-detection', () => {
         configurable: true,
       });
     } else {
-      delete (navigator as any).userAgentData;
+      delete (navigator as Navigator & { userAgentData?: { platform: string } }).userAgentData;
     }
   });
 

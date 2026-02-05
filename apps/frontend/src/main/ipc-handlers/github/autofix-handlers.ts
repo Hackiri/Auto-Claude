@@ -295,7 +295,11 @@ async function checkNewIssues(
     throw new Error(validation.error);
   }
 
-  const backendPath = validation.backendPath!;
+  if (!validation.backendPath) {
+    throw new Error('Backend path not found after validation');
+  }
+
+  const backendPath = validation.backendPath;
   const args = buildRunnerArgs(getRunnerPath(backendPath), project.path, 'check-new');
   const subprocessEnv = await getRunnerEnv();
 
@@ -640,7 +644,11 @@ export function registerAutoFixHandlers(
             throw new Error(validation.error);
           }
 
-          const backendPath = validation.backendPath!;
+          if (!validation.backendPath) {
+            throw new Error('Backend path not found after validation');
+          }
+
+          const backendPath = validation.backendPath;
           const additionalArgs = issueNumbers && issueNumbers.length > 0 ? issueNumbers.map(n => n.toString()) : [];
           const args = buildRunnerArgs(getRunnerPath(backendPath), project.path, 'batch-issues', additionalArgs);
           const subprocessEnv = await getRunnerEnv();
@@ -684,7 +692,11 @@ export function registerAutoFixHandlers(
             throw new Error(result.error ?? 'Failed to batch issues');
           }
 
-          sendComplete(result.data!);
+          if (!result.data) {
+            throw new Error('No batch data returned from subprocess');
+          }
+
+          sendComplete(result.data);
         });
       } catch (error) {
         debugLog('Batch auto-fix failed', { error: error instanceof Error ? error.message : error });
@@ -757,7 +769,11 @@ export function registerAutoFixHandlers(
             throw new Error(validation.error);
           }
 
-          const backendPath = validation.backendPath!;
+          if (!validation.backendPath) {
+            throw new Error('Backend path not found after validation');
+          }
+
+          const backendPath = validation.backendPath;
           const additionalArgs = ['--json'];
           if (maxIssues) {
             additionalArgs.push('--max-issues', maxIssues.toString());
@@ -795,7 +811,11 @@ export function registerAutoFixHandlers(
             throw new Error(result.error ?? 'Failed to analyze issues');
           }
 
-          sendComplete(result.data!);
+          if (!result.data) {
+            throw new Error('No analysis data returned from subprocess');
+          }
+
+          sendComplete(result.data);
         });
       } catch (error) {
         debugLog('Analyze preview failed', { error: error instanceof Error ? error.message : error });
@@ -859,7 +879,11 @@ export function registerAutoFixHandlers(
             throw new Error(validation.error);
           }
 
-          const backendPath = validation.backendPath!;
+          if (!validation.backendPath) {
+            throw new Error('Backend path not found after validation');
+          }
+
+          const backendPath = validation.backendPath;
           const { execFileSync } = await import('child_process');
           // Use execFileSync with arguments array to prevent command injection
           execFileSync(

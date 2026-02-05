@@ -47,10 +47,18 @@ export class ReleaseService extends EventEmitter {
       const match = matches[i];
       const version = match[1];
       const date = match[2] || '';
-      const startIndex = match.index! + match[0].length;
+      const matchIndex = match.index;
+
+      // Skip if match index is undefined (shouldn't happen with matchAll but TypeScript requires this)
+      if (matchIndex === undefined) {
+        continue;
+      }
+
+      const startIndex = matchIndex + match[0].length;
 
       // Content is until next version header or end of file
-      const endIndex = i < matches.length - 1 ? matches[i + 1].index! : content.length;
+      const nextMatch = matches[i + 1];
+      const endIndex = nextMatch?.index ?? content.length;
       const versionContent = content.slice(startIndex, endIndex).trim();
 
       versions.push({

@@ -150,11 +150,17 @@ export function findClaudeSessionAfter(
  * Shared helper used by both persistSession and persistSessionAsync.
  */
 function createSessionObject(terminal: TerminalProcess): TerminalSession {
+  // projectPath is guaranteed to be defined when this function is called
+  // (callers check terminal.projectPath before calling)
+  if (!terminal.projectPath) {
+    throw new Error('Cannot create session object: projectPath is required');
+  }
+
   return {
     id: terminal.id,
     title: terminal.title,
     cwd: terminal.cwd,
-    projectPath: terminal.projectPath!,
+    projectPath: terminal.projectPath,
     isClaudeMode: terminal.isClaudeMode,
     claudeSessionId: terminal.claudeSessionId,
     outputBuffer: terminal.outputBuffer,

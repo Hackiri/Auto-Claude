@@ -190,11 +190,11 @@ async function runMRReview(
 ): Promise<MRReviewResult> {
   const validation = await validateGitLabModule(project);
 
-  if (!validation.valid) {
-    throw new Error(validation.error);
+  if (!validation.valid || !validation.backendPath) {
+    throw new Error(validation.error ?? 'Backend path not available');
   }
 
-  const backendPath = validation.backendPath!;
+  const backendPath = validation.backendPath;
 
   const { sendProgress } = createIPCCommunicators<MRReviewProgress, MRReviewResult>(
     mainWindow,
@@ -258,11 +258,11 @@ async function runMRReview(
   try {
     const result = await promise;
 
-    if (!result.success) {
+    if (!result.success || !result.data) {
       throw new Error(result.error ?? 'Review failed');
     }
 
-    return result.data!;
+    return result.data;
   } finally {
     runningReviews.delete(reviewKey);
     debugLog('Unregistered review process', { reviewKey });
@@ -715,7 +715,8 @@ export function registerMRReviewHandlers(
           return { hasNewCommits: false };
         }
 
-        const reviewedCommitSha = review.reviewedCommitSha || (review as any).reviewed_commit_sha;
+        // Handle both camelCase (MRReviewResult) and snake_case (raw JSON) formats
+        const reviewedCommitSha = review.reviewedCommitSha || (review as unknown as { reviewed_commit_sha?: string }).reviewed_commit_sha;
         if (!reviewedCommitSha) {
           debugLog('No reviewedCommitSha in review', { mrIid });
           return { hasNewCommits: false };
@@ -798,12 +799,12 @@ export function registerMRReviewHandlers(
           );
 
           const validation = await validateGitLabModule(project);
-          if (!validation.valid) {
+          if (!validation.valid || !validation.backendPath) {
             sendError({ mrIid, error: validation.error || 'GitLab module validation failed' });
             return;
           }
 
-          const backendPath = validation.backendPath!;
+          const backendPath = validation.backendPath;
           const reviewKey = getReviewKey(projectId, mrIid);
 
           if (runningReviews.has(reviewKey)) {
@@ -869,11 +870,11 @@ export function registerMRReviewHandlers(
           try {
             const result = await promise;
 
-            if (!result.success) {
+            if (!result.success || !result.data) {
               throw new Error(result.error ?? 'Follow-up review failed');
             }
 
-            debugLog('Follow-up review completed', { mrIid, findingsCount: result.data?.findings.length });
+            debugLog('Follow-up review completed', { mrIid, findingsCount: result.data.findings.length });
             sendProgress({
               phase: 'complete',
               mrIid,
@@ -881,7 +882,7 @@ export function registerMRReviewHandlers(
               message: 'Follow-up review complete!',
             });
 
-            sendComplete(result.data!);
+            sendComplete(result.data);
           } finally {
             runningReviews.delete(reviewKey);
             debugLog('Unregistered follow-up review process', { reviewKey });

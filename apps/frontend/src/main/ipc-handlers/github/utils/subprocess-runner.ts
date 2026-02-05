@@ -172,9 +172,9 @@ export function runPythonSubprocess<T = unknown>(
             if (!isWindows()) {
               process.kill(-child.pid, 'SIGTERM');
             } else {
-              execFile('taskkill', ['/pid', String(child.pid), '/T', '/F'], () => {});
+              execFile('taskkill', ['/pid', String(child.pid), '/T', '/F'], () => { /* no-op */ });
             }
-          } catch {
+          } catch { /* no-op */
             // Process group kill failed, try direct kill
             child.kill('SIGTERM');
           }
@@ -624,10 +624,12 @@ export async function validateGitHubModule(project: Project): Promise<GitHubModu
   try {
     await execAsync('gh auth status 2>&1');
     result.ghAuthenticated = true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // gh auth status returns non-zero when not authenticated
     // Check the output to determine if it's an auth issue
-    const output = error.stdout || error.stderr || '';
+    // exec errors include stdout/stderr properties
+    const execError = error as { stdout?: string; stderr?: string };
+    const output = execError.stdout || execError.stderr || '';
     if (output.includes('not logged in') || output.includes('not authenticated')) {
       result.ghAuthenticated = false;
       result.error = 'GitHub CLI is not authenticated. Run:\n  gh auth login';

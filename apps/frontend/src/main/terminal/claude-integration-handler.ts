@@ -886,18 +886,37 @@ export function handleClaudeExit(
 }
 
 /**
+ * Profile information used in execute commands
+ */
+interface ExecuteProfileInfo {
+  id: string;
+  name?: string;
+  isDefault?: boolean;
+  oauthToken?: string;
+  configDir?: string;
+}
+
+/**
+ * Profile manager interface for execute commands
+ */
+interface ProfileManagerLike {
+  markProfileUsed(profileId: string): void;
+  getProfileToken(profileId: string): string | undefined;
+}
+
+/**
  * Shared command execution logic for profile-based invocation
  * Returns true if command was executed via configDir or temp-file method
  */
 interface ExecuteProfileCommandOptions {
   needsEnvOverride: boolean;
-  activeProfile: any;
+  activeProfile: ExecuteProfileInfo | undefined;
   cwdCommand: string;
   pathPrefix: string;
   escapedClaudeCmd: string;
   extraFlags: string | undefined;
   terminal: TerminalProcess;
-  profileManager: any;
+  profileManager: ProfileManagerLike;
   projectPath: string | undefined;
   startTime: number;
   getWindow: WindowGetter;

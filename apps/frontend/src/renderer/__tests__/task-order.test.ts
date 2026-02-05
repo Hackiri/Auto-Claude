@@ -272,7 +272,7 @@ describe('Task Order State Management', () => {
 
     it('should handle corrupted localStorage data gracefully', () => {
       // Spy on console.error to verify error logging
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
 
       localStorage.setItem('task-order-state-project-1', 'invalid-json{{{');
 
@@ -296,7 +296,7 @@ describe('Task Order State Management', () => {
 
     it('should handle localStorage access errors', () => {
       // Spy on console.error
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
 
       // Mock localStorage.getItem to throw
       const originalGetItem = localStorage.getItem;
@@ -335,7 +335,7 @@ describe('Task Order State Management', () => {
 
       const stored = localStorage.getItem('task-order-state-project-1');
       expect(stored).toBeTruthy();
-      expect(JSON.parse(stored!)).toEqual(order);
+      expect(JSON.parse(stored ?? '{}')).toEqual(order);
     });
 
     it('should not save if taskOrder is null', () => {
@@ -359,7 +359,7 @@ describe('Task Order State Management', () => {
 
     it('should handle localStorage write errors gracefully', () => {
       // Spy on console.error
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
 
       const order = createTestTaskOrder({ backlog: ['task-1'] });
       useTaskStore.setState({ taskOrder: order });
@@ -390,7 +390,9 @@ describe('Task Order State Management', () => {
 
       useTaskStore.getState().saveTaskOrder('project-1');
 
-      const stored = JSON.parse(localStorage.getItem('task-order-state-project-1')!);
+      const storedValue = localStorage.getItem('task-order-state-project-1');
+      expect(storedValue).toBeTruthy();
+      const stored = JSON.parse(storedValue ?? '{}');
       expect(stored.backlog).toEqual(['new-task-1', 'new-task-2']);
     });
   });
@@ -418,7 +420,7 @@ describe('Task Order State Management', () => {
     });
 
     it('should handle localStorage removal errors gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
 
       // Mock localStorage.removeItem to throw
       const originalRemoveItem = localStorage.removeItem;
@@ -589,7 +591,7 @@ describe('Task Order State Management', () => {
 
   describe('localStorage persistence edge cases', () => {
     it('should handle empty string in localStorage', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
 
       localStorage.setItem('task-order-state-project-1', '');
 
@@ -708,7 +710,7 @@ describe('Task Order State Management', () => {
 
     it('should handle very long task ID arrays', () => {
       // Create an order with many task IDs
-      const manyTaskIds = Array.from({ length: 100 }, (_, i) => `task-${i}`);
+      const manyTaskIds = Array.from({ length: 100 }, (_unused, i) => `task-${i}`);
       const order = createTestTaskOrder({ backlog: manyTaskIds });
       useTaskStore.setState({ taskOrder: order });
 
@@ -805,7 +807,9 @@ describe('Task Order State Management', () => {
       useTaskStore.setState({ tasks, taskOrder: orderWithStaleInMultipleColumns });
 
       const currentTaskIds = new Set(tasks.map(t => t.id));
-      const taskOrder = useTaskStore.getState().taskOrder!;
+      const taskOrder = useTaskStore.getState().taskOrder;
+      expect(taskOrder).not.toBeNull();
+      if (!taskOrder) throw new Error('taskOrder should not be null');
 
       // Filter each column
       const validBacklog = taskOrder.backlog.filter(id => currentTaskIds.has(id));

@@ -85,12 +85,14 @@ function computeMetrics(sessions: AgentSession[]): SessionMetrics {
  */
 function computeExecutionTimeData(sessions: AgentSession[]): ExecutionTimeDataPoint[] {
   return sessions
-    .filter((s) => s.startedAt && s.completedAt)
+    .filter((s): s is AgentSession & { startedAt: Date; completedAt: Date } =>
+      s.startedAt != null && s.completedAt != null
+    )
     .map((s) => ({
       sessionId: s.id,
       title: s.title || s.specId || s.id,
-      durationMs: s.completedAt?.getTime() - s.startedAt?.getTime(),
-      completedAt: s.completedAt?.toISOString(),
+      durationMs: s.completedAt.getTime() - s.startedAt.getTime(),
+      completedAt: s.completedAt.toISOString(),
       success: s.status === 'completed',
     }))
     .sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime());
@@ -147,14 +149,16 @@ function computeTrendData(sessions: AgentSession[]): TrendDataPoint[] {
 
   for (const s of completed) {
     const day = s.completedAt?.toISOString().slice(0, 10); // YYYY-MM-DD
+    if (!day) continue; // Skip if completedAt is undefined
     if (!byDay.has(day)) {
       byDay.set(day, { durations: [], successes: 0, total: 0 });
     }
-    const bucket = byDay.get(day)!;
+    const bucket = byDay.get(day);
+    if (!bucket) continue; // TypeScript guard (should never happen after set)
     bucket.total++;
     if (s.status === 'completed') bucket.successes++;
-    if (s.startedAt) {
-      const dur = s.completedAt?.getTime() - s.startedAt.getTime();
+    if (s.startedAt && s.completedAt) {
+      const dur = s.completedAt.getTime() - s.startedAt.getTime();
       if (dur > 0) bucket.durations.push(dur);
     }
   }

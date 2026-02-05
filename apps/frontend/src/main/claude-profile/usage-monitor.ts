@@ -199,6 +199,69 @@ function isHttpError(error: unknown): error is Error & { statusCode?: number } {
   return error instanceof Error && 'statusCode' in error;
 }
 
+/**
+ * Custom error type with HTTP status code for API failures
+ */
+interface ApiError extends Error {
+  statusCode?: number;
+  detectedInBody?: boolean;
+}
+
+/**
+ * Create an API error with status code
+ */
+function createApiError(message: string, statusCode?: number, detectedInBody?: boolean): ApiError {
+  const error = new Error(message) as ApiError;
+  error.statusCode = statusCode;
+  if (detectedInBody !== undefined) {
+    error.detectedInBody = detectedInBody;
+  }
+  return error;
+}
+
+/**
+ * Anthropic OAuth API response format (new nested format)
+ */
+interface AnthropicUsageResponse {
+  five_hour?: {
+    utilization: number;
+    resets_at?: string;
+  };
+  seven_day?: {
+    utilization: number;
+    resets_at?: string;
+  };
+  // Legacy flat format support
+  five_hour_utilization?: number;
+  seven_day_utilization?: number;
+  five_hour_reset_at?: string;
+  seven_day_reset_at?: string;
+}
+
+/**
+ * Quota limit item in z.ai/ZHIPU response
+ */
+interface QuotaLimitItem {
+  type: string;
+  unit?: string;
+  number?: number;
+  usage?: number;
+  currentValue?: number;
+  remaining?: number;
+  percentage?: number;
+  nextResetTime?: number;
+}
+
+/**
+ * z.ai/ZHIPU quota/limit API response format
+ */
+interface QuotaLimitResponse {
+  limits?: QuotaLimitItem[];
+  data?: {
+    limits?: QuotaLimitItem[];
+  };
+}
+
 export class UsageMonitor extends EventEmitter {
   private static instance: UsageMonitor;
   private intervalId: NodeJS.Timeout | null = null;
@@ -1474,14 +1537,12 @@ export class UsageMonitor extends EventEmitter {
 
         // Check for auth failures via status code (works for all providers)
         if (response.status === 401 || response.status === 403) {
-          const error = new Error(`API Auth Failure: ${response.status} (${provider})`);
-          (error as any).statusCode = response.status;
-          throw error;
+          throw createApiError(`API Auth Failure: ${response.status} (${provider})`, response.status);
         }
 
         // For other error statuses, try to parse response body to detect auth failures
         // This handles cases where providers might return different status codes for auth errors
-        let errorData: any;
+        let errorData: unknown;
         try {
           errorData = await response.json();
         } catch (parseError) {
@@ -1519,10 +1580,11 @@ export class UsageMonitor extends EventEmitter {
         const hasAuthError = authErrorPatterns.some(pattern => errorText.includes(pattern));
 
         if (hasAuthError) {
-          const error = new Error(`API Auth Failure detected in response body (${provider}): ${JSON.stringify(errorData)}`);
-          (error as any).statusCode = response.status; // Include original status code
-          (error as any).detectedInBody = true;
-          throw error;
+          throw createApiError(
+            `API Auth Failure detected in response body (${provider}): ${JSON.stringify(errorData)}`,
+            response.status,
+            true
+          );
         }
 
         // Record failure timestamp for cooldown retry (non-auth error)
@@ -1601,10 +1663,15 @@ export class UsageMonitor extends EventEmitter {
       this.debugLog('[UsageMonitor:API_FETCH] API fetch completed successfully');
 
       return normalizedUsage;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-throw auth failures to be handled by checkUsageAndSwap
       // This includes both status code auth failures (401/403) and body-detected failures
-      if (error?.message?.includes('Auth Failure') || error?.statusCode === 401 || error?.statusCode === 403) {
+      const apiError = error as ApiError;
+      if (
+        (apiError?.message?.includes('Auth Failure')) ||
+        apiError?.statusCode === 401 ||
+        apiError?.statusCode === 403
+      ) {
         throw error;
       }
 
@@ -1631,7 +1698,7 @@ export class UsageMonitor extends EventEmitter {
    * }
    */
   private normalizeAnthropicResponse(
-    data: any,
+    data: AnthropicUsageResponse,
     profileId: string,
     profileName: string,
     profileEmail?: string
@@ -1698,7 +1765,7 @@ export class UsageMonitor extends EventEmitter {
    * @returns Normalized usage snapshot or null on parse failure
    */
   private normalizeQuotaLimitResponse(
-    data: any,
+    data: QuotaLimitResponse,
     profileId: string,
     profileName: string,
     profileEmail: string | undefined,
@@ -1710,9 +1777,9 @@ export class UsageMonitor extends EventEmitter {
       console.warn(`[UsageMonitor:${logPrefix}_NORMALIZATION] Starting normalization:`, {
         profileId,
         profileName,
-        responseKeys: Object.keys(data),
-        hasLimits: !!data.limits,
-        limitsCount: data.limits?.length || 0
+        responseKeys: data ? Object.keys(data) : [],
+        hasLimits: !!data?.limits,
+        limitsCount: data?.limits?.length || 0
       });
     }
 
@@ -1728,8 +1795,8 @@ export class UsageMonitor extends EventEmitter {
       }
 
       // Find TOKENS_LIMIT (5-hour usage) and TIME_LIMIT (monthly usage)
-      const tokensLimit = data.limits.find((item: any) => item.type === 'TOKENS_LIMIT');
-      const timeLimit = data.limits.find((item: any) => item.type === 'TIME_LIMIT');
+      const tokensLimit = data.limits.find((item: QuotaLimitItem) => item.type === 'TOKENS_LIMIT');
+      const timeLimit = data.limits.find((item: QuotaLimitItem) => item.type === 'TIME_LIMIT');
 
       if (this.isDebug) {
         console.warn(`[UsageMonitor:${logPrefix}_NORMALIZATION] Found limit types:`, {
@@ -1848,7 +1915,7 @@ export class UsageMonitor extends EventEmitter {
    * Maps TIME_LIMIT → monthly usage (displayed as weekly in UI)
    */
   private normalizeZAIResponse(
-    data: any,
+    data: QuotaLimitResponse,
     profileId: string,
     profileName: string,
     profileEmail?: string
@@ -1866,7 +1933,7 @@ export class UsageMonitor extends EventEmitter {
    * TOKENS_LIMIT and TIME_LIMIT items.
    */
   private normalizeZhipuResponse(
-    data: any,
+    data: QuotaLimitResponse,
     profileId: string,
     profileName: string,
     profileEmail?: string

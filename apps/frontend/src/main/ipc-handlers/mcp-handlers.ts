@@ -166,7 +166,8 @@ async function checkHttpHealth(server: CustomMcpServer, startTime: number): Prom
  * Check command-based server health by verifying the command exists.
  */
 async function checkCommandHealth(server: CustomMcpServer, startTime: number): Promise<McpHealthCheckResult> {
-  if (!server.command) {
+  const serverCommand = server.command;
+  if (!serverCommand) {
     return {
       serverId: server.id,
       status: 'unhealthy',
@@ -175,40 +176,40 @@ async function checkCommandHealth(server: CustomMcpServer, startTime: number): P
     };
   }
 
-  return new Promise((resolve) => {
-    // Defense-in-depth: Validate command and args before spawn
-    if (!isCommandSafe(server.command)) {
-      return resolve({
-        serverId: server.id,
-        status: 'unhealthy',
-        message: `Invalid command '${server.command}' - not in allowlist`,
-        checkedAt: new Date().toISOString(),
-      });
-    }
-    if (!areArgsSafe(server.args)) {
-      return resolve({
-        serverId: server.id,
-        status: 'unhealthy',
-        message: 'Args contain dangerous flags or shell metacharacters',
-        checkedAt: new Date().toISOString(),
-      });
-    }
+  // Defense-in-depth: Validate command and args before spawn
+  if (!isCommandSafe(serverCommand)) {
+    return {
+      serverId: server.id,
+      status: 'unhealthy',
+      message: `Invalid command '${serverCommand}' - not in allowlist`,
+      checkedAt: new Date().toISOString(),
+    };
+  }
+  if (!areArgsSafe(server.args)) {
+    return {
+      serverId: server.id,
+      status: 'unhealthy',
+      message: 'Args contain dangerous flags or shell metacharacters',
+      checkedAt: new Date().toISOString(),
+    };
+  }
 
-    const command = isWindows() ? 'where' : 'which';
-    const proc = spawn(command, [server.command!], {
+  return new Promise((resolve) => {
+    const whichCommand = isWindows() ? 'where' : 'which';
+    const proc = spawn(whichCommand, [serverCommand], {
       timeout: 5000,
     });
 
     let found = false;
 
-    proc.on('close', (code) => {
+    proc.on('close', (code: number | null) => {
       const responseTime = Date.now() - startTime;
 
       if (code === 0 || found) {
         resolve({
           serverId: server.id,
           status: 'healthy',
-          message: `Command '${server.command}' found`,
+          message: `Command '${serverCommand}' found`,
           responseTime,
           checkedAt: new Date().toISOString(),
         });
@@ -216,7 +217,7 @@ async function checkCommandHealth(server: CustomMcpServer, startTime: number): P
         resolve({
           serverId: server.id,
           status: 'unhealthy',
-          message: `Command '${server.command}' not found in PATH`,
+          message: `Command '${serverCommand}' not found in PATH`,
           responseTime,
           checkedAt: new Date().toISOString(),
         });
@@ -232,7 +233,7 @@ async function checkCommandHealth(server: CustomMcpServer, startTime: number): P
       resolve({
         serverId: server.id,
         status: 'unhealthy',
-        message: `Failed to check command '${server.command}'`,
+        message: `Failed to check command '${serverCommand}'`,
         responseTime,
         checkedAt: new Date().toISOString(),
       });
@@ -391,7 +392,8 @@ async function testHttpConnection(server: CustomMcpServer, startTime: number): P
  * Test command-based MCP server connection by spawning the process and trying to communicate.
  */
 async function testCommandConnection(server: CustomMcpServer, startTime: number): Promise<McpTestConnectionResult> {
-  if (!server.command) {
+  const serverCommand = server.command;
+  if (!serverCommand) {
     return {
       serverId: server.id,
       success: false,
@@ -399,27 +401,27 @@ async function testCommandConnection(server: CustomMcpServer, startTime: number)
     };
   }
 
+  // Defense-in-depth: Validate command and args before spawn
+  if (!isCommandSafe(serverCommand)) {
+    return {
+      serverId: server.id,
+      success: false,
+      message: `Invalid command '${serverCommand}' - not in allowlist`,
+    };
+  }
+  if (!areArgsSafe(server.args)) {
+    return {
+      serverId: server.id,
+      success: false,
+      message: 'Args contain dangerous flags or shell metacharacters',
+    };
+  }
+
+  const args = server.args || [];
+
   return new Promise((resolve) => {
-    // Defense-in-depth: Validate command and args before spawn
-    if (!isCommandSafe(server.command)) {
-      return resolve({
-        serverId: server.id,
-        success: false,
-        message: `Invalid command '${server.command}' - not in allowlist`,
-      });
-    }
-    if (!areArgsSafe(server.args)) {
-      return resolve({
-        serverId: server.id,
-        success: false,
-        message: 'Args contain dangerous flags or shell metacharacters',
-      });
-    }
-
-    const args = server.args || [];
-
     // On Windows, use shell: true to properly handle .cmd/.bat scripts like npx
-    const proc = spawn(server.command!, args, {
+    const proc = spawn(serverCommand, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 15000, // OS-level timeout for reliable process termination
       shell: isWindows(), // Required for Windows to run npx.cmd
@@ -460,7 +462,7 @@ async function testCommandConnection(server: CustomMcpServer, startTime: number)
 
     proc.stdin.write(initRequest);
 
-    proc.stdout.on('data', (data) => {
+    proc.stdout.on('data', (data: Buffer) => {
       stdout += data.toString('utf-8');
 
       // Try to parse JSON response
@@ -489,11 +491,11 @@ async function testCommandConnection(server: CustomMcpServer, startTime: number)
       }
     });
 
-    proc.stderr.on('data', (data) => {
+    proc.stderr.on('data', (data: Buffer) => {
       stderr += data.toString('utf-8');
     });
 
-    proc.on('error', (error) => {
+    proc.on('error', (error: Error) => {
       if (!resolved) {
         resolved = true;
         clearTimeout(timeoutId);
@@ -508,7 +510,7 @@ async function testCommandConnection(server: CustomMcpServer, startTime: number)
       }
     });
 
-    proc.on('close', (code) => {
+    proc.on('close', (code: number | null) => {
       if (!resolved) {
         resolved = true;
         clearTimeout(timeoutId);

@@ -34,15 +34,19 @@ interface SessionAnalyticsState {
  * Sorted by completion date ascending, capped at 100 most recent.
  */
 function computeExecutionTimeData(entries: SessionHistoryEntry[]): ExecutionTimeDataPoint[] {
-  return entries
-    .filter((e) => e.completedAt)
-    .sort((a, b) => new Date(a.completedAt!).getTime() - new Date(b.completedAt!).getTime())
+  // Filter to only entries with completedAt, then type-narrow to ensure completedAt is defined
+  const completedEntries = entries.filter(
+    (e): e is SessionHistoryEntry & { completedAt: string } => e.completedAt !== undefined && e.completedAt !== null
+  );
+
+  return completedEntries
+    .sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime())
     .slice(-100)
     .map((e) => ({
       sessionId: e.id,
       title: e.title.length > 30 ? e.title.substring(0, 27) + '...' : e.title,
       durationMs: e.durationMs,
-      completedAt: e.completedAt!,
+      completedAt: e.completedAt,
       success: e.success
     }));
 }
@@ -115,7 +119,8 @@ function computeTrendData(entries: SessionHistoryEntry[]): TrendDataPoint[] {
 
   const sortedDays = Array.from(dayMap.keys()).sort();
   for (const day of sortedDays) {
-    const daySessions = dayMap.get(day)!;
+    const daySessions = dayMap.get(day);
+    if (!daySessions) continue; // Should never happen since we iterate over keys, but satisfies type checker
     const totalDuration = daySessions.reduce((sum, e) => sum + e.durationMs, 0);
     const successCount = daySessions.filter((e) => e.success).length;
 

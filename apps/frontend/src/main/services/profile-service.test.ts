@@ -866,8 +866,8 @@ describe('profile-service', () => {
     });
 
     it('should return network error for connection refused', async () => {
-      const networkError = new TypeError('Failed to fetch');
-      (networkError as any).code = 'ECONNREFUSED';
+      const networkError = new TypeError('Failed to fetch') as TypeError & { code?: string };
+      networkError.code = 'ECONNREFUSED';
 
       vi.mocked(global.fetch).mockRejectedValue(networkError);
 
@@ -881,8 +881,8 @@ describe('profile-service', () => {
     });
 
     it('should return network error for ENOTFOUND (DNS failure)', async () => {
-      const dnsError = new TypeError('Failed to fetch');
-      (dnsError as any).code = 'ENOTFOUND';
+      const dnsError = new TypeError('Failed to fetch') as TypeError & { code?: string };
+      dnsError.code = 'ENOTFOUND';
 
       vi.mocked(global.fetch).mockRejectedValue(dnsError);
 
