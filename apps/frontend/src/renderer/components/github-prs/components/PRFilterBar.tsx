@@ -107,7 +107,7 @@ function FilterDropdown<T extends string>({
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLLabelElement | null)[]>([]);
 
   const toggleItem = useCallback((item: T) => {
     if (selected.includes(item)) {
@@ -233,13 +233,12 @@ function FilterDropdown<T extends string>({
           )}
         </div>
 
-        <div
-          className="max-h-[300px] overflow-y-auto custom-scrollbar p-1"
-          role="listbox"
-          aria-multiselectable="true"
+        {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: Keyboard navigation for checkbox group using arrow keys */}
+        <fieldset
+          className="max-h-[300px] overflow-y-auto custom-scrollbar p-1 border-none m-0 p-0"
           onKeyDown={handleKeyDown}
-          tabIndex={0}
         >
+          <legend className="sr-only">{title}</legend>
           {filteredItems.length === 0 ? (
             <div className="p-3 text-xs text-muted-foreground text-center">
               {noResultsLabel}
@@ -249,40 +248,33 @@ function FilterDropdown<T extends string>({
               const isSelected = selected.includes(item);
               const isFocused = index === focusedIndex;
               return (
-                <div
+                <label
                   key={item}
                   ref={(el) => { itemRefs.current[index] = el; }}
-                  role="option"
-                  aria-selected={isSelected}
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
                     isSelected && "bg-accent/50",
                     isFocused && "ring-2 ring-primary/50 bg-accent"
                   )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    toggleItem(item);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleItem(item);
-                    }
-                  }}
-                  tabIndex={-1}
                 >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleItem(item)}
+                    className="sr-only"
+                  />
                   <div className={cn(
                     "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary/30",
                     isSelected ? "bg-primary border-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible"
-                  )}>
+                  )} aria-hidden="true">
                     <Check className={cn("h-3 w-3")} />
                   </div>
                   {renderItem ? renderItem(item) : item}
-                </div>
+                </label>
               );
             })
           )}
-        </div>
+        </fieldset>
 
         {selected.length > 0 && (
           <div className="p-1 border-t border-border/50 bg-muted/20">
@@ -380,43 +372,48 @@ function SortDropdown({
             {title}
           </div>
         </div>
-        <div
+        {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: Keyboard navigation for radio group using arrow keys */}
+        <fieldset
           className="p-1"
-          role="listbox"
-          tabIndex={0}
           onKeyDown={handleKeyDown}
         >
+          <legend className="sr-only">{title}</legend>
           {options.map((option, index) => {
             const isSelected = value === option.value;
             const isFocused = focusedIndex === index;
-            const Icon = option.icon;
+            const OptionIcon = option.icon;
             return (
-              <div
+              <label
                 key={option.value}
-                role="option"
-                aria-selected={isSelected}
                 className={cn(
                   "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
                   isSelected && "bg-accent/50",
                   isFocused && "bg-accent text-accent-foreground"
                 )}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
               >
+                <input
+                  type="radio"
+                  name="pr-sort-option"
+                  value={option.value}
+                  checked={isSelected}
+                  onChange={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className="sr-only"
+                />
                 <div className={cn(
                   "mr-2 flex h-4 w-4 items-center justify-center rounded-full border border-primary/30",
                   isSelected ? "bg-primary border-primary text-primary-foreground" : "opacity-50"
-                )}>
+                )} aria-hidden="true">
                   {isSelected && <Check className="h-2.5 w-2.5" />}
                 </div>
-                <Icon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                <OptionIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                 <span>{t(option.labelKey)}</span>
-              </div>
+              </label>
             );
           })}
-        </div>
+        </fieldset>
       </DropdownMenuContent>
     </DropdownMenu>
   );

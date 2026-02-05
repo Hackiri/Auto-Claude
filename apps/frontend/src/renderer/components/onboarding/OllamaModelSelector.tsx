@@ -448,12 +448,12 @@ export function OllamaModelSelector({
            const progress = download;
 
            return (
-             <div
+             <button
+               type="button"
                key={model.name}
-               role={model.installed && !disabled ? 'button' : undefined}
-               tabIndex={model.installed && !disabled ? 0 : undefined}
+               disabled={!model.installed || disabled}
                className={cn(
-                 'rounded-lg border transition-colors',
+                 'rounded-lg border transition-colors w-full text-left',
                  model.installed && !disabled
                    ? 'cursor-pointer hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary'
                    : 'cursor-default',
@@ -461,12 +461,6 @@ export function OllamaModelSelector({
                  !model.installed && 'bg-muted/30'
                )}
                onClick={() => handleSelect(model)}
-               onKeyDown={(e) => {
-                 if ((e.key === 'Enter' || e.key === ' ') && model.installed && !disabled) {
-                   e.preventDefault();
-                   handleSelect(model);
-                 }
-               }}
              >
                <div className="flex items-center justify-between p-3">
                  <div className="flex items-center gap-3">
@@ -574,7 +568,7 @@ export function OllamaModelSelector({
                    </div>
                  </div>
                )}
-             </div>
+             </button>
            );
          })}
        </div>

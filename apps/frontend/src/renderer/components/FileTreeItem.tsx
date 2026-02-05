@@ -100,7 +100,7 @@ export function FileTreeItem({
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();
@@ -110,7 +110,7 @@ export function FileTreeItem({
     }
   };
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragStart = (e: DragEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setIsDragging(true);
 
@@ -158,15 +158,14 @@ export function FileTreeItem({
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onKeyDown={handleKeyDown}
       className={cn(
-        'flex items-center gap-1 py-1 px-2 rounded cursor-grab select-none',
+        'flex items-center gap-1 py-1 px-2 rounded cursor-grab select-none w-full text-left',
         'hover:bg-accent/50 transition-colors',
         'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
         isDragging && 'opacity-50 bg-accent ring-2 ring-primary'
@@ -216,6 +215,6 @@ export function FileTreeItem({
       <span className="text-xs truncate flex-1 text-foreground">
         {node.name}
       </span>
-    </div>
+    </button>
   );
 }

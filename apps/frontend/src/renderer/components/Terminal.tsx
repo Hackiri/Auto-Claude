@@ -739,9 +739,10 @@ Please confirm you're ready by saying: I'm ready to work on ${selectedTask.title
   const showClaudeBusyIndicator = terminal?.isClaudeMode && isClaudeBusy !== undefined;
 
   return (
-    <div
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Click-to-focus pattern for terminal container; inner terminal handles keyboard input
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Terminal container click focuses inner xterm which is keyboard accessible
+    <section
       ref={setDropRef}
-      role="region"
       tabIndex={-1}
       className={cn(
         'flex h-full flex-col rounded-lg border bg-[#0B0B0F] overflow-hidden transition-all relative',
@@ -754,11 +755,6 @@ Please confirm you're ready by saying: I'm ready to work on ${selectedTask.title
         showClaudeBusyIndicator && !isClaudeBusy && 'border-green-500/60 ring-1 ring-green-500/20'
       )}
       onClick={handleClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          handleClick();
-        }
-      }}
       onDragOver={handleNativeDragOver}
       onDragLeave={handleNativeDragLeave}
       onDrop={handleNativeDrop}
@@ -815,6 +811,6 @@ Please confirm you're ready by saying: I'm ready to work on ${selectedTask.title
           onWorktreeCreated={handleWorktreeCreated}
         />
       )}
-    </div>
+    </section>
   );
 });

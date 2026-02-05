@@ -80,11 +80,11 @@ export function SessionSidebar() {
   }, [currentSessions, focusedIndex, selectSession]);
 
   return (
-    <div
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Keyboard navigation for session list uses arrow keys on nav container
+    <nav
       ref={sidebarRef}
       className="flex flex-col h-full bg-card/30"
       onKeyDown={handleKeyDown}
-      role="navigation"
       aria-label={t('title')}
     >
       {/* Header */}
@@ -201,7 +201,7 @@ export function SessionSidebar() {
           </ScrollArea>
         </TabsContent>
       </Tabs>
-    </div>
+    </nav>
   );
 }
 

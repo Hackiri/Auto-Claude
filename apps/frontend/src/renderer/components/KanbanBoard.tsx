@@ -605,13 +605,22 @@ const DroppableColumn = memo(function DroppableColumn({ status, tasks, onTaskCli
 
       {/* Resize handle on right edge */}
       {onResizeStart && onResizeEnd && (
+        // biome-ignore lint/a11y/useSemanticElements: Resizable separator doesn't map to hr semantics
         <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-valuenow={50}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={isLocked ? t('kanban.columnLocked') : t('kanban.resizeColumn')}
+          aria-disabled={isLocked}
+          tabIndex={isLocked ? -1 : 0}
           className={cn(
             "absolute right-0 top-0 bottom-0 w-1 touch-none z-10",
             "transition-colors duration-150",
             isLocked
               ? "cursor-not-allowed bg-transparent"
-              : "cursor-col-resize hover:bg-primary/40",
+              : "cursor-col-resize hover:bg-primary/40 focus:bg-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/50",
             isResizing && !isLocked && "bg-primary/60"
           )}
           onMouseDown={(e) => {
@@ -628,10 +637,18 @@ const DroppableColumn = memo(function DroppableColumn({ status, tasks, onTaskCli
               onResizeStart(e.touches[0].clientX);
             }
           }}
+          onKeyDown={(e) => {
+            if (isLocked) return;
+            // Keyboard support for resize would require additional state management
+            // For now, just prevent default on arrow keys to avoid page scrolling
+            if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+              e.preventDefault();
+            }
+          }}
           title={isLocked ? t('kanban.columnLocked') : undefined}
         >
           {/* Wider invisible hit area for easier grabbing */}
-          <div className="absolute inset-y-0 -left-1 -right-1" />
+          <div className="absolute inset-y-0 -left-1 -right-1" aria-hidden="true" />
         </div>
       )}
     </div>

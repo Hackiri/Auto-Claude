@@ -189,6 +189,8 @@ export function PreviewPanel({
       </div>
 
       {/* Preview Content */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Drag-drop zone for adding images to changelog */}
+      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: Drag-drop zone for adding images to changelog */}
       <div
         className={`flex-1 overflow-hidden p-6 ${isDragOver ? 'bg-muted/50' : ''}`}
         onDragOver={onDragOver}

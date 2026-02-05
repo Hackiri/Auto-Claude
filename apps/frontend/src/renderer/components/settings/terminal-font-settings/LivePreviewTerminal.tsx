@@ -31,7 +31,7 @@ interface LivePreviewTerminalProps {
  */
 export function LivePreviewTerminal({ settings }: LivePreviewTerminalProps) {
   const { t } = useTranslation('settings');
-  const terminalRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const isInitializedRef = useRef<boolean>(false);
@@ -223,7 +223,7 @@ export function LivePreviewTerminal({ settings }: LivePreviewTerminalProps) {
   return (
     <div className="space-y-2">
       {/* Terminal container */}
-      <div
+      <section
         ref={terminalRef}
         className="rounded-lg overflow-hidden border-2 border-border bg-[#0B0B0F]"
         style={{
@@ -234,7 +234,6 @@ export function LivePreviewTerminal({ settings }: LivePreviewTerminalProps) {
         aria-label={t('terminalFonts.preview.ariaLabel', {
           defaultValue: 'Terminal preview showing sample output with current font settings',
         })}
-        role="region"
       />
 
       {/* Info text */}

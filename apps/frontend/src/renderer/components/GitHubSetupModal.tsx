@@ -542,47 +542,54 @@ export function GitHubSetupModal({
                         Loading accounts...
                       </div>
                     ) : (
-                      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('common:accessibility.repositoryOwnerAriaLabel')}>
+                      <fieldset className="flex flex-wrap gap-2" aria-label={t('common:accessibility.repositoryOwnerAriaLabel')}>
+                        <legend className="sr-only">{t('common:accessibility.repositoryOwnerAriaLabel')}</legend>
                         {/* Personal account */}
                         {githubUsername && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedOwner(githubUsername)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-md border ${
+                          <label
+                            className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer ${
                               selectedOwner === githubUsername
                                 ? 'border-primary bg-primary/10 text-primary'
                                 : 'border-muted hover:border-primary/50'
-                            }`}
-                            disabled={isCreatingRepo}
-                            role="radio"
-                            aria-checked={selectedOwner === githubUsername}
-                            aria-label={t('githubSetup.selectOwnerAriaLabel', { owner: githubUsername })}
+                            } ${isCreatingRepo ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            <User className="h-4 w-4" />
+                            <input
+                              type="radio"
+                              name="repo-owner"
+                              value={githubUsername}
+                              checked={selectedOwner === githubUsername}
+                              onChange={() => setSelectedOwner(githubUsername)}
+                              disabled={isCreatingRepo}
+                              className="sr-only"
+                            />
+                            <User className="h-4 w-4" aria-hidden="true" />
                             <span className="text-sm">{githubUsername}</span>
-                          </button>
+                          </label>
                         )}
                         {/* Organizations */}
                         {organizations.map((org) => (
-                          <button
-                            type="button"
+                          <label
                             key={org.login}
-                            onClick={() => setSelectedOwner(org.login)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-md border ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer ${
                               selectedOwner === org.login
                                 ? 'border-primary bg-primary/10 text-primary'
                                 : 'border-muted hover:border-primary/50'
-                            }`}
-                            disabled={isCreatingRepo}
-                            role="radio"
-                            aria-checked={selectedOwner === org.login}
-                            aria-label={t('githubSetup.selectOrgAriaLabel', { org: org.login })}
+                            } ${isCreatingRepo ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            <Building className="h-4 w-4" />
+                            <input
+                              type="radio"
+                              name="repo-owner"
+                              value={org.login}
+                              checked={selectedOwner === org.login}
+                              onChange={() => setSelectedOwner(org.login)}
+                              disabled={isCreatingRepo}
+                              className="sr-only"
+                            />
+                            <Building className="h-4 w-4" aria-hidden="true" />
                             <span className="text-sm">{org.login}</span>
-                          </button>
+                          </label>
                         ))}
-                      </div>
+                      </fieldset>
                     )}
                     {organizations.length > 0 && (
                       <p className="text-xs text-muted-foreground">
@@ -608,43 +615,49 @@ export function GitHubSetupModal({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Visibility</Label>
-                    <div className="flex gap-2" role="radiogroup" aria-label={t('common:accessibility.repositoryVisibilityAriaLabel')}>
-                      <button
-                        type="button"
-                        onClick={() => setIsPrivateRepo(true)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md border ${
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-medium leading-none">Visibility</legend>
+                    <div className="flex gap-2">
+                      <label
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer ${
                           isPrivateRepo
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-muted hover:border-primary/50'
-                        }`}
-                        disabled={isCreatingRepo}
-                        role="radio"
-                        aria-checked={isPrivateRepo}
-                        aria-label={t('githubSetup.selectVisibilityAriaLabel', { visibility: 'private' })}
+                        } ${isCreatingRepo ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <Lock className="h-4 w-4" />
+                        <input
+                          type="radio"
+                          name="repo-visibility"
+                          value="private"
+                          checked={isPrivateRepo}
+                          onChange={() => setIsPrivateRepo(true)}
+                          disabled={isCreatingRepo}
+                          className="sr-only"
+                        />
+                        <Lock className="h-4 w-4" aria-hidden="true" />
                         <span className="text-sm">Private</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsPrivateRepo(false)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md border ${
+                      </label>
+                      <label
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer ${
                           !isPrivateRepo
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-muted hover:border-primary/50'
-                        }`}
-                        disabled={isCreatingRepo}
-                        role="radio"
-                        aria-checked={!isPrivateRepo}
-                        aria-label={t('githubSetup.selectVisibilityAriaLabel', { visibility: 'public' })}
+                        } ${isCreatingRepo ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <Globe className="h-4 w-4" />
+                        <input
+                          type="radio"
+                          name="repo-visibility"
+                          value="public"
+                          checked={!isPrivateRepo}
+                          onChange={() => setIsPrivateRepo(false)}
+                          disabled={isCreatingRepo}
+                          className="sr-only"
+                        />
+                        <Globe className="h-4 w-4" aria-hidden="true" />
                         <span className="text-sm">Public</span>
-                      </button>
+                      </label>
                     </div>
-                  </div>
+                  </fieldset>
                 </div>
               )}
 

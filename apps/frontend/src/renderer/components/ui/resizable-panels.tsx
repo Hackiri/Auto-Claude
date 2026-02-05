@@ -73,6 +73,28 @@ export function ResizablePanels({
     setIsDragging(true);
   }, []);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? 5 : 1; // Larger steps when holding Shift
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        setLeftWidth(prev => Math.max(minLeftWidth, prev - step));
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        setLeftWidth(prev => Math.min(maxLeftWidth, prev + step));
+        break;
+      case 'Home':
+        e.preventDefault();
+        setLeftWidth(minLeftWidth);
+        break;
+      case 'End':
+        e.preventDefault();
+        setLeftWidth(maxLeftWidth);
+        break;
+    }
+  }, [minLeftWidth, maxLeftWidth]);
+
   useEffect(() => {
     if (!isDragging) return;
 
@@ -139,18 +161,27 @@ export function ResizablePanels({
       </div>
 
       {/* Resizable divider */}
+      {/* biome-ignore lint/a11y/useSemanticElements: Resizable separator doesn't map to hr semantics */}
       <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-valuenow={Math.round(leftWidth)}
+        aria-valuemin={minLeftWidth}
+        aria-valuemax={maxLeftWidth}
+        aria-label="Resize panels"
+        tabIndex={0}
         className={cn(
           "w-1 flex-shrink-0 relative cursor-col-resize touch-none",
           "bg-border transition-colors duration-150",
-          "hover:bg-primary/40",
+          "hover:bg-primary/40 focus:bg-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/50",
           isDragging && "bg-primary/60"
         )}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
+        onKeyDown={handleKeyDown}
       >
         {/* Wider invisible hit area for easier grabbing */}
-        <div className="absolute inset-y-0 -left-1 -right-1 z-10" />
+        <div className="absolute inset-y-0 -left-1 -right-1 z-10" aria-hidden="true" />
       </div>
 
       {/* Right panel */}

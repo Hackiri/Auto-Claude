@@ -16,21 +16,14 @@ const GITLAB_ISSUE_STATE_LABELS: Record<string, string> = {
 
 export function IssueListItem({ issue, isSelected, onClick, onInvestigate }: IssueListItemProps) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+    <button
+      type="button"
+      className={`group p-3 rounded-lg cursor-pointer transition-colors text-left w-full ${
         isSelected
           ? 'bg-accent/50 border border-accent'
           : 'hover:bg-muted/50 border border-transparent'
       }`}
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
     >
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
@@ -78,6 +71,6 @@ export function IssueListItem({ issue, isSelected, onClick, onInvestigate }: Iss
           <Sparkles className="h-4 w-4" />
         </Button>
       </div>
-    </div>
+    </button>
   );
 }

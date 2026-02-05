@@ -205,8 +205,7 @@ const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               ref={inputRef}
-              type="text"
-              role="searchbox"
+              type="search"
               aria-controls={listboxId}
               aria-activedescendant={activeDescendant}
               value={search}
