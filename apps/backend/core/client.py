@@ -127,6 +127,7 @@ def invalidate_project_cache(project_dir: Path | None = None) -> None:
 
 
 from agents.tools_pkg import (
+    CLAUDE_MEM_TOOLS,
     CONTEXT7_TOOLS,
     ELECTRON_TOOLS,
     GRAPHITI_MCP_TOOLS,
@@ -333,6 +334,8 @@ def load_project_mcp_config(project_dir: Path) -> dict:
     - LINEAR_MCP_ENABLED (default: true)
     - ELECTRON_MCP_ENABLED (default: false)
     - PUPPETEER_MCP_ENABLED (default: false)
+    - CLAUDE_MEM_ENABLED (default: false)
+    - CLAUDE_MEM_URL (default: http://localhost:37777)
     - AGENT_MCP_<agent>_ADD (per-agent MCP additions)
     - AGENT_MCP_<agent>_REMOVE (per-agent MCP removals)
     - CUSTOM_MCP_SERVERS (JSON array of custom server configs)
@@ -353,6 +356,8 @@ def load_project_mcp_config(project_dir: Path) -> dict:
         "LINEAR_MCP_ENABLED",
         "ELECTRON_MCP_ENABLED",
         "PUPPETEER_MCP_ENABLED",
+        "CLAUDE_MEM_ENABLED",
+        "CLAUDE_MEM_URL",
     }
 
     try:
@@ -415,6 +420,22 @@ def is_graphiti_mcp_enabled() -> bool:
 def get_graphiti_mcp_url() -> str:
     """Get the Graphiti MCP server URL."""
     return os.environ.get("GRAPHITI_MCP_URL", "http://localhost:8000/mcp/")
+
+
+def is_claude_mem_enabled() -> bool:
+    """
+    Check if claude-mem MCP server integration is enabled.
+
+    Requires CLAUDE_MEM_ENABLED to be set to 'true'.
+    When enabled, agents can search developer CLI session observations
+    via the claude-mem HTTP MCP worker.
+    """
+    return os.environ.get("CLAUDE_MEM_ENABLED", "").lower() == "true"
+
+
+def get_claude_mem_url() -> str:
+    """Get the claude-mem MCP worker URL (default: http://localhost:37777)."""
+    return os.environ.get("CLAUDE_MEM_URL", "http://localhost:37777")
 
 
 def is_electron_mcp_enabled() -> bool:
@@ -801,6 +822,11 @@ def create_client(
                     if graphiti_mcp_enabled
                     else []
                 ),
+                *(
+                    [f"{tool}(*)" for tool in CLAUDE_MEM_TOOLS]
+                    if "claude-mem" in required_servers
+                    else []
+                ),
                 *[f"{tool}(*)" for tool in browser_tools_permissions],
             ],
         },
@@ -836,6 +862,8 @@ def create_client(
         mcp_servers_list.append("linear (project management)")
     if graphiti_mcp_enabled:
         mcp_servers_list.append("graphiti-memory (knowledge graph)")
+    if "claude-mem" in required_servers:
+        mcp_servers_list.append(f"claude-mem (developer session memory, {get_claude_mem_url()})")
     if "auto-claude" in required_servers and auto_claude_tools_enabled:
         mcp_servers_list.append(f"auto-claude ({agent_type} tools)")
     if mcp_servers_list:
@@ -890,6 +918,13 @@ def create_client(
         mcp_servers["graphiti-memory"] = {
             "type": "http",
             "url": get_graphiti_mcp_url(),
+        }
+
+    # claude-mem MCP server for developer session memory
+    if "claude-mem" in required_servers:
+        mcp_servers["claude-mem"] = {
+            "type": "http",
+            "url": get_claude_mem_url(),
         }
 
     # Add custom auto-claude MCP server if required and available

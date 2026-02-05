@@ -79,6 +79,15 @@ GRAPHITI_MCP_TOOLS = [
     "mcp__graphiti-memory__get_entity_edge",  # Get specific entity/relationship
 ]
 
+# claude-mem MCP tools for developer session memory (when CLAUDE_MEM_ENABLED is set)
+# Provides hybrid search (semantic + keyword + FTS5) over developer CLI observations.
+# See: https://github.com/Hackiri/claude-mem
+CLAUDE_MEM_TOOLS = [
+    "mcp__claude-mem__search",  # Hybrid search across observations
+    "mcp__claude-mem__timeline",  # Timeline-based observation retrieval
+    "mcp__claude-mem__get_observations",  # Get specific observations by ID
+]
+
 # =============================================================================
 # Browser Automation MCP Tools (QA agents only)
 # =============================================================================
@@ -191,7 +200,7 @@ AGENT_CONFIGS = {
     "planner": {
         "tools": BASE_READ_TOOLS + BASE_WRITE_TOOLS + WEB_TOOLS,
         "mcp_servers": ["context7", "graphiti", "auto-claude"],
-        "mcp_servers_optional": ["linear"],  # Only if project setting enabled
+        "mcp_servers_optional": ["linear", "claude-mem"],  # Only if enabled
         "auto_claude_tools": [
             TOOL_GET_BUILD_PROGRESS,
             TOOL_GET_SESSION_CONTEXT,
@@ -202,7 +211,7 @@ AGENT_CONFIGS = {
     "coder": {
         "tools": BASE_READ_TOOLS + BASE_WRITE_TOOLS + WEB_TOOLS,
         "mcp_servers": ["context7", "graphiti", "auto-claude"],
-        "mcp_servers_optional": ["linear"],
+        "mcp_servers_optional": ["linear", "claude-mem"],
         "auto_claude_tools": [
             TOOL_UPDATE_SUBTASK_STATUS,
             TOOL_GET_BUILD_PROGRESS,
@@ -220,7 +229,7 @@ AGENT_CONFIGS = {
         # Note: Reviewer writes to spec directory only (qa_report.md, implementation_plan.json)
         "tools": BASE_READ_TOOLS + BASE_WRITE_TOOLS + WEB_TOOLS,
         "mcp_servers": ["context7", "graphiti", "auto-claude", "browser"],
-        "mcp_servers_optional": ["linear"],  # For updating issue status
+        "mcp_servers_optional": ["linear", "claude-mem"],
         "auto_claude_tools": [
             TOOL_GET_BUILD_PROGRESS,
             TOOL_UPDATE_QA_STATUS,
@@ -231,7 +240,7 @@ AGENT_CONFIGS = {
     "qa_fixer": {
         "tools": BASE_READ_TOOLS + BASE_WRITE_TOOLS + WEB_TOOLS,
         "mcp_servers": ["context7", "graphiti", "auto-claude", "browser"],
-        "mcp_servers_optional": ["linear"],
+        "mcp_servers_optional": ["linear", "claude-mem"],
         "auto_claude_tools": [
             TOOL_UPDATE_SUBTASK_STATUS,
             TOOL_GET_BUILD_PROGRESS,
@@ -395,6 +404,7 @@ def _map_mcp_server_name(
         "electron": "electron",
         "puppeteer": "puppeteer",
         "auto-claude": "auto-claude",
+        "claude-mem": "claude-mem",
     }
     # Check if it's a known mapping
     mapped = mappings.get(name.lower().strip())
@@ -453,6 +463,15 @@ def get_required_mcp_servers(
         linear_mcp_enabled = mcp_config.get("LINEAR_MCP_ENABLED", "true")
         if str(linear_mcp_enabled).lower() != "false":
             servers.append("linear")
+
+    # claude-mem: enabled via CLAUDE_MEM_ENABLED env var or per-project config
+    if "claude-mem" in optional:
+        claude_mem_enabled = mcp_config.get(
+            "CLAUDE_MEM_ENABLED",
+            os.environ.get("CLAUDE_MEM_ENABLED", "false"),
+        )
+        if str(claude_mem_enabled).lower() == "true":
+            servers.append("claude-mem")
 
     # Handle dynamic "browser" → electron/puppeteer based on project type and config
     if "browser" in servers:
