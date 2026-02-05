@@ -836,8 +836,8 @@ ${t('prReview.blockedStatusMessageFooter')}`;
                     {t('prReview.verdictOutdated', 'AI verdict may be outdated')}
                   </p>
                   <ul className="text-sm text-warning/90 space-y-1">
-                    {mergeReadiness.blockers.map((blocker, idx) => (
-                      <li key={idx} className="flex items-center gap-2">
+                    {mergeReadiness.blockers.map((blocker) => (
+                      <li key={`blocker-${blocker}`} className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-warning/70" />
                         {blocker}
                       </li>
@@ -1053,6 +1053,7 @@ ${t('prReview.blockedStatusMessageFooter')}`;
                    {t('prReview.failedPostCleanReview')}
                  </div>
                  <button
+                   type="button"
                    onClick={() => setShowCleanReviewErrorDetails(!showCleanReviewErrorDetails)}
                    aria-expanded={showCleanReviewErrorDetails}
                    aria-controls={cleanReviewErrorDetailsId}

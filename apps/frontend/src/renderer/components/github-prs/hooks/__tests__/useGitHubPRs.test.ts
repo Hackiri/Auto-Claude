@@ -146,20 +146,16 @@ async function simulateSelectPR(params: SelectPRTestParams): Promise<SelectPRTes
 }
 
 describe('useGitHubPRs - selectPR triggering checkNewCommits', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockCheckNewCommits: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockGetPRReview: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockSetNewCommitsCheck: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockSetPRReviewResult: any;
+  let mockCheckNewCommits: ReturnType<typeof vi.fn<[string, number], Promise<NewCommitsCheck>>>;
+  let mockGetPRReview: ReturnType<typeof vi.fn<[string, number], Promise<PRReviewResult | null>>>;
+  let mockSetNewCommitsCheck: ReturnType<typeof vi.fn<[string, number, NewCommitsCheck], void>>;
+  let mockSetPRReviewResult: ReturnType<typeof vi.fn<[string, PRReviewResult], void>>;
 
   beforeEach(() => {
-    mockCheckNewCommits = vi.fn().mockResolvedValue(createMockNewCommitsCheck());
-    mockGetPRReview = vi.fn().mockResolvedValue(null);
-    mockSetNewCommitsCheck = vi.fn();
-    mockSetPRReviewResult = vi.fn();
+    mockCheckNewCommits = vi.fn<[string, number], Promise<NewCommitsCheck>>().mockResolvedValue(createMockNewCommitsCheck());
+    mockGetPRReview = vi.fn<[string, number], Promise<PRReviewResult | null>>().mockResolvedValue(null);
+    mockSetNewCommitsCheck = vi.fn<[string, number, NewCommitsCheck], void>();
+    mockSetPRReviewResult = vi.fn<[string, PRReviewResult], void>();
   });
 
   afterEach(() => {
@@ -507,11 +503,10 @@ describe('useGitHubPRs - selectPR triggering checkNewCommits', () => {
 });
 
 describe('useGitHubPRs - checkNewCommits result handling', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockSetNewCommitsCheck: any;
+  let mockSetNewCommitsCheck: ReturnType<typeof vi.fn<[string, number, NewCommitsCheck], void>>;
 
   beforeEach(() => {
-    mockSetNewCommitsCheck = vi.fn();
+    mockSetNewCommitsCheck = vi.fn<[string, number, NewCommitsCheck], void>();
   });
 
   afterEach(() => {

@@ -62,7 +62,7 @@ function createUseSettingsStoreMock(overrides?: Partial<ReturnType<typeof useSet
     deleteProfile: vi.fn().mockResolvedValue(true),
     setActiveProfile: vi.fn().mockResolvedValue(true),
     profilesLoading: false,
-    settings: {} as any,
+    settings: {} as unknown as ReturnType<typeof useSettingsStore>['settings'],
     isLoading: false,
     error: null,
     setSettings: vi.fn(),
@@ -123,7 +123,7 @@ describe('AuthStatusIndicator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock window.electronAPI usage functions
-    (window as any).electronAPI = {
+    (window as unknown as { electronAPI: { onUsageUpdated: ReturnType<typeof vi.fn>; requestUsageUpdate: ReturnType<typeof vi.fn> } }).electronAPI = {
       onUsageUpdated: vi.fn(() => vi.fn()), // Returns unsubscribe function
       requestUsageUpdate: vi.fn().mockResolvedValue({ success: false, data: null })
     };

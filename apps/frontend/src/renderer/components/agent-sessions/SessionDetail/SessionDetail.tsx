@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Bot, } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { useSessionProgress } from '../../../hooks/useSessionProgress';
 import { SessionHeader } from './SessionHeader';
 import { SessionKanban } from './SessionKanban';
@@ -10,7 +10,6 @@ interface SessionDetailProps {
 }
 
 export function SessionDetail({ sessionId }: SessionDetailProps) {
-  const { t } = useTranslation('agentSessions');
   const { session, tasks, taskStats } = useSessionProgress(sessionId);
 
   if (!session) {

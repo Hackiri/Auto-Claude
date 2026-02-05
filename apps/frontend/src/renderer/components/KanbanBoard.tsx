@@ -293,17 +293,21 @@ const DroppableColumn = memo(function DroppableColumn({ status, tasks, onTaskCli
   const taskCards = useMemo(() => {
     if (tasks.length === 0) return null;
     const isSelectable = !!onToggleSelectHandlers;
-    return tasks.map((task) => (
-      <SortableTaskCard
-        key={task.id}
-        task={task}
-        onClick={onClickHandlers.get(task.id)!}
-        onStatusChange={onStatusChangeHandlers.get(task.id)}
-        isSelectable={isSelectable}
-        isSelected={isSelectable ? selectedTaskIds?.has(task.id) : undefined}
-        onToggleSelect={onToggleSelectHandlers?.get(task.id)}
-      />
-    ));
+    return tasks.map((task) => {
+      const clickHandler = onClickHandlers.get(task.id);
+      if (!clickHandler) return null;
+      return (
+        <SortableTaskCard
+          key={task.id}
+          task={task}
+          onClick={clickHandler}
+          onStatusChange={onStatusChangeHandlers.get(task.id)}
+          isSelectable={isSelectable}
+          isSelected={isSelectable ? selectedTaskIds?.has(task.id) : undefined}
+          onToggleSelect={onToggleSelectHandlers?.get(task.id)}
+        />
+      );
+    });
   }, [tasks, onClickHandlers, onStatusChangeHandlers, onToggleSelectHandlers, selectedTaskIds]);
 
   const getColumnBorderColor = (): string => {
@@ -1520,7 +1524,7 @@ export function KanbanBoard({ tasks, onTaskClick, onNewTaskClick, onRefresh, isR
         <DragOverlay>
           {activeTask ? (
             <div className="drag-overlay-card">
-              <TaskCard task={activeTask} onClick={() => {}} />
+              <TaskCard task={activeTask} onClick={() => { /* no-op */ }} />
             </div>
           ) : null}
         </DragOverlay>
@@ -1579,7 +1583,7 @@ export function KanbanBoard({ tasks, onTaskClick, onNewTaskClick, onRefresh, isR
 
           {/* Task List Preview */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t('kanban.tasksToDelete')}</label>
+            <span className="text-sm font-medium">{t('kanban.tasksToDelete')}</span>
             <ScrollArea className="h-32 rounded-md border border-border p-2">
               <div className="space-y-1">
                 {selectedTasks.map((task, idx) => (

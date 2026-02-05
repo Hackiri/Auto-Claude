@@ -199,8 +199,8 @@ export function DebugSettings() {
                   {t('debug.recentErrors', 'Recent Errors')} ({debugInfo.recentErrors.length})
                 </h4>
                 <div className="space-y-1 max-h-48 overflow-y-auto">
-                  {debugInfo.recentErrors.map((error, index) => (
-                    <div key={index} className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">
+                  {debugInfo.recentErrors.map((error) => (
+                    <div key={`error-${error}`} className="text-xs font-mono text-muted-foreground bg-muted/30 px-2 py-1 rounded">
                       {error}
                     </div>
                   ))}

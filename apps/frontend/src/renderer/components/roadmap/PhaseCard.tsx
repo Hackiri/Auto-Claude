@@ -87,9 +87,10 @@ export function PhaseCard({
         <h4 className="text-sm font-medium mb-2">Features ({features.length})</h4>
         <div className="grid gap-2">
           {features.slice(0, 5).map((feature) => (
-            <div
+            <button
+              type="button"
               key={feature.id}
-              className="flex items-center justify-between p-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+              className="w-full flex items-center justify-between p-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors text-left"
               onClick={() => onFeatureSelect(feature)}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -113,7 +114,9 @@ export function PhaseCard({
                   className="h-6 px-2"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onGoToTask(feature.linkedSpecId!);
+                    if (feature.linkedSpecId) {
+                      onGoToTask(feature.linkedSpecId);
+                    }
                   }}
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
@@ -133,7 +136,7 @@ export function PhaseCard({
                   Build
                 </Button>
               )}
-            </div>
+            </button>
           ))}
           {features.length > 5 && (
             <div className="text-sm text-muted-foreground text-center py-1">

@@ -24,9 +24,10 @@ export function IssueCard({ issue, isSelected, onToggle }: IssueCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div
+    <button
+      type="button"
       className={`
-        rounded-lg border border-border p-3 cursor-pointer transition-colors
+        rounded-lg border border-border p-3 cursor-pointer transition-colors w-full text-left
         ${isSelected ? 'bg-primary/5 border-primary/30' : 'hover:bg-muted/50'}
       `}
       onClick={() => onToggle(issue.id)}
@@ -86,6 +87,7 @@ export function IssueCard({ issue, isSelected, onToggle }: IssueCardProps) {
           {/* Expandable description */}
           {issue.description && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
@@ -133,6 +135,6 @@ export function IssueCard({ issue, isSelected, onToggle }: IssueCardProps) {
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

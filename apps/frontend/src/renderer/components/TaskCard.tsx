@@ -434,12 +434,14 @@ export const TaskCard = memo(function TaskCard({
                 variant="outline"
                 className={cn('text-[10px] px-1.5 py-0', TASK_CATEGORY_COLORS[task.metadata.category])}
               >
-                {CategoryIcon[task.metadata.category] && (
-                  (() => {
-                    const Icon = CategoryIcon[task.metadata.category!];
+                {(() => {
+                  const category = task.metadata?.category;
+                  if (category && CategoryIcon[category]) {
+                    const Icon = CategoryIcon[category];
                     return <Icon className="h-2.5 w-2.5 mr-0.5" />;
-                  })()
-                )}
+                  }
+                  return null;
+                })()}
                 {TASK_CATEGORY_LABELS[task.metadata.category]}
               </Badge>
             )}

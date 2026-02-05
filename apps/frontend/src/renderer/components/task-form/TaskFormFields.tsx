@@ -230,7 +230,10 @@ export function TaskFormFields({
 
       for (const image of imagesToLoad) {
         try {
-          const result = await window.electronAPI.loadImageThumbnail(projectPath, specId, image.path!);
+          // image.path is guaranteed to exist here due to the filter above
+          const imagePath = image.path;
+          if (!imagePath) continue;
+          const result = await window.electronAPI.loadImageThumbnail(projectPath, specId, imagePath);
           if (result.success && result.data) {
             thumbnailMap.set(image.id, result.data);
           }
@@ -426,12 +429,14 @@ export function TaskFormFields({
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {images.map((image) => (
-                  <div
+                  <button
+                    type="button"
                     key={image.id}
                     className="relative group rounded-md border border-border overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
                     style={{ width: '72px', height: '72px' }}
                     title={image.filename}
                     onDoubleClick={() => setPreviewImage(image)}
+                    aria-label={`Preview ${image.filename}`}
                   >
                     {image.thumbnail ? (
                       <img
@@ -458,7 +463,7 @@ export function TaskFormFields({
                         <X className="h-3 w-3" />
                       </button>
                     )}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

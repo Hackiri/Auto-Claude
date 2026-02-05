@@ -21,9 +21,14 @@ vi.mock('../../../../lib/os-detection', () => ({
 }));
 
 // Mock terminal-font-settings-store
+interface MockTerminalFontSettingsState {
+  applySettings: ReturnType<typeof vi.fn>;
+  resetToDefaults: ReturnType<typeof vi.fn>;
+}
+
 vi.mock('../../../../stores/terminal-font-settings-store', () => ({
-  useTerminalFontSettingsStore: vi.fn((selector) => {
-    const state = {
+  useTerminalFontSettingsStore: vi.fn(<T,>(selector: (state: MockTerminalFontSettingsState) => T): MockTerminalFontSettingsState | T => {
+    const state: MockTerminalFontSettingsState = {
       applySettings: vi.fn(),
       resetToDefaults: vi.fn(),
     };
@@ -136,7 +141,8 @@ describe('PresetsPanel', () => {
       );
 
       const vscodeButton = screen.getByText('VS Code').closest('button');
-      fireEvent.click(vscodeButton!);
+      expect(vscodeButton).not.toBeNull();
+      fireEvent.click(vscodeButton as HTMLButtonElement);
 
       expect(mockOnPresetApply).toHaveBeenCalledWith('vscode');
     });
@@ -151,7 +157,8 @@ describe('PresetsPanel', () => {
       );
 
       const intellijButton = screen.getByText('IntelliJ IDEA').closest('button');
-      fireEvent.click(intellijButton!);
+      expect(intellijButton).not.toBeNull();
+      fireEvent.click(intellijButton as HTMLButtonElement);
 
       expect(mockOnPresetApply).toHaveBeenCalledWith('intellij');
     });
@@ -166,7 +173,8 @@ describe('PresetsPanel', () => {
       );
 
       const macosButton = screen.getByText('macOS Terminal').closest('button');
-      fireEvent.click(macosButton!);
+      expect(macosButton).not.toBeNull();
+      fireEvent.click(macosButton as HTMLButtonElement);
 
       expect(mockOnPresetApply).toHaveBeenCalledWith('macos');
     });
@@ -181,7 +189,8 @@ describe('PresetsPanel', () => {
       );
 
       const ubuntuButton = screen.getByText('Ubuntu Terminal').closest('button');
-      fireEvent.click(ubuntuButton!);
+      expect(ubuntuButton).not.toBeNull();
+      fireEvent.click(ubuntuButton as HTMLButtonElement);
 
       expect(mockOnPresetApply).toHaveBeenCalledWith('ubuntu');
     });

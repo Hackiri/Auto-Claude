@@ -905,9 +905,10 @@ export function AgentTools() {
       try {
         const result = await window.electronAPI.checkMcpHealth(server);
         if (result.success && result.data) {
+          const healthData = result.data;
           setServerHealthStatus(prev => ({
             ...prev,
-            [server.id]: result.data!,
+            [server.id]: healthData,
           }));
         }
       } catch (_error) {
@@ -939,13 +940,14 @@ export function AgentTools() {
       const result = await window.electronAPI.testMcpConnection(server);
       if (result.success && result.data) {
         // Update health status based on test result
+        const testData = result.data;
         setServerHealthStatus(prev => ({
           ...prev,
           [server.id]: {
             serverId: server.id,
-            status: result.data?.success ? 'healthy' : 'unhealthy',
-            message: result.data?.message,
-            responseTime: result.data?.responseTime,
+            status: testData.success ? 'healthy' : 'unhealthy',
+            message: testData.message,
+            responseTime: testData.responseTime,
             checkedAt: new Date().toISOString(),
           }
         }));

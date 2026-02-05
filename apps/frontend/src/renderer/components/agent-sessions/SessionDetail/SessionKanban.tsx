@@ -11,7 +11,7 @@ interface SessionKanbanProps {
   tasks: SessionTask[];
 }
 
-export function SessionKanban({ sessionId, tasks }: SessionKanbanProps) {
+export function SessionKanban({ sessionId: _sessionId, tasks }: SessionKanbanProps) {
   const { t } = useTranslation('agentSessions');
 
   // Group tasks by status

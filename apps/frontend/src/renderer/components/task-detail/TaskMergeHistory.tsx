@@ -349,7 +349,7 @@ function MergeEntryItem({ merge, isExpanded, onToggle, onRollback }: MergeEntryI
         )}
       >
         <CollapsibleTrigger asChild>
-          <button className="w-full p-3 flex items-start gap-3 hover:bg-accent/50 transition-colors rounded-lg text-left">
+          <button type="button" className="w-full p-3 flex items-start gap-3 hover:bg-accent/50 transition-colors rounded-lg text-left">
             <div className="flex-shrink-0 mt-0.5">
               {isExpanded ? (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -439,20 +439,20 @@ function MergeEntryItem({ merge, isExpanded, onToggle, onRollback }: MergeEntryI
               <div className="space-y-2">
                 <div className="text-xs font-medium text-muted-foreground">{t('tasks:mergeHistory.filesChangedLabel')}</div>
                 <div className="space-y-1">
-                  {merge.files_added.map((file, idx) => (
-                    <div key={`added-${idx}`} className="flex items-center gap-2 text-xs">
+                  {merge.files_added.map((file) => (
+                    <div key={`added-${file}`} className="flex items-center gap-2 text-xs">
                       <FilePlus className="h-3 w-3 text-success flex-shrink-0" />
                       <span className="font-mono text-success truncate">{file}</span>
                     </div>
                   ))}
-                  {merge.files_changed.map((file, idx) => (
-                    <div key={`changed-${idx}`} className="flex items-center gap-2 text-xs">
+                  {merge.files_changed.map((file) => (
+                    <div key={`changed-${file}`} className="flex items-center gap-2 text-xs">
                       <FileText className="h-3 w-3 text-info flex-shrink-0" />
                       <span className="font-mono truncate">{file}</span>
                     </div>
                   ))}
-                  {merge.files_deleted.map((file, idx) => (
-                    <div key={`deleted-${idx}`} className="flex items-center gap-2 text-xs">
+                  {merge.files_deleted.map((file) => (
+                    <div key={`deleted-${file}`} className="flex items-center gap-2 text-xs">
                       <FileX className="h-3 w-3 text-destructive flex-shrink-0" />
                       <span className="font-mono text-destructive truncate">{file}</span>
                     </div>

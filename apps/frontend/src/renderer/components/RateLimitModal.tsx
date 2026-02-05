@@ -40,6 +40,17 @@ export function RateLimitModal() {
 
   // Load profiles and auto-switch settings when modal opens
   useEffect(() => {
+    const loadAutoSwitchSettings = async () => {
+      try {
+        const result = await window.electronAPI.getAutoSwitchSettings();
+        if (result.success && result.data) {
+          setAutoSwitchEnabled(result.data.autoSwitchOnRateLimit);
+        }
+      } catch (err) {
+        debugError('[RateLimitModal] Failed to load auto-switch settings:', err);
+      }
+    };
+
     if (isModalOpen) {
       loadClaudeProfiles();
       loadAutoSwitchSettings();
@@ -49,8 +60,7 @@ export function RateLimitModal() {
         setSelectedProfileId(rateLimitInfo.suggestedProfileId);
       }
     }
-  // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: loadAutoSwitchSettings is hoisted
-  }, [isModalOpen, rateLimitInfo?.suggestedProfileId, loadAutoSwitchSettings]);
+  }, [isModalOpen, rateLimitInfo?.suggestedProfileId]);
 
   // Reset selection when modal closes
   useEffect(() => {
@@ -60,17 +70,6 @@ export function RateLimitModal() {
       setNewProfileName('');
     }
   }, [isModalOpen]);
-
-  const loadAutoSwitchSettings = async () => {
-    try {
-      const result = await window.electronAPI.getAutoSwitchSettings();
-      if (result.success && result.data) {
-        setAutoSwitchEnabled(result.data.autoSwitchOnRateLimit);
-      }
-    } catch (err) {
-      debugError('[RateLimitModal] Failed to load auto-switch settings:', err);
-    }
-  };
 
   const handleAutoSwitchToggle = async (enabled: boolean) => {
     setIsLoadingSettings(true);

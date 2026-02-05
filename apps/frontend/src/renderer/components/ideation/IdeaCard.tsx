@@ -61,13 +61,7 @@ export function IdeaCard({ idea, isSelected, onClick, onConvert, onGoToTask, onD
     >
       <div className="flex items-start gap-3">
         {/* Selection checkbox */}
-        <div
-          className="pt-0.5"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSelect(idea.id);
-          }}
-        >
+        <div className="pt-0.5">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelect(idea.id)}
@@ -164,49 +158,55 @@ export function IdeaCard({ idea, isSelected, onClick, onConvert, onGoToTask, onD
             </div>
           )}
           {/* Archived ideas show link to task */}
-          {isArchived && idea.taskId && onGoToTask && (
-            <div className="flex items-center gap-1 ml-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onGoToTask(idea.taskId!);
-                    }}
-                    aria-label={t('accessibility.goToTaskAriaLabel')}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('accessibility.goToTaskAriaLabel')}</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
+          {isArchived && idea.taskId && onGoToTask && (() => {
+            const taskId = idea.taskId;
+            return (
+              <div className="flex items-center gap-1 ml-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onGoToTask(taskId);
+                      }}
+                      aria-label={t('accessibility.goToTaskAriaLabel')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('accessibility.goToTaskAriaLabel')}</TooltipContent>
+                </Tooltip>
+              </div>
+            );
+          })()}
           {/* Legacy: converted status also shows link to task */}
-          {isConverted && idea.taskId && onGoToTask && (
-            <div className="flex items-center gap-1 ml-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onGoToTask(idea.taskId!);
-                    }}
-                    aria-label={t('accessibility.goToTaskAriaLabel')}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('accessibility.goToTaskAriaLabel')}</TooltipContent>
+          {isConverted && idea.taskId && onGoToTask && (() => {
+            const taskId = idea.taskId;
+            return (
+              <div className="flex items-center gap-1 ml-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onGoToTask(taskId);
+                      }}
+                      aria-label={t('accessibility.goToTaskAriaLabel')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('accessibility.goToTaskAriaLabel')}</TooltipContent>
               </Tooltip>
-            </div>
-          )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </Card>

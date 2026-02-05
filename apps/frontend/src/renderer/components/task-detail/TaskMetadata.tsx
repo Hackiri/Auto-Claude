@@ -110,9 +110,13 @@ export function TaskMetadata({ task }: TaskMetadataProps) {
                 variant="outline"
                 className={cn('text-xs', TASK_CATEGORY_COLORS[task.metadata.category])}
               >
-                {CategoryIcon[task.metadata.category] && (() => {
-                  const Icon = CategoryIcon[task.metadata.category!];
-                  return <Icon className="h-3 w-3 mr-1" />;
+                {(() => {
+                  const category = task.metadata?.category;
+                  if (category && CategoryIcon[category]) {
+                    const Icon = CategoryIcon[category];
+                    return <Icon className="h-3 w-3 mr-1" />;
+                  }
+                  return null;
                 })()}
                 {TASK_CATEGORY_LABELS[task.metadata.category]}
               </Badge>
@@ -273,8 +277,8 @@ export function TaskMetadata({ task }: TaskMetadataProps) {
                 Dependencies
               </h3>
               <ul className="text-sm text-foreground/80 list-disc list-inside space-y-0.5">
-                {task.metadata.dependencies.map((dep, idx) => (
-                  <li key={idx}>{dep}</li>
+                {task.metadata.dependencies.map((dep) => (
+                  <li key={dep}>{dep}</li>
                 ))}
               </ul>
             </div>
@@ -310,8 +314,8 @@ export function TaskMetadata({ task }: TaskMetadataProps) {
                 Acceptance Criteria
               </h3>
               <ul className="text-sm text-foreground/80 list-disc list-inside space-y-0.5">
-                {task.metadata.acceptanceCriteria.map((criteria, idx) => (
-                  <li key={idx}>{criteria}</li>
+                {task.metadata.acceptanceCriteria.map((criteria) => (
+                  <li key={`criteria-${criteria}`}>{criteria}</li>
                 ))}
               </ul>
             </div>
@@ -325,8 +329,8 @@ export function TaskMetadata({ task }: TaskMetadataProps) {
                 Affected Files
               </h3>
               <div className="flex flex-wrap gap-1">
-                {task.metadata.affectedFiles.map((file, idx) => (
-                  <Tooltip key={idx}>
+                {task.metadata.affectedFiles.map((file) => (
+                  <Tooltip key={file}>
                     <TooltipTrigger asChild>
                       <Badge variant="secondary" className="text-xs font-mono cursor-help">
                         {file.split('/').pop()}

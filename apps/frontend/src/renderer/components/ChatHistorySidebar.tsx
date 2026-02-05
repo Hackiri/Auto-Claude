@@ -256,9 +256,10 @@ function SessionItem({
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        'group relative cursor-pointer px-2 py-2 transition-colors hover:bg-muted',
+        'group relative cursor-pointer px-2 py-2 transition-colors hover:bg-muted w-full text-left',
         isActive && 'bg-primary/10 hover:bg-primary/15'
       )}
       onClick={onSelect}
@@ -312,6 +313,6 @@ function SessionItem({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </button>
   );
 }

@@ -15,6 +15,7 @@ export function TaskCard({ task, isSelected, onToggle }: TaskCardProps) {
 
   return (
     <label
+      htmlFor={`task-${task.id}`}
       className={cn(
         'flex flex-col rounded-lg border p-4 cursor-pointer transition-all',
         isSelected
@@ -24,6 +25,7 @@ export function TaskCard({ task, isSelected, onToggle }: TaskCardProps) {
     >
       <div className="flex items-start gap-3">
         <Checkbox
+          id={`task-${task.id}`}
           checked={isSelected}
           onCheckedChange={onToggle}
           className="mt-1"

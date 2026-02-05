@@ -95,54 +95,6 @@ export function GitHubOAuthFlow({ onSuccess, onCancel }: GitHubOAuthFlowProps) {
     authTimeoutRef.current = null;
   }, []);
 
-  useEffect(() => {
-    if (hasCheckedRef.current) {
-      debugLog('Skipping duplicate check (Strict Mode)');
-      return;
-    }
-    hasCheckedRef.current = true;
-    debugLog('Component mounted, checking GitHub status...');
-    checkGitHubStatus();
-
-    // Cleanup timeout on unmount
-    return () => {
-      clearAuthTimeout();
-    };
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: checkGitHubStatus is hoisted and available
-  }, [clearAuthTimeout, checkGitHubStatus]);
-
-  // Listen for device code events from the main process
-  // This allows us to display the code IMMEDIATELY when extracted, not after the auth completes
-  useEffect(() => {
-    if (status !== 'authenticating') {
-      return;
-    }
-
-    debugLog('Setting up device code event listener');
-
-    // Listen for device code from main process (sent immediately when extracted)
-    const cleanup = window.electronAPI.onGitHubAuthDeviceCode((data) => {
-      debugLog('Received device code from main process:', {
-        hasCode: !!data.deviceCode,
-        authUrl: data.authUrl,
-        browserOpened: data.browserOpened
-      });
-
-      if (data.deviceCode) {
-        setDeviceCode(data.deviceCode);
-      }
-      if (data.authUrl) {
-        setAuthUrl(data.authUrl);
-      }
-      setBrowserOpened(data.browserOpened);
-    });
-
-    return () => {
-      debugLog('Cleaning up device code event listener');
-      cleanup();
-    };
-  }, [status]);
-
   const checkGitHubStatus = async () => {
     debugLog('checkGitHubStatus() called');
     setStatus('checking');
@@ -192,6 +144,54 @@ export function GitHubOAuthFlow({ onSuccess, onCancel }: GitHubOAuthFlowProps) {
       setStatus('error');
     }
   };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: checkGitHubStatus is intentionally omitted - we only want to run once on mount, using hasCheckedRef to prevent double-execution in Strict Mode
+  useEffect(() => {
+    if (hasCheckedRef.current) {
+      debugLog('Skipping duplicate check (Strict Mode)');
+      return;
+    }
+    hasCheckedRef.current = true;
+    debugLog('Component mounted, checking GitHub status...');
+    checkGitHubStatus();
+
+    // Cleanup timeout on unmount
+    return () => {
+      clearAuthTimeout();
+    };
+  }, [clearAuthTimeout]);
+
+  // Listen for device code events from the main process
+  // This allows us to display the code IMMEDIATELY when extracted, not after the auth completes
+  useEffect(() => {
+    if (status !== 'authenticating') {
+      return;
+    }
+
+    debugLog('Setting up device code event listener');
+
+    // Listen for device code from main process (sent immediately when extracted)
+    const cleanup = window.electronAPI.onGitHubAuthDeviceCode((data) => {
+      debugLog('Received device code from main process:', {
+        hasCode: !!data.deviceCode,
+        authUrl: data.authUrl,
+        browserOpened: data.browserOpened
+      });
+
+      if (data.deviceCode) {
+        setDeviceCode(data.deviceCode);
+      }
+      if (data.authUrl) {
+        setAuthUrl(data.authUrl);
+      }
+      setBrowserOpened(data.browserOpened);
+    });
+
+    return () => {
+      debugLog('Cleaning up device code event listener');
+      cleanup();
+    };
+  }, [status]);
 
   const fetchAndNotifyToken = async () => {
     debugLog('fetchAndNotifyToken() called');

@@ -61,6 +61,7 @@ export function AgentSessions() {
                     <span>{t('comparison.title')}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={clearComparison}
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
                   >

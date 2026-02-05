@@ -206,8 +206,8 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={CheckCircle2} title="What Worked" count={parsed.what_worked.length} />
                 <ul className="space-y-0.5">
-                  {parsed.what_worked.map((item, idx) => (
-                    <ListItem key={idx} variant="success">{item}</ListItem>
+                  {parsed.what_worked.map((item) => (
+                    <ListItem key={`worked-${item}`} variant="success">{item}</ListItem>
                   ))}
                 </ul>
               </div>
@@ -218,8 +218,8 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={XCircle} title="What Failed" count={parsed.what_failed.length} />
                 <ul className="space-y-0.5">
-                  {parsed.what_failed.map((item, idx) => (
-                    <ListItem key={idx} variant="error">{item}</ListItem>
+                  {parsed.what_failed.map((item) => (
+                    <ListItem key={`failed-${item}`} variant="error">{item}</ListItem>
                   ))}
                 </ul>
               </div>
@@ -260,11 +260,11 @@ export function MemoryCard({ memory }: MemoryCardProps) {
                   count={(parsed.recommendations_for_next_session?.length ?? 0) + (parsed.discoveries?.recommendations?.length ?? 0)}
                 />
                 <ul className="space-y-0.5">
-                  {parsed.recommendations_for_next_session?.map((item, idx) => (
-                    <ListItem key={`rec-${idx}`}>{item}</ListItem>
+                  {parsed.recommendations_for_next_session?.map((item) => (
+                    <ListItem key={`rec-${item}`}>{item}</ListItem>
                   ))}
-                  {parsed.discoveries?.recommendations?.map((item, idx) => (
-                    <ListItem key={`disc-rec-${idx}`}>{item}</ListItem>
+                  {parsed.discoveries?.recommendations?.map((item) => (
+                    <ListItem key={`disc-rec-${item}`}>{item}</ListItem>
                   ))}
                 </ul>
               </div>
@@ -275,10 +275,10 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={Sparkles} title="Patterns" count={parsed.discoveries.patterns_discovered.length} />
                 <div className="flex flex-wrap gap-2 pl-4">
-                  {parsed.discoveries.patterns_discovered.map((pattern, idx) => {
+                  {parsed.discoveries.patterns_discovered.map((pattern) => {
                     const text = typeof pattern === 'string' ? pattern : pattern.pattern;
                     return text ? (
-                      <Badge key={idx} variant="secondary" className="text-xs">
+                      <Badge key={`pattern-${text}`} variant="secondary" className="text-xs">
                         {text}
                       </Badge>
                     ) : null;
@@ -292,10 +292,10 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={AlertTriangle} title="Gotchas" count={parsed.discoveries.gotchas_discovered.length} />
                 <ul className="space-y-0.5">
-                  {parsed.discoveries.gotchas_discovered.map((gotcha, idx) => {
+                  {parsed.discoveries.gotchas_discovered.map((gotcha) => {
                     const text = typeof gotcha === 'string' ? gotcha : gotcha.gotcha;
                     return text ? (
-                      <ListItem key={idx} variant="error">{text}</ListItem>
+                      <ListItem key={`gotcha-${text}`} variant="error">{text}</ListItem>
                     ) : null;
                   })}
                 </ul>
@@ -307,8 +307,8 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={FileCode} title="Changed Files" count={parsed.discoveries.changed_files.length} />
                 <div className="flex flex-wrap gap-1.5 pl-4">
-                  {parsed.discoveries.changed_files.map((file, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs font-mono">
+                  {parsed.discoveries.changed_files.map((file) => (
+                    <Badge key={file} variant="outline" className="text-xs font-mono">
                       {file}
                     </Badge>
                   ))}
@@ -321,8 +321,8 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={FileCode} title="File Insights" count={parsed.discoveries.file_insights.length} />
                 <div className="space-y-2 pl-4">
-                  {parsed.discoveries.file_insights.map((insight, idx) => (
-                    <div key={idx} className="text-sm">
+                  {parsed.discoveries.file_insights.map((insight) => (
+                    <div key={`insight-${insight.path || insight.purpose}`} className="text-sm">
                       {insight.path && (
                         <Badge variant="outline" className="text-xs font-mono mb-1">
                           {insight.path}
@@ -345,8 +345,8 @@ export function MemoryCard({ memory }: MemoryCardProps) {
               <div>
                 <SectionHeader icon={CheckCircle2} title="Subtasks Completed" count={parsed.subtasks_completed.length} />
                 <div className="flex flex-wrap gap-1.5 pl-4">
-                  {parsed.subtasks_completed.map((task, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs font-mono">
+                  {parsed.subtasks_completed.map((task) => (
+                    <Badge key={task} variant="secondary" className="text-xs font-mono">
                       {task}
                     </Badge>
                   ))}

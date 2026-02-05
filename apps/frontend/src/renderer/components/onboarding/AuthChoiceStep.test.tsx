@@ -23,12 +23,25 @@ const mockOnAPIKeyPathComplete = vi.fn();
 // Dynamic profiles state for testing
 let mockProfiles: APIProfile[] = [];
 
-const mockUseSettingsStore = (selector?: any) => {
-  const state = {
+interface MockSettingsState {
+  profiles: APIProfile[];
+  profilesLoading: boolean;
+  profilesError: string | null;
+  setProfiles: ReturnType<typeof vi.fn>;
+  setProfilesLoading: ReturnType<typeof vi.fn>;
+  setProfilesError: ReturnType<typeof vi.fn>;
+  saveProfile: ReturnType<typeof vi.fn>;
+  updateProfile: ReturnType<typeof vi.fn>;
+  deleteProfile: ReturnType<typeof vi.fn>;
+  setActiveProfile: ReturnType<typeof vi.fn>;
+}
+
+const mockUseSettingsStore = <T,>(selector?: (state: MockSettingsState) => T): MockSettingsState | T => {
+  const state: MockSettingsState = {
     profiles: mockProfiles,
     profilesLoading: false,
     profilesError: null,
-    setProfiles: vi.fn((newProfiles) => { mockProfiles = newProfiles; }),
+    setProfiles: vi.fn((newProfiles: APIProfile[]) => { mockProfiles = newProfiles; }),
     setProfilesLoading: vi.fn(),
     setProfilesError: vi.fn(),
     saveProfile: vi.fn(),
@@ -43,7 +56,7 @@ const mockUseSettingsStore = (selector?: any) => {
 };
 
 vi.mock('../../stores/settings-store', () => ({
-  useSettingsStore: vi.fn((selector) => mockUseSettingsStore(selector))
+  useSettingsStore: vi.fn(<T,>(selector: (state: MockSettingsState) => T) => mockUseSettingsStore(selector))
 }));
 
 // Mock ProfileEditDialog
@@ -129,7 +142,8 @@ describe('AuthChoiceStep', () => {
       );
 
       const oauthButton = screen.getByText('Sign in with Anthropic').closest('.cursor-pointer');
-      fireEvent.click(oauthButton!);
+      expect(oauthButton).not.toBeNull();
+      fireEvent.click(oauthButton as Element);
 
       expect(mockGoToNext).toHaveBeenCalledTimes(1);
     });
@@ -144,7 +158,8 @@ describe('AuthChoiceStep', () => {
       );
 
       const oauthButton = screen.getByText('Sign in with Anthropic').closest('.cursor-pointer');
-      fireEvent.click(oauthButton!);
+      expect(oauthButton).not.toBeNull();
+      fireEvent.click(oauthButton as Element);
 
       expect(mockGoToNext).toHaveBeenCalled();
       expect(mockOnAPIKeyPathComplete).not.toHaveBeenCalled();
@@ -162,7 +177,8 @@ describe('AuthChoiceStep', () => {
       );
 
       const apiKeyButton = screen.getByText('Use Custom API Key').closest('.cursor-pointer');
-      fireEvent.click(apiKeyButton!);
+      expect(apiKeyButton).not.toBeNull();
+      fireEvent.click(apiKeyButton as Element);
 
       // ProfileEditDialog should be rendered
       expect(screen.getByTestId('profile-edit-dialog')).toBeInTheDocument();
@@ -185,7 +201,8 @@ describe('AuthChoiceStep', () => {
 
       // Click API Key button to open dialog
       const apiKeyButton = screen.getByText('Use Custom API Key').closest('.cursor-pointer');
-      fireEvent.click(apiKeyButton!);
+      expect(apiKeyButton).not.toBeNull();
+      fireEvent.click(apiKeyButton as Element);
 
       // Dialog should be open - verifies the API key path works
       expect(screen.getByTestId('profile-edit-dialog')).toBeInTheDocument();

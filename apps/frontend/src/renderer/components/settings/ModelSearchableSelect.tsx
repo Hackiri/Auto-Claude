@@ -15,7 +15,7 @@
  * - Per-credential caching: reuses fetched models for same (baseUrl, apiKey)
  * - Request cancellation: aborts pending fetch when closed
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, ChevronDown, Search, Check, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
@@ -162,12 +162,12 @@ export function ModelSearchableSelect({
    * Handle dropdown close.
    * Cancels any pending fetch requests.
    */
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsOpen(false);
     // Cancel pending fetch
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
-  };
+  }, []);
 
   /**
    * Handle model selection from dropdown.

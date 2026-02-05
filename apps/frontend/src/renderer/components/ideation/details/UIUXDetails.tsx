@@ -57,8 +57,8 @@ export function UIUXDetails({ idea }: UIUXDetailsProps) {
             Affected Components
           </h3>
           <ul className="space-y-1">
-            {idea.affectedComponents.map((component, i) => (
-              <li key={i} className="text-sm font-mono text-muted-foreground">
+            {idea.affectedComponents.map((component) => (
+              <li key={component} className="text-sm font-mono text-muted-foreground">
                 {component}
               </li>
             ))}

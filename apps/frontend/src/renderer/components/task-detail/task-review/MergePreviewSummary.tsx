@@ -78,8 +78,8 @@ export function MergePreviewSummary({
             {' '}{t('taskReview:merge.filesNeedIntelligentMerging', { count: mergePreview.gitConflicts.conflictingFiles.length })}
           </p>
           <ul className="list-disc list-inside text-muted-foreground">
-            {mergePreview.gitConflicts.conflictingFiles.map((file, idx) => (
-              <li key={idx} className="truncate">{file}</li>
+            {mergePreview.gitConflicts.conflictingFiles.map((file) => (
+              <li key={file} className="truncate">{file}</li>
             ))}
           </ul>
           <p className="mt-2 text-muted-foreground">

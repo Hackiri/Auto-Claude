@@ -12,6 +12,7 @@ import { ProfileList } from './ProfileList';
 import { maskApiKey } from '../../lib/profile-utils';
 import { useSettingsStore } from '../../stores/settings-store';
 import type { APIProfile } from '@shared/types/profile';
+import type { AppSettings } from '@shared/types/settings';
 import { TooltipProvider } from '../ui/tooltip';
 import i18n from '../../../shared/i18n';
 
@@ -73,7 +74,7 @@ function createSettingsStoreMock(overrides: Partial<ReturnType<typeof useSetting
     deleteProfile: mockDeleteProfile,
     setActiveProfile: mockSetActiveProfile,
     profilesLoading: false,
-    settings: {} as any,
+    settings: {} as unknown as AppSettings,
     isLoading: false,
     error: null,
     setSettings: vi.fn(),

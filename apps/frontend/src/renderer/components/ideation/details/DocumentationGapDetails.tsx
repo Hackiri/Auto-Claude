@@ -75,8 +75,8 @@ export function DocumentationGapDetails({ idea }: DocumentationGapDetailsProps) 
             Affected Areas
           </h3>
           <ul className="space-y-1">
-            {idea.affectedAreas.map((area, i) => (
-              <li key={i} className="text-sm font-mono text-muted-foreground">
+            {idea.affectedAreas.map((area) => (
+              <li key={area} className="text-sm font-mono text-muted-foreground">
                 {area}
               </li>
             ))}

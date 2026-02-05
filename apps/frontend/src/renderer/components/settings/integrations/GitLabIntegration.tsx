@@ -79,49 +79,6 @@ export function GitLabIntegration({
   debugLog('Render - projectPath:', projectPath);
   debugLog('Render - envConfig:', envConfig ? { gitlabEnabled: envConfig.gitlabEnabled, hasToken: !!envConfig.gitlabToken, defaultBranch: envConfig.defaultBranch } : null);
 
-  // Fetch projects when entering oauth-success mode
-  useEffect(() => {
-    if (authMode === 'oauth-success') {
-      fetchUserProjects();
-    }
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchUserProjects is hoisted and available
-  }, [authMode, fetchUserProjects]);
-
-  // Check glab CLI on mount
-  useEffect(() => {
-    const checkGlab = async () => {
-      setIsCheckingGlab(true);
-      try {
-        const result = await window.electronAPI.checkGitLabCli();
-        debugLog('checkGitLabCli result:', result);
-        if (result.success && result.data) {
-          setGlabInstalled(result.data.installed);
-          setGlabVersion(result.data.version || null);
-        } else {
-          setGlabInstalled(false);
-        }
-      } catch (error) {
-        debugLog('Error checking glab CLI:', error);
-        setGlabInstalled(false);
-      } finally {
-        setIsCheckingGlab(false);
-      }
-    };
-    checkGlab();
-  }, []);
-
-  // Fetch branches when GitLab is enabled and project path is available
-  useEffect(() => {
-    debugLog(`useEffect[branches] - gitlabEnabled: ${envConfig?.gitlabEnabled}, projectPath: ${projectPath}`);
-    if (envConfig?.gitlabEnabled && projectPath) {
-      debugLog('useEffect[branches] - Triggering fetchBranches');
-      fetchBranches();
-    } else {
-      debugLog('useEffect[branches] - Skipping fetchBranches (conditions not met)');
-    }
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchBranches is hoisted and available
-  }, [envConfig?.gitlabEnabled, projectPath, fetchBranches]);
-
   /**
    * Handler for branch selection changes.
    * Updates BOTH project.settings.mainBranch (for Electron app) and envConfig.defaultBranch (for CLI backward compatibility).
@@ -205,6 +162,49 @@ export function GitLabIntegration({
       setIsLoadingProjects(false);
     }
   };
+
+  // Fetch projects when entering oauth-success mode
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchUserProjects is intentionally omitted to prevent re-fetching when function reference changes - we only want to fetch when authMode becomes 'oauth-success'
+  useEffect(() => {
+    if (authMode === 'oauth-success') {
+      fetchUserProjects();
+    }
+  }, [authMode]);
+
+  // Check glab CLI on mount
+  useEffect(() => {
+    const checkGlab = async () => {
+      setIsCheckingGlab(true);
+      try {
+        const result = await window.electronAPI.checkGitLabCli();
+        debugLog('checkGitLabCli result:', result);
+        if (result.success && result.data) {
+          setGlabInstalled(result.data.installed);
+          setGlabVersion(result.data.version || null);
+        } else {
+          setGlabInstalled(false);
+        }
+      } catch (error) {
+        debugLog('Error checking glab CLI:', error);
+        setGlabInstalled(false);
+      } finally {
+        setIsCheckingGlab(false);
+      }
+    };
+    checkGlab();
+  }, []);
+
+  // Fetch branches when GitLab is enabled and project path is available
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchBranches is intentionally omitted to prevent re-fetching when function reference changes - we only want to fetch when gitlabEnabled or projectPath changes
+  useEffect(() => {
+    debugLog(`useEffect[branches] - gitlabEnabled: ${envConfig?.gitlabEnabled}, projectPath: ${projectPath}`);
+    if (envConfig?.gitlabEnabled && projectPath) {
+      debugLog('useEffect[branches] - Triggering fetchBranches');
+      fetchBranches();
+    } else {
+      debugLog('useEffect[branches] - Skipping fetchBranches (conditions not met)');
+    }
+  }, [envConfig?.gitlabEnabled, projectPath]);
 
   if (!envConfig) {
     debugLog('No envConfig, returning null');
@@ -800,7 +800,7 @@ function IssuesAvailableInfo() {
   return (
     <div className="rounded-lg border border-info/30 bg-info/5 p-3">
       <div className="flex items-start gap-3">
-        <svg className="h-5 w-5 text-info mt-0.5" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="h-5 w-5 text-info mt-0.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z"/>
         </svg>
         <div className="flex-1">

@@ -50,9 +50,13 @@ export function TaskCreationWizard({
 }: TaskCreationWizardProps) {
   const { t } = useTranslation(['tasks', 'common']);
   const { settings } = useSettingsStore();
+  const autoProfile = DEFAULT_AGENT_PROFILES.find(p => p.id === 'auto');
+  if (!autoProfile) {
+    throw new Error('Auto agent profile not found in DEFAULT_AGENT_PROFILES');
+  }
   const selectedProfile = DEFAULT_AGENT_PROFILES.find(
     p => p.id === settings.selectedAgentProfile
-  ) || DEFAULT_AGENT_PROFILES.find(p => p.id === 'auto')!;
+  ) || autoProfile;
 
   // Form state
   const [title, setTitle] = useState('');
@@ -571,7 +575,7 @@ export function TaskCreationWizard({
         if (part.match(/^@[\w\-./\\]+\.\w+$/)) {
           return (
             <span
-              key={i}
+              key={`mention-${i}-${part}`}
               className="bg-info/20 text-info-foreground rounded px-0.5"
               style={{ color: 'hsl(var(--info))' }}
             >
@@ -579,7 +583,8 @@ export function TaskCreationWizard({
             </span>
           );
         }
-        return <span key={i}>{part}</span>;
+        // biome-ignore lint/suspicious/noArrayIndexKey: Text fragments from split don't have stable IDs
+        return <span key={`text-${i}`}>{part}</span>;
       })}
     </div>
   );

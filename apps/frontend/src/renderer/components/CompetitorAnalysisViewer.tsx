@@ -155,8 +155,8 @@ export function CompetitorAnalysisViewer({
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1">Top Pain Points:</p>
                     <ul className="text-sm space-y-1">
-                      {analysis.insightsSummary.topPainPoints.map((point, idx) => (
-                        <li key={idx} className="text-muted-foreground">• {point}</li>
+                      {analysis.insightsSummary.topPainPoints.map((point) => (
+                        <li key={`pain-${point}`} className="text-muted-foreground">• {point}</li>
                       ))}
                     </ul>
                   </div>
@@ -166,8 +166,8 @@ export function CompetitorAnalysisViewer({
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1">Differentiator Opportunities:</p>
                     <ul className="text-sm space-y-1">
-                      {analysis.insightsSummary.differentiatorOpportunities.map((opp, idx) => (
-                        <li key={idx} className="text-muted-foreground">• {opp}</li>
+                      {analysis.insightsSummary.differentiatorOpportunities.map((opp) => (
+                        <li key={`opp-${opp}`} className="text-muted-foreground">• {opp}</li>
                       ))}
                     </ul>
                   </div>
@@ -177,8 +177,8 @@ export function CompetitorAnalysisViewer({
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1">Market Trends:</p>
                     <ul className="text-sm space-y-1">
-                      {analysis.insightsSummary.marketTrends.map((trend, idx) => (
-                        <li key={idx} className="text-muted-foreground">• {trend}</li>
+                      {analysis.insightsSummary.marketTrends.map((trend) => (
+                        <li key={`trend-${trend}`} className="text-muted-foreground">• {trend}</li>
                       ))}
                     </ul>
                   </div>

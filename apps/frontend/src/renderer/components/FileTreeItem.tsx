@@ -159,22 +159,22 @@ export function FileTreeItem({
 
   return (
     <div
-      role={node.isDirectory ? 'button' : undefined}
-      tabIndex={node.isDirectory ? 0 : undefined}
+      role="button"
+      tabIndex={0}
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onKeyDown={node.isDirectory ? handleKeyDown : undefined}
+      onKeyDown={handleKeyDown}
       className={cn(
         'flex items-center gap-1 py-1 px-2 rounded cursor-grab select-none',
         'hover:bg-accent/50 transition-colors',
-        node.isDirectory && 'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
+        'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
         isDragging && 'opacity-50 bg-accent ring-2 ring-primary'
       )}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      aria-label={node.isDirectory ? t('accessibility.toggleFolder', { name: node.name }) : undefined}
+      aria-label={node.isDirectory ? t('accessibility.toggleFolder', { name: node.name }) : t('accessibility.selectFile', { name: node.name })}
       aria-expanded={node.isDirectory ? isExpanded : undefined}
     >
       {/* Expand/collapse chevron for directories */}

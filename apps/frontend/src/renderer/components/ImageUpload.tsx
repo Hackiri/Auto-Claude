@@ -276,19 +276,29 @@ export function ImageUpload({
     <div className={cn('space-y-3', className)}>
       {/* Drop zone */}
       <div
+        role="button"
+        tabIndex={disabled || !canAddMore ? -1 : 0}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
         className={cn(
           'relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer',
           'flex flex-col items-center justify-center gap-2 text-center',
+          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
           isDragOver && !disabled
             ? 'border-primary bg-primary/5'
             : 'border-border hover:border-muted-foreground/50',
           disabled && 'opacity-50 cursor-not-allowed',
           !canAddMore && 'opacity-50 cursor-not-allowed'
         )}
+        aria-label="Upload images"
       >
         <input
           ref={fileInputRef}

@@ -95,6 +95,7 @@ export function PRHeader({ pr, isLoadingFiles = false }: PRHeaderProps) {
         <div className="flex items-center gap-4 ml-auto">
           {/* Clickable files indicator */}
           <button
+            type="button"
             onClick={() => setShowFiles(!showFiles)}
             className={cn(
               "flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors",
@@ -135,9 +136,9 @@ export function PRHeader({ pr, isLoadingFiles = false }: PRHeaderProps) {
             </div>
           ) : hasFiles ? (
             <div className="divide-y divide-border/40 max-h-[300px] overflow-y-auto">
-              {pr.files.map((file, index) => (
+              {pr.files.map((file) => (
                 <div
-                  key={`${file.path}-${index}`}
+                  key={file.path}
                   className="flex items-center gap-3 px-3 py-2 hover:bg-accent/30 transition-colors"
                 >
                   <FileCode className="h-4 w-4 text-muted-foreground shrink-0" />

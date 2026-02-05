@@ -62,9 +62,13 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
   const { t } = useTranslation(['tasks', 'common']);
   // Get selected agent profile from settings for defaults
   const { settings } = useSettingsStore();
+  const autoProfile = DEFAULT_AGENT_PROFILES.find(p => p.id === 'auto');
+  if (!autoProfile) {
+    throw new Error('Auto agent profile not found in DEFAULT_AGENT_PROFILES');
+  }
   const selectedProfile = DEFAULT_AGENT_PROFILES.find(
     p => p.id === settings.selectedAgentProfile
-  ) || DEFAULT_AGENT_PROFILES.find(p => p.id === 'auto')!;
+  ) || autoProfile;
 
   // Get project path for loading image thumbnails from disk
   const projects = useProjectStore((state) => state.projects);

@@ -228,7 +228,7 @@ function highlightText(content: string, searchText: string): React.ReactNode {
 
   return parts.map((part, i) =>
     regex.test(part) ? (
-      <mark key={i} className="bg-yellow-500/40 text-inherit rounded-sm px-0.5">
+      <mark key={`match-${i}-${part}`} className="bg-yellow-500/40 text-inherit rounded-sm px-0.5">
         {part}
       </mark>
     ) : (

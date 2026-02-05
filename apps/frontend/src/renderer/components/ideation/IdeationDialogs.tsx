@@ -127,9 +127,10 @@ export function IdeationDialogs({
               </div>
             ) : (
               availableTypesToAdd.map((type) => (
-                <div
+                <button
+                  type="button"
                   key={type}
-                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`w-full flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors text-left ${
                     typesToAdd.includes(type)
                       ? 'bg-primary/10 border border-primary'
                       : 'bg-muted/50 hover:bg-muted'
@@ -156,7 +157,7 @@ export function IdeationDialogs({
                       <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
                     )}
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>

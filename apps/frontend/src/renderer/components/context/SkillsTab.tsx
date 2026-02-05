@@ -58,7 +58,6 @@ export function SkillsTab({ projectId }: SkillsTabProps) {
     generationLoading,
     generationError,
     setSkills,
-    setGenerationLoading,
     setGenerationError,
     toggleSkill,
   } = useSkillsStore();

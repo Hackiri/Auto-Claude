@@ -147,7 +147,6 @@ export function Insights({ projectId }: InsightsProps) {
   // Smart auto-scroll: only scroll if user is already at bottom
   // This allows users to scroll up to read previous messages without being
   // yanked back down during streaming responses
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deps intentionally trigger scroll on message/content changes
   useEffect(() => {
     if (isUserAtBottom && viewportEl) {
       viewportEl.scrollTop = viewportEl.scrollHeight;
@@ -160,7 +159,6 @@ export function Insights({ projectId }: InsightsProps) {
   }, []);
 
   // Reset taskCreated when switching sessions
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when session changes
   useEffect(() => {
     setTaskCreated(new Set());
   }, []);
@@ -655,11 +653,11 @@ function ToolUsageHistory({ tools }: ToolUsageHistoryProps) {
 
       {expanded && (
         <div className="mt-2 space-y-1 rounded-md border border-border bg-muted/30 p-2">
-          {tools.map((tool, index) => {
+          {tools.map((tool) => {
             const Icon = getToolIcon(tool.name);
             return (
               <div
-                key={`${tool.name}-${index}`}
+                key={`${tool.name}-${tool.timestamp.getTime()}`}
                 className="flex items-center gap-2 text-xs"
               >
                 <Icon className={cn('h-3 w-3 shrink-0', getToolColor(tool.name))} />

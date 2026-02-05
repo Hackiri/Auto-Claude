@@ -106,9 +106,9 @@ export function WorkspaceStatus({
   onStageOnlyChange,
   onMerge,
   onShowPRDialog,
-  onClose,
-  onSwitchToTerminals,
-  onOpenInbuiltTerminal
+  onClose: _onClose,
+  onSwitchToTerminals: _onSwitchToTerminals,
+  onOpenInbuiltTerminal: _onOpenInbuiltTerminal
 }: WorkspaceStatusProps) {
   const { t } = useTranslation(['taskReview', 'common', 'tasks']);
   const { settings } = useSettingsStore();
@@ -549,8 +549,9 @@ export function WorkspaceStatus({
       <div className="px-4 py-3 bg-muted/20 border-t border-border space-y-3">
         {/* Stage Only Option - only show after conflicts have been checked (not for already_merged/superseded) */}
         {mergePreview && !isAlreadyMerged && !isSuperseded && (
-          <label className="inline-flex items-center gap-2.5 text-sm cursor-pointer select-none px-3 py-2 rounded-lg border border-border bg-background/50 hover:bg-background/80 transition-colors">
+          <label htmlFor="stage-only-checkbox" className="inline-flex items-center gap-2.5 text-sm cursor-pointer select-none px-3 py-2 rounded-lg border border-border bg-background/50 hover:bg-background/80 transition-colors">
             <Checkbox
+              id="stage-only-checkbox"
               checked={stageOnly}
               onCheckedChange={(checked) => onStageOnlyChange(checked === true)}
               className="border-muted-foreground/50 data-[state=checked]:border-primary"

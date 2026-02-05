@@ -36,6 +36,7 @@ export function TaskSelector({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
+            type="button"
             className={cn(
               'flex items-center gap-1.5 h-6 px-2 rounded text-[10px] font-medium transition-colors',
               phaseConfig.color,
@@ -99,6 +100,7 @@ export function TaskSelector({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           className="flex items-center gap-1.5 h-6 px-2 rounded text-[10px] font-medium transition-colors border border-border/50 bg-card/50 hover:bg-card hover:border-border text-muted-foreground hover:text-foreground"
           onClick={(e) => e.stopPropagation()}
         >

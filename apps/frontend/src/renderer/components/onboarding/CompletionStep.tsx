@@ -134,9 +134,9 @@ export function CompletionStep({
             {t('completion.whatsNext')}
           </div>
           <div className="grid grid-cols-1 gap-3">
-            {nextSteps.map((step, index) => (
+            {nextSteps.map((step) => (
               <NextStepCard
-                key={index}
+                key={step.title}
                 icon={step.icon}
                 title={step.title}
                 description={step.description}

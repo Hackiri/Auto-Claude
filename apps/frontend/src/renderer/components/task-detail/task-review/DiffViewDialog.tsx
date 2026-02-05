@@ -41,9 +41,9 @@ export function DiffViewDialog({
         <div className="flex-1 overflow-auto min-h-0 -mx-6 px-6">
           {worktreeDiff?.files && worktreeDiff.files.length > 0 ? (
             <div className="space-y-2">
-              {worktreeDiff.files.map((file, idx) => (
+              {worktreeDiff.files.map((file) => (
                 <div
-                  key={idx}
+                  key={file.path}
                   className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">

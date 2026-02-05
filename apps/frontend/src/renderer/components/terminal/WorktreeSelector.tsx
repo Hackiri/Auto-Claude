@@ -133,12 +133,12 @@ export function WorktreeSelector({
     onSelectWorktree(config);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchWorktrees is intentionally omitted to prevent infinite re-renders - we only want to fetch when isOpen or projectPath changes
   useEffect(() => {
     if (isOpen && projectPath) {
       fetchWorktrees();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchWorktrees is intentionally excluded to prevent infinite loop
-  }, [isOpen, projectPath, fetchWorktrees]);
+  }, [isOpen, projectPath]);
 
   // Handle delete worktree
   const handleDeleteWorktree = async () => {
@@ -172,6 +172,7 @@ export function WorktreeSelector({
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           className={cn(
             'flex items-center gap-1 h-6 px-2 rounded text-xs font-medium transition-colors',
             'hover:bg-amber-500/10 hover:text-amber-500 text-muted-foreground'
@@ -234,6 +235,7 @@ export function WorktreeSelector({
                         )}
                       </div>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();

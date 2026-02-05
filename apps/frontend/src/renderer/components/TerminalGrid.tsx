@@ -549,6 +549,7 @@ export function TerminalGrid({ projectPath, onNewTaskClick, isActive = false }: 
               <SortableContext items={terminalIds} strategy={rectSortingStrategy}>
                 <Group orientation="vertical" className="h-full">
                   {terminalRows.map((row, rowIndex) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Row indices are stable during render - rows don't reorder
                     <React.Fragment key={rowIndex}>
                       <Panel id={`row-${rowIndex}`} defaultSize={100 / terminalRows.length} minSize={15}>
                         <Group orientation="horizontal" className="h-full">

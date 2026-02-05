@@ -21,12 +21,12 @@ import {
 import { Badge } from '../ui/badge';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible';
 import { cn } from '../../lib/utils';
-import type { Task, TaskLogs, TaskLogPhase, TaskPhaseLog, TaskLogEntry, TaskMetadata } from '../../../shared/types';
+import type { Task, TaskLogs as TaskLogsType, TaskLogPhase, TaskPhaseLog, TaskLogEntry, TaskMetadata } from '../../../shared/types';
 import type { PhaseModelConfig, ThinkingLevel, ModelTypeShort } from '../../../shared/types/settings';
 
 interface TaskLogsProps {
   task: Task;
-  phaseLogs: TaskLogs | null;
+  phaseLogs: TaskLogsType | null;
   isLoadingLogs: boolean;
   expandedPhases: Set<TaskLogPhase>;
   isStuck: boolean;
@@ -225,6 +225,7 @@ function PhaseLogSection({ phase, phaseLog, isExpanded, onToggle, isTaskStuck, p
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <CollapsibleTrigger asChild>
         <button
+          type="button"
           className={cn(
             'w-full flex items-center justify-between p-3 rounded-lg border transition-colors',
             'hover:bg-secondary/50',
@@ -359,6 +360,7 @@ function LogEntry({ entry }: LogEntryProps) {
           </div>
           {hasDetail && (
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className={cn(
                 'flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded',
@@ -400,6 +402,7 @@ function LogEntry({ entry }: LogEntryProps) {
           <SubphaseBadge />
           {hasDetail && (
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className={cn(
                 'flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded shrink-0',
@@ -453,6 +456,7 @@ function LogEntry({ entry }: LogEntryProps) {
         <SubphaseBadge />
         {hasDetail && (
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className={cn(
               'flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded shrink-0',

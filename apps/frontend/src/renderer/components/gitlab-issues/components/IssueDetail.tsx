@@ -80,9 +80,9 @@ export function IssueDetail({ issue, onInvestigate, investigationResult, linkedT
         {/* Labels */}
         {issue.labels.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {issue.labels.map((label, index) => (
+            {issue.labels.map((label) => (
               <Badge
-                key={index}
+                key={label}
                 variant="outline"
                 className="bg-orange-500/10 text-orange-500 border-orange-500/20"
               >

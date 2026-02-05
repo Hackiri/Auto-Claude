@@ -52,9 +52,9 @@ export function ConflictDetailsDialog({
         <div className="flex-1 overflow-auto min-h-0 -mx-6 px-6">
           {mergePreview?.conflicts && mergePreview.conflicts.length > 0 ? (
             <div className="space-y-3">
-              {mergePreview.conflicts.map((conflict, idx) => (
+              {mergePreview.conflicts.map((conflict) => (
                 <div
-                  key={idx}
+                  key={conflict.file}
                   className={cn(
                     "p-3 rounded-lg border",
                     conflict.canAutoMerge

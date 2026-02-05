@@ -40,8 +40,12 @@ export function SeverityGroupHeader({
     >
       <div className="flex items-center gap-3">
         {/* Group Checkbox */}
-        <div
-          onClick={onSelectAll}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectAll(e);
+          }}
           className="cursor-pointer"
         >
           {isFullySelected ? (
@@ -51,7 +55,7 @@ export function SeverityGroupHeader({
           ) : (
             <Square className="h-4 w-4 text-muted-foreground" />
           )}
-        </div>
+        </button>
 
         <Icon className={cn("h-4 w-4", config.color)} />
         <span className={cn("font-medium text-sm", config.color)}>

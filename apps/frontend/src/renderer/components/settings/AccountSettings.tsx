@@ -69,7 +69,7 @@ interface AccountSettingsProps {
 /**
  * Unified account settings with tabs for Claude Code and Custom Endpoints
  */
-export function AccountSettings({ settings, onSettingsChange, isOpen }: AccountSettingsProps) {
+export function AccountSettings({ settings: _settings, onSettingsChange: _onSettingsChange, isOpen }: AccountSettingsProps) {
   const { t } = useTranslation('settings');
   const { t: tCommon } = useTranslation('common');
   const { toast } = useToast();
@@ -215,18 +215,6 @@ export function AccountSettings({ settings, onSettingsChange, isOpen }: AccountS
 
   const unifiedAccounts = buildUnifiedAccounts();
 
-  // Load priority order from settings
-  const loadPriorityOrder = async () => {
-    try {
-      const result = await window.electronAPI.getAccountPriorityOrder();
-      if (result.success && result.data) {
-        setPriorityOrder(result.data);
-      }
-    } catch (err) {
-      console.warn('[AccountSettings] Failed to load priority order:', err);
-    }
-  };
-
   // Save priority order
   const handlePriorityReorder = async (newOrder: string[]) => {
     setPriorityOrder(newOrder);
@@ -245,38 +233,23 @@ export function AccountSettings({ settings, onSettingsChange, isOpen }: AccountS
     }
   };
 
-  // Load data when section is opened
-  useEffect(() => {
-    if (isOpen) {
-      loadClaudeProfiles();
-      loadAutoSwitchSettings();
-      loadPriorityOrder();
-      // Force refresh usage data when Settings opens to get fresh data
-      // This bypasses the 1-minute cache to ensure accurate duplicate detection
-      loadProfileUsageData(true);
+  // Auto-switch settings handlers (moved before useEffect that uses them)
+  const loadAutoSwitchSettings = useCallback(async () => {
+    setIsLoadingAutoSwitch(true);
+    try {
+      const result = await window.electronAPI.getAutoSwitchSettings();
+      if (result.success && result.data) {
+        setAutoSwitchSettings(result.data);
+      }
+    } catch (err) {
+      console.warn('[AccountSettings] Failed to load auto-switch settings:', err);
+    } finally {
+      setIsLoadingAutoSwitch(false);
     }
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: functions are hoisted and available
-  }, [isOpen, loadProfileUsageData, loadAutoSwitchSettings, loadClaudeProfiles, loadPriorityOrder]);
-
-  // Subscribe to usage updates for real-time data
-  useEffect(() => {
-    const unsubscribe = window.electronAPI.onAllProfilesUsageUpdated?.((allProfilesUsage) => {
-      const usageMap = new Map<string, ProfileUsageSummary>();
-      allProfilesUsage.allProfiles.forEach(profile => {
-        usageMap.set(profile.profileId, profile);
-      });
-      setProfileUsageData(usageMap);
-    });
-
-    return () => {
-      unsubscribe?.();
-    };
   }, []);
 
-  // ============================================
-  // Claude Code (OAuth) handlers
-  // ============================================
-  const loadClaudeProfiles = async () => {
+  // Claude Code (OAuth) handlers (moved before useEffect that uses them)
+  const loadClaudeProfiles = useCallback(async () => {
     setIsLoadingProfiles(true);
     try {
       const result = await window.electronAPI.getClaudeProfiles();
@@ -301,8 +274,50 @@ export function AccountSettings({ settings, onSettingsChange, isOpen }: AccountS
     } finally {
       setIsLoadingProfiles(false);
     }
-  };
+  }, [toast, t]);
 
+  // Load priority order from settings
+  const loadPriorityOrder = useCallback(async () => {
+    try {
+      const result = await window.electronAPI.getAccountPriorityOrder();
+      if (result.success && result.data) {
+        setPriorityOrder(result.data);
+      }
+    } catch (err) {
+      console.warn('[AccountSettings] Failed to load priority order:', err);
+    }
+  }, []);
+
+  // Load data when section is opened
+  useEffect(() => {
+    if (isOpen) {
+      loadClaudeProfiles();
+      loadAutoSwitchSettings();
+      loadPriorityOrder();
+      // Force refresh usage data when Settings opens to get fresh data
+      // This bypasses the 1-minute cache to ensure accurate duplicate detection
+      loadProfileUsageData(true);
+    }
+  }, [isOpen, loadProfileUsageData, loadClaudeProfiles, loadAutoSwitchSettings, loadPriorityOrder]);
+
+  // Subscribe to usage updates for real-time data
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.onAllProfilesUsageUpdated?.((allProfilesUsage) => {
+      const usageMap = new Map<string, ProfileUsageSummary>();
+      allProfilesUsage.allProfiles.forEach(profile => {
+        usageMap.set(profile.profileId, profile);
+      });
+      setProfileUsageData(usageMap);
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  // ============================================
+  // Claude Code (OAuth) handlers
+  // ============================================
   const handleAddClaudeProfile = async () => {
     if (!newProfileName.trim()) return;
 
@@ -619,20 +634,6 @@ export function AccountSettings({ settings, onSettingsChange, isOpen }: AccountS
   // ============================================
   // Auto-switch settings handlers (shared)
   // ============================================
-  const loadAutoSwitchSettings = async () => {
-    setIsLoadingAutoSwitch(true);
-    try {
-      const result = await window.electronAPI.getAutoSwitchSettings();
-      if (result.success && result.data) {
-        setAutoSwitchSettings(result.data);
-      }
-    } catch (err) {
-      console.warn('[AccountSettings] Failed to load auto-switch settings:', err);
-    } finally {
-      setIsLoadingAutoSwitch(false);
-    }
-  };
-
   const handleUpdateAutoSwitch = async (updates: Partial<ClaudeAutoSwitchSettings>) => {
     setIsLoadingAutoSwitch(true);
     try {

@@ -135,8 +135,8 @@ export function CodeQualityDetails({ idea }: CodeQualityDetailsProps) {
             Affected Files
           </h3>
           <ul className="space-y-1">
-            {idea.affectedFiles.map((file, i) => (
-              <li key={i} className="text-sm font-mono text-muted-foreground">
+            {idea.affectedFiles.map((file) => (
+              <li key={file} className="text-sm font-mono text-muted-foreground">
                 {file}
               </li>
             ))}
@@ -163,8 +163,8 @@ export function CodeQualityDetails({ idea }: CodeQualityDetailsProps) {
             Prerequisites
           </h3>
           <ul className="space-y-1">
-            {idea.prerequisites.map((prereq, i) => (
-              <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+            {idea.prerequisites.map((prereq) => (
+              <li key={prereq} className="text-sm text-muted-foreground flex items-start gap-2">
                 <span className="text-muted-foreground">•</span>
                 {prereq}
               </li>

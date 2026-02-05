@@ -8,6 +8,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { DEFAULT_AGENT_PROFILES, DEFAULT_PHASE_MODELS, DEFAULT_FEATURE_MODELS, DEFAULT_FEATURE_THINKING } from '../../../shared/constants/models';
 import { resolveAgentSettings, } from '../../hooks';
+import type { ElectronAPI } from '../../../preload/api';
 
 // Mock electronAPI
 global.window.electronAPI = {
@@ -15,7 +16,7 @@ global.window.electronAPI = {
   updateProjectEnv: vi.fn().mockResolvedValue({ success: true }),
   checkMcpHealth: vi.fn().mockResolvedValue({ success: true, data: null }),
   testMcpConnection: vi.fn().mockResolvedValue({ success: true, data: null }),
-} as any;
+} as unknown as ElectronAPI;
 
 describe('AgentTools - Agent Profile Resolution', () => {
   describe('Profile Selection', () => {
@@ -160,9 +161,13 @@ describe('AgentTools - Agent Profile Resolution', () => {
 
   describe('Agent Settings Resolution (Utility)', () => {
     it('should resolve phase-based agent settings correctly', () => {
-      const profile = DEFAULT_AGENT_PROFILES.find(p => p.id === 'auto')!;
-      const phaseModels = profile.phaseModels!;
-      const phaseThinking = profile.phaseThinking!;
+      const profile = DEFAULT_AGENT_PROFILES.find(p => p.id === 'auto');
+      expect(profile).toBeDefined();
+      if (!profile || !profile.phaseModels || !profile.phaseThinking) {
+        throw new Error('Auto profile or its properties not found');
+      }
+      const phaseModels = profile.phaseModels;
+      const phaseThinking = profile.phaseThinking;
       const featureModels = DEFAULT_FEATURE_MODELS;
       const featureThinking = DEFAULT_FEATURE_THINKING;
 

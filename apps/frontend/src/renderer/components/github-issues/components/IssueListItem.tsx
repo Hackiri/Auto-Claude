@@ -9,8 +9,9 @@ import type { IssueListItemProps } from '../types';
 
 export function IssueListItem({ issue, isSelected, onClick, onInvestigate }: IssueListItemProps) {
   return (
-    <div
-      className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+    <button
+      type="button"
+      className={`group p-3 rounded-lg cursor-pointer transition-colors w-full text-left ${
         isSelected
           ? 'bg-accent/50 border border-accent'
           : 'hover:bg-muted/50 border border-transparent'
@@ -62,6 +63,6 @@ export function IssueListItem({ issue, isSelected, onClick, onInvestigate }: Iss
           <Sparkles className="h-4 w-4" />
         </Button>
       </div>
-    </div>
+    </button>
   );
 }

@@ -206,8 +206,8 @@ export function MergeProgressOverlay({ mergeProgress, logEntries }: MergeProgres
               className="mt-2 max-h-48 overflow-y-auto rounded-lg border bg-background/50 p-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
             >
               <div className="space-y-1">
-                {logEntries.map((entry, idx) => (
-                  <div key={idx} className="flex gap-2 text-xs font-mono">
+                {logEntries.map((entry) => (
+                  <div key={`log-${entry.timestamp}-${entry.message.slice(0, 30)}`} className="flex gap-2 text-xs font-mono">
                     <span className="text-muted-foreground shrink-0">
                       {new Date(entry.timestamp).toLocaleTimeString()}
                     </span>

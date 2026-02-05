@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useToast } from '../../../hooks/use-toast';
 import { SettingsSection } from '../SettingsSection';
 import { useTerminalFontSettingsStore } from '../../../stores/terminal-font-settings-store';
-import type { TerminalFontSettings } from '../../../stores/terminal-font-settings-store';
+import type { TerminalFontSettings as TerminalFontSettingsType } from '../../../stores/terminal-font-settings-store';
 import { MAX_IMPORT_FILE_SIZE } from '../../../lib/terminal-font-constants';
 
 // Child components
@@ -44,7 +44,7 @@ export function TerminalFontSettings() {
 
   // Reconstruct settings object with stable reference using useMemo
   // This prevents the infinite re-render loop caused by creating new object references
-  const settings = useMemo<TerminalFontSettings>(
+  const settings = useMemo<TerminalFontSettingsType>(
     () => ({
       fontFamily,
       fontSize,
@@ -70,9 +70,9 @@ export function TerminalFontSettings() {
    * Handle individual setting updates
    * This wrapper ensures type safety and could add validation/logging in future
    */
-  const handleSettingChange = <K extends keyof TerminalFontSettings>(
+  const handleSettingChange = <K extends keyof TerminalFontSettingsType>(
     key: K,
-    value: TerminalFontSettings[K]
+    value: TerminalFontSettingsType[K]
   ) => {
     updateSettings({ [key]: value });
   };

@@ -160,9 +160,13 @@ async function setupMockXterm(overrides: {
   render(React.createElement(TestWrapper));
 
   // After rendering, keyEventHandler is guaranteed to be set by attachCustomKeyEventHandler
-  // Use non-null assertion since we know the hook will set it
+  // Throw an error if not set (should never happen in properly configured tests)
+  if (keyEventHandler === null) {
+    throw new Error('keyEventHandler was not set by attachCustomKeyEventHandler');
+  }
+
   return {
-    keyEventHandler: keyEventHandler!,
+    keyEventHandler,
     mockInstance: {
       hasSelection: overrides.hasSelection,
       getSelection: overrides.getSelection,
@@ -659,7 +663,7 @@ describe('useXterm keyboard handlers', () => {
 
   describe('Clipboard error handling', () => {
     it('should handle clipboard write errors gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
       const mockHasSelection = vi.fn(() => true);
       const mockGetSelection = vi.fn(() => 'selected text');
 
@@ -691,7 +695,7 @@ describe('useXterm keyboard handlers', () => {
     });
 
     it('should handle clipboard read errors gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { /* no-op */ });
       const mockPaste = vi.fn();
 
       // Mock Windows platform to enable custom paste handler

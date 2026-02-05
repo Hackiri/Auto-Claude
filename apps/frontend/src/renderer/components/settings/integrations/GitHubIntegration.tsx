@@ -74,26 +74,6 @@ export function GitHubIntegration({
   debugLog('Render - projectPath:', projectPath);
   debugLog('Render - envConfig:', envConfig ? { githubEnabled: envConfig.githubEnabled, hasToken: !!envConfig.githubToken, defaultBranch: envConfig.defaultBranch } : null);
 
-  // Fetch repos when entering oauth-success mode
-  useEffect(() => {
-    if (authMode === 'oauth-success') {
-      fetchUserRepos();
-    }
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchUserRepos is hoisted and available
-  }, [authMode, fetchUserRepos]);
-
-  // Fetch branches when GitHub is enabled and project path is available
-  useEffect(() => {
-    debugLog(`useEffect[branches] - githubEnabled: ${envConfig?.githubEnabled}, projectPath: ${projectPath}`);
-    if (envConfig?.githubEnabled && projectPath) {
-      debugLog('useEffect[branches] - Triggering fetchBranches');
-      fetchBranches();
-    } else {
-      debugLog('useEffect[branches] - Skipping fetchBranches (conditions not met)');
-    }
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: fetchBranches is hoisted and available
-  }, [envConfig?.githubEnabled, projectPath, fetchBranches]);
-
   /**
    * Handler for branch selection changes.
    * Updates BOTH project.settings.mainBranch (for Electron app) and envConfig.defaultBranch (for CLI backward compatibility).
@@ -177,6 +157,26 @@ export function GitHubIntegration({
       setIsLoadingRepos(false);
     }
   };
+
+  // Fetch repos when entering oauth-success mode
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchUserRepos is intentionally omitted to prevent re-fetching when function reference changes - we only want to fetch when authMode becomes 'oauth-success'
+  useEffect(() => {
+    if (authMode === 'oauth-success') {
+      fetchUserRepos();
+    }
+  }, [authMode]);
+
+  // Fetch branches when GitHub is enabled and project path is available
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchBranches is intentionally omitted to prevent re-fetching when function reference changes - we only want to fetch when githubEnabled or projectPath changes
+  useEffect(() => {
+    debugLog(`useEffect[branches] - githubEnabled: ${envConfig?.githubEnabled}, projectPath: ${projectPath}`);
+    if (envConfig?.githubEnabled && projectPath) {
+      debugLog('useEffect[branches] - Triggering fetchBranches');
+      fetchBranches();
+    } else {
+      debugLog('useEffect[branches] - Skipping fetchBranches (conditions not met)');
+    }
+  }, [envConfig?.githubEnabled, projectPath]);
 
   // Build branch options for Combobox using shared utility
   // Must be called before early return to satisfy React hooks rules

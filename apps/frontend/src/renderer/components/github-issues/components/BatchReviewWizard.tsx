@@ -49,7 +49,7 @@ interface BatchReviewWizardProps {
 export function BatchReviewWizard({
   isOpen,
   onClose,
-  projectId,
+  projectId: _projectId,
   onStartAnalysis,
   onApproveBatches,
   analysisProgress,
@@ -276,7 +276,7 @@ export function BatchReviewWizard({
           <div className="space-y-3">
             {proposedBatches.map((batch, idx) => (
               <BatchCard
-                key={idx}
+                key={`batch-${batch.primaryIssue}`}
                 batch={batch}
                 index={idx}
                 isSelected={selectedBatchIds.has(idx)}
@@ -295,10 +295,11 @@ export function BatchReviewWizard({
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {singleIssues.slice(0, 10).map((issue) => (
-                  <div
+                  <button
+                    type="button"
                     key={issue.issueNumber}
                     onClick={() => toggleSingleIssueSelection(issue.issueNumber)}
-                    className={`p-2 rounded border text-sm truncate cursor-pointer transition-colors ${
+                    className={`p-2 rounded border text-sm truncate cursor-pointer transition-colors text-left w-full ${
                       selectedSingleIssueNumbers.has(issue.issueNumber)
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:bg-accent'
@@ -312,7 +313,7 @@ export function BatchReviewWizard({
                     />
                     <span className="text-muted-foreground">#{issue.issueNumber}</span>{' '}
                     {issue.title}
-                  </div>
+                  </button>
                 ))}
                 {singleIssues.length > 10 && (
                   <div className="p-2 text-sm text-muted-foreground">
@@ -519,8 +520,8 @@ function BatchCard({
             {/* Themes */}
             {batch.commonThemes.length > 0 && (
               <div className="flex flex-wrap gap-1 px-6 pt-2">
-                {batch.commonThemes.map((theme, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs">
+                {batch.commonThemes.map((theme) => (
+                  <Badge key={theme} variant="secondary" className="text-xs">
                     {theme}
                   </Badge>
                 ))}

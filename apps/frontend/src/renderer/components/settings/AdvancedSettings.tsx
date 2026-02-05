@@ -53,6 +53,7 @@ function ReleaseNotesRenderer({ markdown }: { markdown: string }) {
   return (
     <div
       className="text-sm text-muted-foreground leading-relaxed"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML is sanitized above (escapes &, <, >) - used for rendering trusted markdown changelog content
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Check,
@@ -133,7 +133,7 @@ export function OllamaModelSelector({
    * @param {AbortSignal} [abortSignal] - Optional abort signal to cancel the request
    * @returns {Promise<void>}
    */
-  const checkInstalledModels = async (abortSignal?: AbortSignal) => {
+  const checkInstalledModels = useCallback(async (abortSignal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
     setOllamaState('checking');
@@ -217,7 +217,7 @@ export function OllamaModelSelector({
         setIsLoading(false);
       }
     }
-  };
+  }, [baseUrl]);
 
   /**
    * Install Ollama by opening terminal with the official install command.
@@ -450,15 +450,23 @@ export function OllamaModelSelector({
            return (
              <div
                key={model.name}
+               role={model.installed && !disabled ? 'button' : undefined}
+               tabIndex={model.installed && !disabled ? 0 : undefined}
                className={cn(
                  'rounded-lg border transition-colors',
                  model.installed && !disabled
-                   ? 'cursor-pointer hover:bg-accent/50'
+                   ? 'cursor-pointer hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary'
                    : 'cursor-default',
                  isSelected && 'border-primary bg-primary/5',
                  !model.installed && 'bg-muted/30'
                )}
                onClick={() => handleSelect(model)}
+               onKeyDown={(e) => {
+                 if ((e.key === 'Enter' || e.key === ' ') && model.installed && !disabled) {
+                   e.preventDefault();
+                   handleSelect(model);
+                 }
+               }}
              >
                <div className="flex items-center justify-between p-3">
                  <div className="flex items-center gap-3">

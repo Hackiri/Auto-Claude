@@ -70,7 +70,7 @@ const filterIcons: Record<FilterCategory, React.ElementType> = {
 
 export function MemoriesTab({
   memoryStatus,
-  memoryState,
+  memoryState: _memoryState,
   recentMemories,
   memoriesLoading,
   searchResults,
@@ -215,8 +215,8 @@ export function MemoriesTab({
               <p className="text-sm text-muted-foreground">
                 {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
               </p>
-              {searchResults.map((result, idx) => (
-                <Card key={idx} className="bg-muted/50">
+              {searchResults.map((result) => (
+                <Card key={`result-${result.type}-${result.content.slice(0, 50)}`} className="bg-muted/50">
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline" className="text-xs capitalize">

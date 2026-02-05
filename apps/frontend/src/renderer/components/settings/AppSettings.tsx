@@ -154,7 +154,7 @@ export function AppSettingsDialog({ open, onOpenChange, initialSection, initialP
 
     // If on project section with a project selected, save project settings too
     if (activeTopLevel === 'project' && selectedProject && projectSettingsHook) {
-      await projectSettingsHook.handleSave(() => {});
+      await projectSettingsHook.handleSave(() => { /* no-op */ });
       // Check for project errors
       if (projectSettingsHook.error || projectSettingsHook.envError) {
         setProjectError(projectSettingsHook.error || projectSettingsHook.envError);
@@ -261,6 +261,7 @@ export function AppSettingsDialog({ open, onOpenChange, initialSection, initialP
                         const isActive = activeTopLevel === 'app' && appSection === item.id;
                         return (
                           <button
+                            type="button"
                             key={item.id}
                             onClick={() => {
                               setActiveTopLevel('app');
@@ -285,6 +286,7 @@ export function AppSettingsDialog({ open, onOpenChange, initialSection, initialP
                       {/* Re-run Wizard button */}
                       {onRerunWizard && (
                         <button
+                          type="button"
                           onClick={() => {
                             onOpenChange(false);
                             onRerunWizard();
@@ -326,6 +328,7 @@ export function AppSettingsDialog({ open, onOpenChange, initialSection, initialP
                         const isActive = activeTopLevel === 'project' && projectSection === item.id;
                         return (
                           <button
+                            type="button"
                             key={item.id}
                             onClick={() => {
                               setActiveTopLevel('project');

@@ -128,9 +128,9 @@ export function FirstSpecStep({ onNext, onBack, onSkip, onOpenTaskCreator }: Fir
             Tips for Great Tasks
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {tips.map((tip, index) => (
+            {tips.map((tip) => (
               <TipCard
-                key={index}
+                key={tip.title}
                 icon={tip.icon}
                 title={tip.title}
                 description={tip.description}

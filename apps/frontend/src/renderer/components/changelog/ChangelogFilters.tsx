@@ -93,6 +93,7 @@ export function ChangelogFilters({
             className="space-y-2"
           >
             <label
+              htmlFor="source-mode-tasks"
               className={cn(
                 'flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all',
                 sourceMode === 'tasks'
@@ -100,7 +101,7 @@ export function ChangelogFilters({
                   : 'border-border hover:border-primary/50'
               )}
             >
-              <RadioGroupItem value="tasks" className="mt-1" />
+              <RadioGroupItem id="source-mode-tasks" value="tasks" className="mt-1" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
@@ -118,6 +119,7 @@ export function ChangelogFilters({
             </label>
 
             <label
+              htmlFor="source-mode-git-history"
               className={cn(
                 'flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all',
                 sourceMode === 'git-history'
@@ -125,7 +127,7 @@ export function ChangelogFilters({
                   : 'border-border hover:border-primary/50'
               )}
             >
-              <RadioGroupItem value="git-history" className="mt-1" />
+              <RadioGroupItem id="source-mode-git-history" value="git-history" className="mt-1" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <History className="h-4 w-4" />
@@ -140,6 +142,7 @@ export function ChangelogFilters({
             </label>
 
             <label
+              htmlFor="source-mode-branch-diff"
               className={cn(
                 'flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all',
                 sourceMode === 'branch-diff'
@@ -147,7 +150,7 @@ export function ChangelogFilters({
                   : 'border-border hover:border-primary/50'
               )}
             >
-              <RadioGroupItem value="branch-diff" className="mt-1" />
+              <RadioGroupItem id="source-mode-branch-diff" value="branch-diff" className="mt-1" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <GitBranch className="h-4 w-4" />

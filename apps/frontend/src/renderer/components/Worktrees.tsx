@@ -47,7 +47,7 @@ import {
 import { useProjectStore } from '../stores/project-store';
 import { useTaskStore } from '../stores/task-store';
 import { useToast } from '../hooks/use-toast';
-import type { WorktreeListItem, WorktreeMergeResult, TerminalWorktreeConfig, WorktreeStatus, Task, WorktreeCreatePROptions, WorktreeCreatePRResult } from '../../shared/types';
+import type { WorktreeListItem, WorktreeMergeResult, TerminalWorktreeConfig, WorktreeStatus, Task, WorktreeCreatePROptions, WorktreeCreatePRResult, IPCResult, WorktreeDiscardResult } from '../../shared/types';
 import { CreatePRDialog } from './task-detail/task-review/CreatePRDialog';
 
 // Prefix constants for worktree ID parsing
@@ -248,7 +248,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
 
     setIsDeleting(true);
     try {
-      let result;
+      let result: IPCResult<WorktreeDiscardResult>;
       if (task) {
         // Normal delete via task ID
         result = await window.electronAPI.discardWorktree(task.id);
@@ -367,7 +367,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
       const worktree = worktrees.find(w => w.specName === specName);
 
       try {
-        let result;
+        let result: IPCResult<WorktreeDiscardResult>;
         if (task) {
           // Normal delete via task ID
           result = await window.electronAPI.discardWorktree(task.id);
@@ -508,6 +508,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
         <div className="flex items-center justify-between py-2 mb-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={isAllSelected ? deselectAll : selectAll}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >

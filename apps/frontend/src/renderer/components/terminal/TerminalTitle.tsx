@@ -75,15 +75,17 @@ export function TerminalTitle({ title, associatedTask, onTitleChange, terminalCo
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span
-              className={cn("text-xs font-medium text-foreground truncate cursor-text hover:text-primary/80 transition-colors", maxWidthClass)}
+            <button
+              type="button"
+              className={cn("text-xs font-medium text-foreground truncate cursor-text hover:text-primary/80 transition-colors bg-transparent border-0 p-0 text-left", maxWidthClass)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 handleStartEdit();
               }}
+              aria-label={`${title} - double-click to rename`}
             >
               {title}
-            </span>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
             <p className="text-sm">{associatedTask.description}</p>
@@ -98,15 +100,17 @@ export function TerminalTitle({ title, associatedTask, onTitleChange, terminalCo
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
-            className={cn("text-xs font-medium text-foreground truncate cursor-text hover:text-primary/80 transition-colors", maxWidthClass)}
+          <button
+            type="button"
+            className={cn("text-xs font-medium text-foreground truncate cursor-text hover:text-primary/80 transition-colors bg-transparent border-0 p-0 text-left", maxWidthClass)}
             onDoubleClick={(e) => {
               e.stopPropagation();
               handleStartEdit();
             }}
+            aria-label={`${title} - double-click to rename`}
           >
             {title}
-          </span>
+          </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
           <p className="text-xs">Double-click to rename</p>

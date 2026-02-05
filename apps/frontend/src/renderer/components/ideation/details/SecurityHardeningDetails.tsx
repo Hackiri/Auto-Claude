@@ -85,8 +85,8 @@ export function SecurityHardeningDetails({ idea }: SecurityHardeningDetailsProps
             Affected Files
           </h3>
           <ul className="space-y-1">
-            {idea.affectedFiles.map((file, i) => (
-              <li key={i} className="text-sm font-mono text-muted-foreground">
+            {idea.affectedFiles.map((file) => (
+              <li key={file} className="text-sm font-mono text-muted-foreground">
                 {file}
               </li>
             ))}
@@ -102,8 +102,8 @@ export function SecurityHardeningDetails({ idea }: SecurityHardeningDetailsProps
             References
           </h3>
           <ul className="space-y-1">
-            {idea.references.map((ref, i) => (
-              <li key={i} className="text-sm text-primary hover:underline">
+            {idea.references.map((ref) => (
+              <li key={ref} className="text-sm text-primary hover:underline">
                 <a href={ref} target="_blank" rel="noopener noreferrer">{ref}</a>
               </li>
             ))}
@@ -116,8 +116,8 @@ export function SecurityHardeningDetails({ idea }: SecurityHardeningDetailsProps
         <div>
           <h3 className="text-sm font-medium mb-2">Compliance</h3>
           <div className="flex flex-wrap gap-1">
-            {idea.compliance.map((comp, i) => (
-              <Badge key={i} variant="outline" className="text-xs">
+            {idea.compliance.map((comp) => (
+              <Badge key={comp} variant="outline" className="text-xs">
                 {comp}
               </Badge>
             ))}

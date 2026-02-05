@@ -60,7 +60,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Termi
   onNewTaskClick,
   terminalCount = 1,
   dragHandleListeners,
-  isDragging,
+  isDragging: _isDragging,
   isExpanded,
   onToggleExpand,
 }, ref) {
@@ -428,6 +428,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Termi
   // Refit terminal when expansion state changes
   // Uses transitionend event listener and RAF-based retry logic instead of fixed timeout
   // for more reliable resizing after CSS transitions complete
+  // biome-ignore lint/correctness/useExhaustiveDependencies: terminalRef.current and xtermRef.current are refs that are intentionally read inside the effect rather than as dependencies - refs don't trigger re-renders when changed
   useEffect(() => {
     // Detect if this is an actual expansion state change vs initial mount
     // Only force PTY resize on actual state changes to avoid resizing with invalid dimensions on mount
@@ -469,6 +470,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Termi
         if (isCleanedUp) return;
 
         // fit() returns boolean indicating success (true if container had valid dimensions)
+        // biome-ignore lint/suspicious/noFocusedTests: fit() is an xterm addon function, not a test function
         const success = fit();
         debugLog(`[Terminal ${id}] performFit: fit returned success=${success}, expansionStateChanged=${expansionStateChanged}, isCreatedRef=${isCreatedRef.current}`);
 
@@ -611,7 +613,7 @@ export const Terminal = forwardRef<TerminalHandle, TerminalProps>(function Termi
         }
       }, 100);
     };
-  }, [id, dispose, cleanupAutoNaming]);
+  }, [dispose, cleanupAutoNaming]);
 
   const handleInvokeClaude = useCallback(() => {
     setClaudeMode(id, true);
@@ -739,6 +741,8 @@ Please confirm you're ready by saying: I'm ready to work on ${selectedTask.title
   return (
     <div
       ref={setDropRef}
+      role="region"
+      tabIndex={-1}
       className={cn(
         'flex h-full flex-col rounded-lg border bg-[#0B0B0F] overflow-hidden transition-all relative',
         // Default border states
@@ -750,9 +754,15 @@ Please confirm you're ready by saying: I'm ready to work on ${selectedTask.title
         showClaudeBusyIndicator && !isClaudeBusy && 'border-green-500/60 ring-1 ring-green-500/20'
       )}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          handleClick();
+        }
+      }}
       onDragOver={handleNativeDragOver}
       onDragLeave={handleNativeDragLeave}
       onDrop={handleNativeDrop}
+      aria-label="Terminal"
     >
       {showFileDropOverlay && (
         <div className="absolute inset-0 bg-info/10 z-10 flex items-center justify-center pointer-events-none">

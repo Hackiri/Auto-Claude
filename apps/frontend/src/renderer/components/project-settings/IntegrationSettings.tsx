@@ -146,6 +146,7 @@ export function IntegrationSettings({
       {/* Linear Integration Section */}
       <section className="space-y-3">
         <button
+          type="button"
           onClick={onLinearToggle}
           className="w-full flex items-center justify-between text-sm font-semibold text-foreground hover:text-foreground/80"
         >
@@ -325,6 +326,7 @@ export function IntegrationSettings({
       {/* GitHub Integration Section */}
       <section className="space-y-3">
         <button
+          type="button"
           onClick={onGitHubToggle}
           className="w-full flex items-center justify-between text-sm font-semibold text-foreground hover:text-foreground/80"
         >

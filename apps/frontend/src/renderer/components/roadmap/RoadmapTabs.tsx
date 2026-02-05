@@ -94,9 +94,10 @@ export function RoadmapTabs({
                 </div>
                 <div className="space-y-2">
                   {features.map((feature: RoadmapFeature) => (
-                    <div
+                    <button
+                      type="button"
                       key={feature.id}
-                      className="p-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                      className="w-full p-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors text-left"
                       onClick={() => onFeatureSelect(feature)}
                     >
                       <div className="font-medium text-sm">{feature.title}</div>
@@ -120,7 +121,7 @@ export function RoadmapTabs({
                           </Badge>
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </Card>

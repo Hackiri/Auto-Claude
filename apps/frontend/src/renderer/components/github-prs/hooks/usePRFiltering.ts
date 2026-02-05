@@ -154,8 +154,8 @@ export function usePRFiltering(
 
     // Sort the filtered results
     return filtered.sort((a, b) => {
-      const aTime = timestamps.get(a.number)!;
-      const bTime = timestamps.get(b.number)!;
+      const aTime = timestamps.get(a.number) ?? 0;
+      const bTime = timestamps.get(b.number) ?? 0;
 
       switch (filters.sortBy) {
         case 'newest':
