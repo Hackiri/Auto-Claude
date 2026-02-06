@@ -150,6 +150,7 @@ class PRWorktreeManager:
             logger.warning(
                 f"Timeout fetching {head_sha} from origin, continuing anyway"
             )
+            print(f"[PRReview] WARNING: Timeout fetching {head_sha}, continuing anyway", flush=True)
 
         try:
             result = subprocess.run(
@@ -177,6 +178,7 @@ class PRWorktreeManager:
 
         except subprocess.TimeoutExpired:
             # Clean up partial worktree on timeout
+            print(f"[PRReview] WARNING: Timeout creating worktree for {head_sha[:8]}", flush=True)
             if worktree_path.exists():
                 shutil.rmtree(worktree_path, ignore_errors=True)
             raise RuntimeError(f"Timeout creating worktree for {head_sha}")

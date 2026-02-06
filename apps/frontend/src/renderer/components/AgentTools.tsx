@@ -152,7 +152,7 @@ const AGENT_CONFIGS: Record<string, AgentConfig> = {
     category: 'build',
     tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
     mcp_servers: ['context7', 'graphiti-memory', 'auto-claude'],
-    mcp_optional: ['linear'],
+    mcp_optional: ['linear', 'claude-mem'],
     settingsSource: { type: 'phase', phase: 'planning' },
   },
   coder: {
@@ -161,7 +161,7 @@ const AGENT_CONFIGS: Record<string, AgentConfig> = {
     category: 'build',
     tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
     mcp_servers: ['context7', 'graphiti-memory', 'auto-claude'],
-    mcp_optional: ['linear'],
+    mcp_optional: ['linear', 'claude-mem'],
     settingsSource: { type: 'phase', phase: 'coding' },
   },
 
@@ -172,7 +172,7 @@ const AGENT_CONFIGS: Record<string, AgentConfig> = {
     category: 'qa',
     tools: ['Read', 'Glob', 'Grep', 'Bash', 'WebFetch', 'WebSearch'],
     mcp_servers: ['context7', 'graphiti-memory', 'auto-claude'],
-    mcp_optional: ['linear', 'electron', 'puppeteer'],
+    mcp_optional: ['linear', 'claude-mem', 'electron', 'puppeteer'],
     settingsSource: { type: 'phase', phase: 'qa' },
   },
   qa_fixer: {
@@ -181,7 +181,7 @@ const AGENT_CONFIGS: Record<string, AgentConfig> = {
     category: 'qa',
     tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'Bash', 'WebFetch', 'WebSearch'],
     mcp_servers: ['context7', 'graphiti-memory', 'auto-claude'],
-    mcp_optional: ['linear', 'electron', 'puppeteer'],
+    mcp_optional: ['linear', 'claude-mem', 'electron', 'puppeteer'],
     settingsSource: { type: 'phase', phase: 'qa' },
   },
 
@@ -284,6 +284,16 @@ const MCP_SERVERS: Record<string, { name: string; description: string; icon: Rea
       'mcp__graphiti-memory__get_entity_edge',
     ],
   },
+  'claude-mem': {
+    name: 'Claude Mem',
+    description: 'Developer session memory via hybrid search. Requires CLAUDE_MEM_ENABLED=true.',
+    icon: Brain,
+    tools: [
+      'mcp__claude-mem__search',
+      'mcp__claude-mem__timeline',
+      'mcp__claude-mem__get_observations',
+    ],
+  },
   'auto-claude': {
     name: 'Auto-Claude Tools',
     description: 'Build progress tracking, session context, discoveries & gotchas recording',
@@ -342,6 +352,7 @@ const MCP_SERVERS: Record<string, { name: string; description: string; icon: Rea
 const ALL_MCP_SERVERS = [
   'context7',
   'graphiti-memory',
+  'claude-mem',
   'linear',
   'electron',
   'puppeteer',
@@ -407,6 +418,7 @@ function AgentCard({ id, config, modelLabel, thinkingLabel, overrides, mcpServer
         case 'linear': return mcpServerStates.linearMcpEnabled !== false;
         case 'electron': return mcpServerStates.electronEnabled !== false;
         case 'puppeteer': return mcpServerStates.puppeteerEnabled !== false;
+        case 'claude-mem': return mcpServerStates.claudeMemEnabled === true;
         default: return true;
       }
     });
@@ -982,6 +994,7 @@ export function AgentTools() {
   const enabledCount = [
     mcpServers.context7Enabled !== false,
     mcpServers.graphitiEnabled && envConfig?.graphitiProviderConfig,
+    mcpServers.claudeMemEnabled,
     mcpServers.linearMcpEnabled !== false && envConfig?.linearEnabled,
     mcpServers.electronEnabled,
     mcpServers.puppeteerEnabled,
@@ -1119,6 +1132,21 @@ export function AgentTools() {
                     checked={mcpServers.graphitiEnabled !== false && !!envConfig.graphitiProviderConfig}
                     onCheckedChange={(checked) => updateMcpServer('graphitiEnabled', checked)}
                     disabled={!envConfig.graphitiProviderConfig}
+                  />
+                </div>
+
+                {/* Claude-Mem */}
+                <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div className="flex items-center gap-3">
+                    <Brain className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-sm font-medium">{t('settings:mcp.servers.claudeMem.name')}</span>
+                      <p className="text-xs text-muted-foreground">{t('settings:mcp.servers.claudeMem.description')}</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={mcpServers.claudeMemEnabled === true}
+                    onCheckedChange={(checked) => updateMcpServer('claudeMemEnabled', checked)}
                   />
                 </div>
 

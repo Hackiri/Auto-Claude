@@ -261,12 +261,24 @@ class ParallelOrchestratorReviewer:
 
     def _cleanup_stale_pr_worktrees(self) -> None:
         """Clean up orphaned, expired, and excess PR review worktrees on startup."""
-        stats = self.worktree_manager.cleanup_worktrees()
-        if stats["total"] > 0:
-            logger.info(
-                f"[PRReview] Cleanup: removed {stats['total']} worktrees "
-                f"(orphaned={stats['orphaned']}, expired={stats['expired']}, excess={stats['excess']})"
+        try:
+            stats = self.worktree_manager.cleanup_worktrees()
+            if stats["total"] > 0:
+                safe_print(
+                    f"[PRReview] Cleaned up {stats['total']} stale worktrees",
+                    flush=True,
+                )
+                logger.info(
+                    f"[PRReview] Cleanup: removed {stats['total']} worktrees "
+                    f"(orphaned={stats['orphaned']}, expired={stats['expired']}, excess={stats['excess']})"
+                )
+        except Exception as e:
+            # Don't let worktree cleanup failure block the review
+            safe_print(
+                f"[PRReview] WARNING: Worktree cleanup failed: {e}",
+                flush=True,
             )
+            logger.warning(f"[PRReview] Worktree cleanup failed: {e}")
 
     def _define_specialist_agents(
         self, project_root: Path | None = None
@@ -961,20 +973,36 @@ The SDK will run invoked agents in parallel automatically.
         logger.info(
             f"[ParallelOrchestrator] Starting review for PR #{context.pr_number}"
         )
+        safe_print(
+            f"[PRReview] Starting parallel orchestrator review for PR #{context.pr_number}",
+            flush=True,
+        )
+
+        # Report progress: cleaning up stale worktrees
+        self._report_progress(
+            "orchestrating",
+            12,
+            "Cleaning up stale worktrees...",
+            pr_number=context.pr_number,
+        )
+        safe_print("[PRReview] Cleaning up stale worktrees...", flush=True)
 
         # Clean up any stale worktrees from previous runs
         self._cleanup_stale_pr_worktrees()
+        safe_print("[PRReview] Stale worktree cleanup complete", flush=True)
 
         # Track worktree for cleanup
         worktree_path: Path | None = None
 
         try:
+            # Report progress: preparing worktree
             self._report_progress(
                 "orchestrating",
-                35,
-                "Parallel orchestrator analyzing PR...",
+                18,
+                "Preparing isolated review environment...",
                 pr_number=context.pr_number,
             )
+            safe_print("[PRReview] Preparing isolated review environment...", flush=True)
 
             # Create temporary worktree at PR head commit for isolated review
             # This MUST happen BEFORE building the prompt so we can find related files
@@ -999,6 +1027,10 @@ The SDK will run invoked agents in parallel automatically.
                     f"[ParallelOrchestrator] Invalid git ref '{head_sha}', "
                     "using current checkout for safety"
                 )
+                safe_print(
+                    f"[PRReview] Invalid git ref '{head_sha}', using current checkout",
+                    flush=True,
+                )
                 head_sha = None
 
             if not head_sha:
@@ -1007,18 +1039,34 @@ The SDK will run invoked agents in parallel automatically.
                 logger.warning(
                     "[ParallelOrchestrator] No head_sha available, using current checkout"
                 )
+                safe_print(
+                    "[PRReview] No head_sha available, using current checkout",
+                    flush=True,
+                )
                 # Fallback to original behavior if no SHA available
                 project_root = (
                     self.project_dir.parent.parent
                     if self.project_dir.name == "backend"
                     else self.project_dir
                 )
+                self._report_progress(
+                    "orchestrating",
+                    25,
+                    "Using current checkout (no worktree needed)...",
+                    pr_number=context.pr_number,
+                )
             else:
-                if DEBUG_MODE:
-                    safe_print(
-                        f"[PRReview] DEBUG: Creating worktree for head_sha={head_sha}",
-                        flush=True,
-                    )
+                # Report progress: creating worktree
+                self._report_progress(
+                    "orchestrating",
+                    20,
+                    f"Creating isolated worktree at {head_sha[:8]}...",
+                    pr_number=context.pr_number,
+                )
+                safe_print(
+                    f"[PRReview] Creating worktree for head_sha={head_sha[:8]}...",
+                    flush=True,
+                )
                 try:
                     worktree_path = self._create_pr_worktree(
                         head_sha, context.pr_number
@@ -1049,12 +1097,23 @@ The SDK will run invoked agents in parallel automatically.
                         f"[PRReview] Worktree contains PR branch HEAD: {head_sha[:8]}",
                         flush=True,
                     )
+                    # Report progress: worktree created successfully
+                    self._report_progress(
+                        "orchestrating",
+                        25,
+                        f"Worktree created at {head_sha[:8]}",
+                        pr_number=context.pr_number,
+                    )
                 except (RuntimeError, ValueError) as e:
-                    if DEBUG_MODE:
-                        safe_print(
-                            f"[PRReview] DEBUG: Worktree creation FAILED: {e}",
-                            flush=True,
-                        )
+                    # Always log worktree failures (not just DEBUG mode)
+                    safe_print(
+                        f"[PRReview] Worktree creation failed: {e}",
+                        flush=True,
+                    )
+                    safe_print(
+                        "[PRReview] Falling back to current checkout",
+                        flush=True,
+                    )
                     logger.warning(
                         f"[ParallelOrchestrator] Worktree creation failed, "
                         f"using current checkout: {e}"
@@ -1065,6 +1124,15 @@ The SDK will run invoked agents in parallel automatically.
                         if self.project_dir.name == "backend"
                         else self.project_dir
                     )
+
+            # Report progress: worktree ready
+            self._report_progress(
+                "orchestrating",
+                28,
+                "Review environment ready, configuring AI agents...",
+                pr_number=context.pr_number,
+            )
+            safe_print("[PRReview] Review environment ready", flush=True)
 
             # Removed: Related files rescanning
             # LLM agents now discover relevant files themselves via Read, Grep, Glob tools
@@ -1077,16 +1145,25 @@ The SDK will run invoked agents in parallel automatically.
             thinking_level = self.config.thinking_level or "medium"
             thinking_budget = get_thinking_budget(thinking_level)
 
+            safe_print(
+                f"[PRReview] Using model={model}, thinking_level={thinking_level}",
+                flush=True,
+            )
             logger.info(
                 f"[ParallelOrchestrator] Using model={model}, "
                 f"thinking_level={thinking_level}, thinking_budget={thinking_budget}"
             )
 
+            # Report progress: about to launch specialists
             self._report_progress(
                 "orchestrating",
-                40,
-                "Running specialist agents in parallel...",
+                35,
+                f"Launching {len(SPECIALIST_CONFIGS)} specialist agents...",
                 pr_number=context.pr_number,
+            )
+            safe_print(
+                f"[PRReview] Launching {len(SPECIALIST_CONFIGS)} specialist agents in parallel...",
+                flush=True,
             )
 
             # =================================================================
@@ -1102,6 +1179,14 @@ The SDK will run invoked agents in parallel automatically.
             # - No dependency on broken CLI features
             # =================================================================
 
+            # Report progress: specialists running
+            self._report_progress(
+                "orchestrating",
+                40,
+                "Specialist agents analyzing code...",
+                pr_number=context.pr_number,
+            )
+
             # Run all specialists in parallel
             findings, agents_invoked = await self._run_parallel_specialists(
                 context=context,
@@ -1111,6 +1196,11 @@ The SDK will run invoked agents in parallel automatically.
             )
 
             # Log results
+            safe_print(
+                f"[PRReview] Parallel specialists complete: "
+                f"{len(findings)} findings from {len(agents_invoked)} agents",
+                flush=True,
+            )
             logger.info(
                 f"[ParallelOrchestrator] Parallel specialists complete: "
                 f"{len(findings)} findings from {len(agents_invoked)} agents"

@@ -580,6 +580,12 @@ export const IPC_CHANNELS = {
   MCP_CHECK_HEALTH: 'mcp:checkHealth',           // Quick connectivity check
   MCP_TEST_CONNECTION: 'mcp:testConnection',     // Full MCP protocol test
 
+  // Claude Mem installation and worker management
+  CLAUDE_MEM_GET_STATUS: 'claudeMem:getStatus',
+  CLAUDE_MEM_INSTALL: 'claudeMem:install',
+  CLAUDE_MEM_START_WORKER: 'claudeMem:startWorker',
+  CLAUDE_MEM_INSTALL_LOG: 'claudeMem:installLog',  // event: main -> renderer
+
   // Sentry error reporting
   SENTRY_STATE_CHANGED: 'sentry:state-changed',  // Notify main process when setting changes
   GET_SENTRY_DSN: 'sentry:get-dsn',              // Get DSN from main process (env var)

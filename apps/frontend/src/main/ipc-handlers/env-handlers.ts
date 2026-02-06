@@ -195,6 +195,12 @@ export function registerEnvHandlers(
       if (config.mcpServers.puppeteerEnabled !== undefined) {
         existingVars['PUPPETEER_MCP_ENABLED'] = config.mcpServers.puppeteerEnabled ? 'true' : 'false';
       }
+      if (config.mcpServers.claudeMemEnabled !== undefined) {
+        existingVars['CLAUDE_MEM_ENABLED'] = config.mcpServers.claudeMemEnabled ? 'true' : 'false';
+      }
+      if (config.mcpServers.claudeMemUrl !== undefined) {
+        existingVars['CLAUDE_MEM_URL'] = config.mcpServers.claudeMemUrl;
+      }
       // Note: graphitiEnabled is already handled via GRAPHITI_ENABLED above
     }
 
@@ -284,6 +290,9 @@ ${existingVars['LINEAR_MCP_ENABLED'] !== undefined ? `LINEAR_MCP_ENABLED=${exist
 ${existingVars['ELECTRON_MCP_ENABLED'] !== undefined ? `ELECTRON_MCP_ENABLED=${existingVars['ELECTRON_MCP_ENABLED']}` : '# ELECTRON_MCP_ENABLED=false'}
 # Puppeteer browser automation - QA agents only (default: disabled)
 ${existingVars['PUPPETEER_MCP_ENABLED'] !== undefined ? `PUPPETEER_MCP_ENABLED=${existingVars['PUPPETEER_MCP_ENABLED']}` : '# PUPPETEER_MCP_ENABLED=false'}
+# Claude-mem developer session memory (default: disabled)
+${existingVars['CLAUDE_MEM_ENABLED'] !== undefined ? `CLAUDE_MEM_ENABLED=${existingVars['CLAUDE_MEM_ENABLED']}` : '# CLAUDE_MEM_ENABLED=false'}
+${existingVars['CLAUDE_MEM_URL'] ? `CLAUDE_MEM_URL=${existingVars['CLAUDE_MEM_URL']}` : '# CLAUDE_MEM_URL=http://localhost:37777'}
 
 # =============================================================================
 # PER-AGENT MCP OVERRIDES
@@ -513,6 +522,8 @@ ${existingVars['GRAPHITI_DB_PATH'] ? `GRAPHITI_DB_PATH=${existingVars['GRAPHITI_
         linearMcpEnabled: vars['LINEAR_MCP_ENABLED']?.toLowerCase() !== 'false', // default true
         electronEnabled: vars['ELECTRON_MCP_ENABLED']?.toLowerCase() === 'true', // default false
         puppeteerEnabled: vars['PUPPETEER_MCP_ENABLED']?.toLowerCase() === 'true', // default false
+        claudeMemEnabled: vars['CLAUDE_MEM_ENABLED']?.toLowerCase() === 'true', // default false
+        claudeMemUrl: vars['CLAUDE_MEM_URL'] || undefined,
       };
 
       // Parse per-agent MCP overrides (AGENT_MCP_<agent>_ADD/REMOVE)

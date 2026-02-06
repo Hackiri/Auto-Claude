@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Database,
   Eye,
   EyeOff,
   ChevronDown,
   ChevronUp,
-  Globe
+  Globe,
+  RefreshCw,
+  Loader2,
+  Download,
+  Play
 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -19,7 +23,7 @@ import {
 } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { OllamaModelSelector } from '../onboarding/OllamaModelSelector';
-import type { ProjectEnvConfig, ProjectSettings as ProjectSettingsType, GraphitiEmbeddingProvider } from '../../../shared/types';
+import type { ProjectEnvConfig, ProjectSettings as ProjectSettingsType, GraphitiEmbeddingProvider, ClaudeMemStatus } from '../../../shared/types';
 
 interface SecuritySettingsProps {
   envConfig: ProjectEnvConfig | null;
@@ -54,10 +58,59 @@ export function SecuritySettings({
     azure: false
   });
 
+  // Claude-mem status state
+  const [claudeMemStatus, setClaudeMemStatus] = useState<ClaudeMemStatus | null>(null);
+  const [claudeMemInstalling, setClaudeMemInstalling] = useState(false);
+  const [claudeMemStarting, setClaudeMemStarting] = useState(false);
+  const [claudeMemInstallLog, setClaudeMemInstallLog] = useState<string[]>([]);
+
   // Sync parent's showOpenAIKey prop to local state
   useEffect(() => {
     setShowApiKey(prev => ({ ...prev, openai: showOpenAIKey }));
   }, [showOpenAIKey]);
+
+  // Check claude-mem status when enabled
+  const refreshClaudeMemStatus = useCallback(() => {
+    window.electronAPI.getClaudeMemStatus().then(result => {
+      if (result.success && result.data) {
+        setClaudeMemStatus(result.data);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (envConfig?.mcpServers?.claudeMemEnabled) {
+      refreshClaudeMemStatus();
+    } else {
+      setClaudeMemStatus(null);
+    }
+  }, [envConfig?.mcpServers?.claudeMemEnabled, refreshClaudeMemStatus]);
+
+  // Listen for install log output
+  useEffect(() => {
+    if (!claudeMemInstalling) return;
+    const cleanup = window.electronAPI.onClaudeMemInstallLog((data: string) => {
+      setClaudeMemInstallLog(prev => [...prev, data]);
+    });
+    return cleanup;
+  }, [claudeMemInstalling]);
+
+  const handleInstallClaudeMem = async () => {
+    setClaudeMemInstalling(true);
+    setClaudeMemInstallLog([]);
+    const result = await window.electronAPI.installClaudeMem();
+    setClaudeMemInstalling(false);
+    if (result.success) {
+      refreshClaudeMemStatus();
+    }
+  };
+
+  const handleStartClaudeMemWorker = async () => {
+    setClaudeMemStarting(true);
+    await window.electronAPI.startClaudeMemWorker();
+    setClaudeMemStarting(false);
+    refreshClaudeMemStatus();
+  };
 
   const embeddingProvider = envConfig?.graphitiProviderConfig?.embeddingProvider || 'ollama';
 
@@ -477,6 +530,130 @@ export function SecuritySettings({
                 />
               </div>
             </>
+          )}
+
+          <Separator />
+
+          {/* Claude-Mem Developer Session Memory */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="font-normal text-foreground">Claude-Mem</Label>
+              <p className="text-xs text-muted-foreground">
+                Search developer CLI session observations via hybrid search
+              </p>
+            </div>
+            <Switch
+              checked={envConfig.mcpServers?.claudeMemEnabled || false}
+              onCheckedChange={(checked) =>
+                updateEnvConfig({
+                  mcpServers: { ...envConfig.mcpServers, claudeMemEnabled: checked }
+                })
+              }
+            />
+          </div>
+
+          {envConfig.mcpServers?.claudeMemEnabled && (
+            <div className="space-y-3 ml-6">
+              {/* Status badges and actions */}
+              {claudeMemStatus && (
+                <div className="space-y-3">
+                  {/* Status badges */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                      claudeMemStatus.installed
+                        ? 'bg-success/10 text-success'
+                        : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {claudeMemStatus.installed
+                        ? `Installed${claudeMemStatus.version ? ` v${claudeMemStatus.version}` : ''}`
+                        : 'Not Installed'}
+                    </span>
+                    {claudeMemStatus.installed && (
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        claudeMemStatus.workerRunning
+                          ? 'bg-success/10 text-success'
+                          : 'bg-warning/10 text-warning'
+                      }`}>
+                        {claudeMemStatus.workerRunning ? 'Worker Running' : 'Worker Stopped'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={refreshClaudeMemStatus}
+                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                      aria-label="Refresh claude-mem status"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* Install button */}
+                  {!claudeMemStatus.installed && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleInstallClaudeMem}
+                        disabled={claudeMemInstalling}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        {claudeMemInstalling ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Download className="h-3 w-3" />
+                        )}
+                        {claudeMemInstalling ? 'Installing...' : 'Install claude-mem'}
+                      </button>
+                      {claudeMemInstallLog.length > 0 && (
+                        <pre className="text-xs bg-muted/50 rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap font-mono">
+                          {claudeMemInstallLog.join('')}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Start Worker button */}
+                  {claudeMemStatus.installed && !claudeMemStatus.workerRunning && (
+                    <button
+                      type="button"
+                      onClick={handleStartClaudeMemWorker}
+                      disabled={claudeMemStarting}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {claudeMemStarting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Play className="h-3 w-3" />
+                      )}
+                      {claudeMemStarting ? 'Starting...' : 'Start Worker'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Worker URL input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Worker URL</Label>
+                <p className="text-xs text-muted-foreground">
+                  HTTP endpoint for the claude-mem MCP worker
+                </p>
+                <Input
+                  placeholder="http://localhost:37777"
+                  value={envConfig.mcpServers?.claudeMemUrl || ''}
+                  onChange={(e) =>
+                    updateEnvConfig({
+                      mcpServers: { ...envConfig.mcpServers, claudeMemUrl: e.target.value || undefined }
+                    })
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Requires{' '}
+                <a href="https://github.com/anthropics/claude-mem" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+                  claude-mem
+                </a>{' '}
+                plugin installed and worker running
+              </p>
+            </div>
           )}
         </div>
       )}

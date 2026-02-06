@@ -32,6 +32,7 @@ import { registerSkillsHandlers } from './skills-handlers';
 import { registerDebugHandlers } from './debug-handlers';
 import { registerClaudeCodeHandlers } from './claude-code-handlers';
 import { registerMcpHandlers } from './mcp-handlers';
+import { registerClaudeMemHandlers } from './claude-mem-handlers';
 import { registerProfileHandlers } from './profile-handlers';
 import { registerScreenshotHandlers } from './screenshot-handlers';
 import { registerTerminalWorktreeIpcHandlers } from './terminal';
@@ -122,6 +123,9 @@ export function setupIpcHandlers(
   // MCP server health check handlers
   registerMcpHandlers();
 
+  // Claude-mem installation and worker management handlers
+  registerClaudeMemHandlers(getMainWindow);
+
   // API Profile handlers (custom Anthropic-compatible endpoints)
   registerProfileHandlers();
 
@@ -160,6 +164,7 @@ export {
   registerDebugHandlers,
   registerClaudeCodeHandlers,
   registerMcpHandlers,
+  registerClaudeMemHandlers,
   registerProfileHandlers,
   registerSkillsHandlers,
   registerScreenshotHandlers,

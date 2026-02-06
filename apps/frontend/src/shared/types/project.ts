@@ -351,6 +351,10 @@ export interface ProjectEnvConfig {
     electronEnabled?: boolean;
     /** Puppeteer browser automation (QA only) - default: false */
     puppeteerEnabled?: boolean;
+    /** Claude-mem developer session memory - default: false */
+    claudeMemEnabled?: boolean;
+    /** Claude-mem MCP worker URL (default: http://localhost:37777) */
+    claudeMemUrl?: string;
   };
 
   // Per-agent MCP overrides (add/remove MCPs from specific agents)
@@ -400,6 +404,16 @@ export interface CustomMcpServer {
   headers?: Record<string, string>;
   /** Optional description shown in UI */
   description?: string;
+}
+
+/**
+ * Claude-mem installation and worker status.
+ */
+export interface ClaudeMemStatus {
+  installed: boolean;
+  version?: string;
+  workerRunning: boolean;
+  workerUrl?: string;
 }
 
 /**

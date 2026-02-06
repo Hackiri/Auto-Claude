@@ -363,7 +363,7 @@
     },
     "memory": {
       "title": "Memory",
-      "description": "Graphiti memory backend",
+      "description": "Graphiti and claude-mem",
       "integrationTitle": "Memory",
       "integrationDescription": "Configure persistent cross-session memory for agents",
       "syncDescription": "Configure persistent memory"
@@ -686,6 +686,10 @@
       "puppeteer": {
         "name": "Puppeteer",
         "description": "Web browser automation for testing"
+      },
+      "claudeMem": {
+        "name": "Claude Mem",
+        "description": "Developer session memory via hybrid search"
       },
       "autoClaude": {
         "name": "Auto-Claude Tools",

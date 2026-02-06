@@ -24,7 +24,8 @@ import type {
   GitStatus,
   CustomMcpServer,
   McpHealthCheckResult,
-  McpTestConnectionResult
+  McpTestConnectionResult,
+  ClaudeMemStatus
 } from './project';
 import type { ScreenshotSource } from './screenshot';
 import type {
@@ -925,6 +926,13 @@ export interface ElectronAPI {
   // MCP Server health check operations
   checkMcpHealth: (server: CustomMcpServer) => Promise<IPCResult<McpHealthCheckResult>>;
   testMcpConnection: (server: CustomMcpServer) => Promise<IPCResult<McpTestConnectionResult>>;
+
+  // Claude Mem management
+  getClaudeMemStatus: () => Promise<IPCResult<ClaudeMemStatus>>;
+  installClaudeMem: () => Promise<IPCResult>;
+  startClaudeMemWorker: () => Promise<IPCResult>;
+  onClaudeMemInstallLog: (callback: (data: string) => void) => () => void;
+
 // Skills operations
   generateSkills: (projectId: string, options?: SkillGenerationOptions) => Promise<IPCResult<SkillGenerationResult>>;
   generateSkillFromPrompt: (projectId: string, skillName: string, prompt: string) => Promise<IPCResult<Skill>>;
