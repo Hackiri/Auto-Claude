@@ -20,8 +20,10 @@ import type {
   ClaudeProfileSettings,
   ClaudeUsageData,
   ClaudeRateLimitEvent,
-  ClaudeAutoSwitchSettings
+  ClaudeAutoSwitchSettings,
+  APIProfile
 } from '../shared/types';
+import type { UnifiedAccount } from '../shared/types/unified-account';
 
 // Module imports
 import { encryptToken, decryptToken } from './claude-profile/token-encryption';
@@ -40,9 +42,11 @@ import {
 import {
   getBestAvailableProfile,
   shouldProactivelySwitch as shouldProactivelySwitchImpl,
-  getProfilesSortedByAvailability as getProfilesSortedByAvailabilityImpl
+  getProfilesSortedByAvailability as getProfilesSortedByAvailabilityImpl,
+  getBestAvailableUnifiedAccount
 } from './claude-profile/profile-scorer';
 import { getCredentialsFromKeychain, normalizeWindowsPath, updateProfileSubscriptionMetadata } from './claude-profile/credential-utils';
+import { loadProfilesFile } from './services/profile/profile-manager';
 import {
   CLAUDE_PROFILES_DIR,
   generateProfileId as generateProfileIdImpl,
@@ -52,6 +56,7 @@ import {
   expandHomePath,
   getEmailFromConfigDir
 } from './claude-profile/profile-utils';
+import { debugLog } from '../shared/utils/debug-logger';
 
 /**
  * Manages Claude Code profiles for multi-account support.
@@ -82,6 +87,8 @@ export class ClaudeProfileManager {
       return;
     }
 
+    console.log('[ClaudeProfileManager] Starting initialization...');
+
     // Ensure directory exists (async) - mkdir with recursive:true is idempotent
     await mkdir(this.configDir, { recursive: true });
 
@@ -89,6 +96,9 @@ export class ClaudeProfileManager {
     const loadedData = await loadProfileStoreAsync(this.storePath);
     if (loadedData) {
       this.data = loadedData;
+      debugLog('[ClaudeProfileManager] Loaded profile store with', this.data.profiles.length, 'profiles');
+    } else {
+      debugLog('[ClaudeProfileManager] No existing profile store found, using defaults');
     }
 
     // Run one-time migration to fix corrupted emails
@@ -100,6 +110,7 @@ export class ClaudeProfileManager {
     this.populateSubscriptionMetadata();
 
     this.initialized = true;
+    console.log('[ClaudeProfileManager] Initialization complete');
   }
 
   /**
@@ -145,13 +156,20 @@ export class ClaudeProfileManager {
   private populateSubscriptionMetadata(): void {
     let needsSave = false;
 
+    debugLog('[ClaudeProfileManager] populateSubscriptionMetadata: checking', this.data.profiles.length, 'profiles');
+
     for (const profile of this.data.profiles) {
       if (!profile.configDir) {
+        debugLog('[ClaudeProfileManager] populateSubscriptionMetadata: skipping profile', profile.id, '(no configDir)');
         continue;
       }
 
       // Skip if profile already has subscription metadata
       if (profile.subscriptionType && profile.rateLimitTier) {
+        debugLog('[ClaudeProfileManager] populateSubscriptionMetadata: profile', profile.id, 'already has metadata:', {
+          subscriptionType: profile.subscriptionType,
+          rateLimitTier: profile.rateLimitTier
+        });
         continue;
       }
 
@@ -533,6 +551,29 @@ export class ClaudeProfileManager {
       // This matches where authenticateClaudeProfile saves credentials when profile has no configDir
       configDir = join(homedir(), '.claude');
       console.warn('[ClaudeProfileManager] Profile has no configDir, using default:', configDir, 'profile:', profile?.name);
+
+      // Also try Keychain token lookup as a direct override when configDir was missing.
+      // Without an explicit configDir, Claude CLI may not resolve credentials automatically,
+      // so inject CLAUDE_CODE_OAUTH_TOKEN as a fallback.
+      if (profile) {
+        debugLog(
+          '[ClaudeProfileManager] Profile had no configDir configured:',
+          profile.name,
+          '- attempting Keychain token lookup. Subscription display may be degraded.'
+        );
+
+        const credentials = getCredentialsFromKeychain(undefined, true);
+        if (credentials.token) {
+          env.CLAUDE_CODE_OAUTH_TOKEN = credentials.token;
+          debugLog('[ClaudeProfileManager] Injected CLAUDE_CODE_OAUTH_TOKEN from Keychain for profile:', profile.name);
+        } else {
+          debugLog(
+            '[ClaudeProfileManager] No token found in Keychain for profile without configDir:',
+            profile.name,
+            credentials.error ? `(error: ${credentials.error})` : ''
+          );
+        }
+      }
     }
 
     // Expand ~ to home directory for the environment variable
@@ -674,6 +715,57 @@ export class ClaudeProfileManager {
   }
 
   /**
+   * Load API profiles from profiles.json with error handling
+   * Shared helper to avoid duplication across methods
+   */
+  private async loadProfilesFileSafe(): Promise<{ profiles: APIProfile[]; activeProfileId?: string }> {
+    try {
+      const file = await loadProfilesFile();
+      return { profiles: file.profiles, activeProfileId: file.activeProfileId ?? undefined };
+    } catch (error) {
+      console.error('[ClaudeProfileManager] Failed to load profiles file:', error);
+      return { profiles: [] };
+    }
+  }
+
+  /**
+   * Load API profiles from profiles.json
+   * Used by the unified account selection to consider API profiles as fallback
+   */
+  async loadAPIProfiles(): Promise<APIProfile[]> {
+    const { profiles } = await this.loadProfilesFileSafe();
+    return profiles;
+  }
+
+  /**
+   * Get the best available unified account from both OAuth and API profiles
+   * This enables cross-type account switching when OAuth profiles are exhausted
+   *
+   * @param excludeAccountId - Unified account ID to exclude (e.g., 'oauth-profile1')
+   * @returns The best available UnifiedAccount, or null if none available
+   */
+  async getBestAvailableUnifiedAccount(excludeAccountId?: string): Promise<UnifiedAccount | null> {
+    const settings = this.getAutoSwitchSettings();
+    const priorityOrder = this.getAccountPriorityOrder();
+    const activeOAuthId = this.data.activeProfileId;
+
+    // Load API profiles and active API profile ID from profiles.json
+    const { profiles: apiProfiles, activeProfileId: activeAPIId } = await this.loadProfilesFileSafe();
+
+    return getBestAvailableUnifiedAccount(
+      this.data.profiles,
+      apiProfiles,
+      settings,
+      {
+        excludeAccountId,
+        priorityOrder,
+        activeOAuthId,
+        activeAPIId
+      }
+    );
+  }
+
+  /**
    * Determine if we should proactively switch profiles based on current usage
    */
   shouldProactivelySwitch(profileId: string): { shouldSwitch: boolean; reason?: string; suggestedProfile?: ClaudeProfile } {
@@ -761,6 +853,28 @@ export class ClaudeProfileManager {
       // Fallback to default Claude config directory
       configDir = join(homedir(), '.claude');
       console.warn('[ClaudeProfileManager] getProfileEnv: Profile has no configDir, using default:', configDir, 'profile:', profile.name);
+
+      // Also try Keychain token lookup as a direct override when configDir was missing.
+      // Without an explicit configDir, Claude CLI may not resolve credentials automatically,
+      // so inject CLAUDE_CODE_OAUTH_TOKEN as a fallback.
+      // This mirrors the fallback in getActiveProfileEnv().
+      debugLog(
+        '[ClaudeProfileManager] getProfileEnv: profile had no configDir:',
+        profile.name,
+        '- attempting Keychain token lookup.'
+      );
+
+      const credentials = getCredentialsFromKeychain(undefined, true);
+      if (credentials.token) {
+        debugLog('[ClaudeProfileManager] getProfileEnv: injected CLAUDE_CODE_OAUTH_TOKEN from Keychain for profile:', profile.name);
+        // Don't return early - continue to set CLAUDE_CONFIG_DIR as well
+        // The token will be added to the env object below
+      } else {
+        debugLog(
+          '[ClaudeProfileManager] getProfileEnv: no token found in Keychain for profile without configDir:',
+          profile.name
+        );
+      }
     }
 
     // Expand ~ to home directory for the environment variable

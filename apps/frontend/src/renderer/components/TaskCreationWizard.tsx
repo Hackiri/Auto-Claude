@@ -30,7 +30,9 @@ import type { PhaseModelConfig, PhaseThinkingConfig } from '../../shared/types/s
 import {
   DEFAULT_AGENT_PROFILES,
   DEFAULT_PHASE_MODELS,
-  DEFAULT_PHASE_THINKING
+  DEFAULT_PHASE_THINKING,
+  FAST_MODE_MODELS,
+  PHASE_KEYS
 } from '../../shared/constants';
 import { useSettingsStore } from '../stores/settings-store';
 
@@ -138,6 +140,14 @@ export function TaskCreationWizard({
   const [enableSwarmMode, setEnableSwarmMode] = useState(false);
   const [swarmMaxWorkers, setSwarmMaxWorkers] = useState(3);
 
+  // Fast mode
+  const [fastMode, setFastMode] = useState(false);
+
+  // Show Fast Mode toggle when any phase uses an Opus model
+  const showFastModeToggle = useMemo(() => {
+    if (!phaseModels) return false;
+    return PHASE_KEYS.some(phase => FAST_MODE_MODELS.includes(phaseModels[phase]));
+  }, [phaseModels]);
   // Draft state
   const [isDraftRestored, setIsDraftRestored] = useState(false);
 
@@ -183,6 +193,7 @@ export function TaskCreationWizard({
         setRalphLoopOvernightMode(draft.ralphLoopOvernightMode ?? false);
         setEnableSwarmMode(draft.enableSwarmMode ?? false);
         setSwarmMaxWorkers(draft.swarmMaxWorkers ?? 3);
+        setFastMode(draft.fastMode ?? false);
         setIsDraftRestored(true);
 
         if (draft.category || draft.priority || draft.complexity || draft.impact) {
@@ -210,6 +221,7 @@ export function TaskCreationWizard({
         setRalphLoopMaxQaIterations(3);
         setRalphLoopRetryStrategy('adaptive');
         setRalphLoopOvernightMode(false);
+        setFastMode(false);
         setBaseBranch(PROJECT_DEFAULT_BRANCH);
         setUseWorktree(true);
         setIsDraftRestored(false);
@@ -293,8 +305,9 @@ export function TaskCreationWizard({
     ralphLoopOvernightMode,
     enableSwarmMode,
     swarmMaxWorkers,
+    fastMode,
     savedAt: new Date()
-  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, enableRalphLoop, ralphLoopMaxCoderIterations, ralphLoopMaxQaIterations, ralphLoopRetryStrategy, ralphLoopOvernightMode, enableSwarmMode, swarmMaxWorkers]);
+  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, enableRalphLoop, ralphLoopMaxCoderIterations, ralphLoopMaxQaIterations, ralphLoopRetryStrategy, ralphLoopOvernightMode, enableSwarmMode, swarmMaxWorkers, fastMode]);
 
   /**
    * Detect @ mention being typed and show autocomplete
@@ -491,6 +504,7 @@ export function TaskCreationWizard({
       // Set useLocalBranch when user explicitly selects a local branch
       // This preserves gitignored files (.env, configs) by not switching to origin
       if (isSelectedBranchLocal) metadata.useLocalBranch = true;
+      metadata.fastMode = fastMode;
 
       const task = await createTask(projectId, title.trim(), description.trim(), metadata);
       if (task) {
@@ -529,6 +543,7 @@ export function TaskCreationWizard({
     setRalphLoopOvernightMode(false);
     setEnableSwarmMode(false);
     setSwarmMaxWorkers(3);
+    setFastMode(false);
     setBaseBranch(PROJECT_DEFAULT_BRANCH);
     setUseWorktree(true);
     setError(null);
@@ -726,6 +741,9 @@ export function TaskCreationWizard({
           onEnableSwarmModeChange={setEnableSwarmMode}
           swarmMaxWorkers={swarmMaxWorkers}
           onSwarmMaxWorkersChange={setSwarmMaxWorkers}
+          fastMode={fastMode}
+          onFastModeChange={setFastMode}
+          showFastModeToggle={showFastModeToggle}
           disabled={isCreating}
           error={error}
           onError={setError}

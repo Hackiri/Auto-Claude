@@ -9,6 +9,7 @@ import { existsSync } from 'fs';
 import type { TerminalProcess, WindowGetter, WindowsShellType } from './types';
 import { isWindows, getWindowsShellPaths } from '../platform';
 import { IPC_CHANNELS } from '../../shared/constants';
+import { safeSendToRenderer } from '../ipc-handlers/utils';
 import { getClaudeProfileManager } from '../claude-profile-manager';
 import { readSettingsFile } from '../settings-utils';
 import { debugLog, debugError } from '../../shared/utils/debug-logger';
@@ -221,11 +222,9 @@ export function setupPtyHandlers(
     // Call custom data handler
     onDataCallback(terminal, data);
 
-    // Send to renderer
-    const win = getWindow();
-    if (win) {
-      win.webContents.send(IPC_CHANNELS.TERMINAL_OUTPUT, id, data);
-    }
+    // Send to renderer with isDestroyed() check to prevent crashes
+    // when the window is closed during terminal activity
+    safeSendToRenderer(getWindow, IPC_CHANNELS.TERMINAL_OUTPUT, id, data);
   });
 
   // Handle terminal exit
@@ -245,10 +244,9 @@ export function setupPtyHandlers(
     // to avoid pty.node SIGABRT from destroyed BrowserWindow resources
     if (isShuttingDown) return;
 
-    const win = getWindow();
-    if (win) {
-      win.webContents.send(IPC_CHANNELS.TERMINAL_EXIT, id, exitCode);
-    }
+    // Send to renderer with isDestroyed() check to prevent crashes
+    // when the window is closed during terminal exit
+    safeSendToRenderer(getWindow, IPC_CHANNELS.TERMINAL_EXIT, id, exitCode);
 
     // Call custom exit handler
     onExitCallback(terminal);
@@ -264,11 +262,16 @@ export function setupPtyHandlers(
 
 /**
  * Constants for chunked write behavior
- * CHUNKED_WRITE_THRESHOLD: Data larger than this (bytes) will be written in chunks
- * CHUNK_SIZE: Size of each chunk - smaller chunks yield to event loop more frequently
+ * CHUNKED_WRITE_THRESHOLD: Data larger than this (bytes) will be written in chunks.
+ *   Set high enough that typical pastes go through as a single synchronous write.
+ * CHUNK_SIZE: Size of each chunk. Larger chunks = fewer event-loop yields = less
+ *   GPU pressure when many terminals are rendering simultaneously.
+ *   Previous values (1000/100) caused GPU context exhaustion: a 9KB paste produced
+ *   ~91 setImmediate yields, letting GPU rendering tasks from 8+ terminals pile up
+ *   until ContextResult::kTransientFailure crashed the app.
  */
-const CHUNKED_WRITE_THRESHOLD = 1000;
-const CHUNK_SIZE = 100;
+const CHUNKED_WRITE_THRESHOLD = 16_384;
+const CHUNK_SIZE = 8_192;
 
 /**
  * Write queue per terminal to prevent interleaving of concurrent writes.

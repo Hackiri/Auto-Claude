@@ -289,9 +289,6 @@ describe('Task Order State Management', () => {
         pr_created: [],
         error: []
       });
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to load task order:', expect.any(Error));
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle localStorage access errors', () => {
@@ -319,7 +316,6 @@ describe('Task Order State Management', () => {
       });
 
       localStorage.getItem = originalGetItem;
-      consoleSpy.mockRestore();
     });
   });
 

@@ -54,5 +54,7 @@ export const settingsMock = {
   onAppUpdateAvailable: () => () => { /* no-op */ },
   onAppUpdateDownloaded: () => () => { /* no-op */ },
   onAppUpdateProgress: () => () => { /* no-op */ },
-  onAppUpdateStableDowngrade: () => () => { /* no-op */ }
+  onAppUpdateStableDowngrade: () => () => { /* no-op */ },
+  onAppUpdateReadOnlyVolume: () => () => { /* no-op */ },
+  onAppUpdateError: () => () => { /* no-op */ }
 };

@@ -1,6 +1,6 @@
 {
   "name": "auto-claude-ui",
-  "version": "2.7.6-beta.2",
+  "version": "2.7.6-beta.5",
   "type": "module",
   "description": "Desktop UI for Auto Claude autonomous coding framework",
   "homepage": "https://github.com/AndyMik90/Auto-Claude",
@@ -98,6 +98,8 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.2.0",
     "recharts": "^2.15.3",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "semver": "^7.7.3",
     "tailwind-merge": "^3.4.0",

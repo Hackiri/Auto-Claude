@@ -8,6 +8,27 @@ Auto Claude is a multi-agent autonomous coding framework that builds software th
 
 **CRITICAL: All AI interactions use the Claude Agent SDK (`claude-agent-sdk` package), NOT the Anthropic API directly.**
 
+## Work Approach
+
+**Investigate before speculating** — Always read the actual code before proposing root causes. Spawn agents to grep and read relevant source files before forming any hypothesis. Never guess at causes without evidence from the codebase.
+
+**Spawn agents for complex tasks** — When tackling complex tasks, spawn sub-agents/agent teams immediately rather than trying to handle everything in a single context window. Never attempt to analyze large codebases or multiple features monolithically.
+
+**Minimal fixes only** — Prefer the simplest approach (e.g., prompt-only changes, single guard clause) before suggesting multi-component solutions. If the user asks for X, implement X — don't bundle additional fixes they didn't request.
+
+## Known Gotchas
+
+**Electron path resolution** — For bug fixes in the Electron app, always check path resolution differences between dev and production builds (`app.isPackaged`, `process.resourcesPath`). Paths that work in dev often break when Electron is bundled for production — verify both contexts.
+
+### Resetting PR Review State
+
+To fully clear all PR review data so reviews run fresh, delete/reset these three things in `.auto-claude/github/`:
+
+1. `rm .auto-claude/github/pr/logs_*.json` — review log files
+2. `rm .auto-claude/github/pr/review_*.json` — review result files
+3. Reset `pr/index.json` to `{"reviews": [], "last_updated": null}`
+4. Reset `bot_detection_state.json` to `{"reviewed_commits": {}}` — this is the gatekeeper; without clearing it, the bot detector skips already-seen commits
+
 ## Project Structure
 
 ```
@@ -200,6 +221,8 @@ See [RELEASE.md](RELEASE.md) for detailed release process documentation.
   - Enabled with `ELECTRON_MCP_ENABLED=true` in `.env`
   - Allows QA agents to interact with running Electron app
   - See "End-to-End Testing" section for details
+
+Model and thinking level are user-configurable (via the Electron UI settings or CLI override). Use `phase_config.py` helpers to resolve the correct values.
 
 ### Agent Prompts (apps/backend/prompts/)
 
@@ -726,6 +749,8 @@ python run.py --spec 001
 ```bash
 npm start        # Build and run desktop app
 npm run dev      # Run in development mode (includes --remote-debugging-port=9222 for E2E testing)
+npm run dev:debug  # Debug mode with verbose output
+npm run dev:mcp    # Electron MCP server for AI debugging
 ```
 
 **For E2E Testing with QA Agents:**

@@ -21,6 +21,9 @@ RALPH_MAX_CODER_ITERATIONS = 100
 # Maximum consecutive failures before stopping (prevents infinite loops on stuck issues)
 RALPH_CONSECUTIVE_FAILURE_LIMIT = 3
 
+# Retry configuration for subtask execution
+MAX_SUBTASK_RETRIES = 5  # Maximum attempts before marking subtask as stuck
+
 # Retry configuration for 400 tool concurrency errors
 MAX_CONCURRENCY_RETRIES = 5  # Maximum number of retries for tool concurrency errors
 INITIAL_RETRY_DELAY_SECONDS = (

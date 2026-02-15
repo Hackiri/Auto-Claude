@@ -39,7 +39,9 @@ import type { Task, ImageAttachment, TaskCategory, TaskPriority, TaskComplexity,
 import {
   DEFAULT_AGENT_PROFILES,
   DEFAULT_PHASE_MODELS,
-  DEFAULT_PHASE_THINKING
+  DEFAULT_PHASE_THINKING,
+  FAST_MODE_MODELS,
+  PHASE_KEYS
 } from '../../shared/constants';
 import type { PhaseModelConfig, PhaseThinkingConfig } from '../../shared/types/settings';
 import { useSettingsStore } from '../stores/settings-store';
@@ -149,6 +151,17 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
     task.metadata?.swarmMode?.maxWorkers ?? 3
   );
 
+  // Fast mode
+  const [fastMode, setFastMode] = useState(task.metadata?.fastMode ?? false);
+
+  // Show Fast Mode toggle when any phase uses an Opus model
+  const showFastModeToggle = useMemo(() => {
+    if (!phaseModels) return false;
+    return PHASE_KEYS.some(phase => FAST_MODE_MODELS.includes(phaseModels[phase]));
+  }, [phaseModels]);
+
+  // Disable fast mode toggle for tasks that have moved past backlog
+  const isFastModeEditable = task.status === 'backlog';
   // Reset form when task changes or dialog opens
   useEffect(() => {
     if (open) {
@@ -194,6 +207,7 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
       setRalphLoopMaxQaIterations(task.metadata?.ralphLoop?.maxQaIterations ?? 3);
       setRalphLoopRetryStrategy(task.metadata?.ralphLoop?.retryStrategy ?? 'adaptive');
       setRalphLoopOvernightMode(task.metadata?.ralphLoop?.overnightMode ?? false);
+      setFastMode(task.metadata?.fastMode ?? false);
       setError(null);
 
       // Auto-expand classification if it has content
@@ -245,6 +259,7 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
       ralphLoopOvernightMode !== (task.metadata?.ralphLoop?.overnightMode ?? false) ||
       enableSwarmMode !== (task.metadata?.swarmMode?.enabled ?? false) ||
       swarmMaxWorkers !== (task.metadata?.swarmMode?.maxWorkers ?? 3) ||
+      fastMode !== (task.metadata?.fastMode ?? false) ||
       JSON.stringify(images) !== JSON.stringify(task.metadata?.attachedImages || []) ||
       JSON.stringify(phaseModels) !== JSON.stringify(task.metadata?.phaseModels || DEFAULT_PHASE_MODELS) ||
       JSON.stringify(phaseThinking) !== JSON.stringify(task.metadata?.phaseThinking || DEFAULT_PHASE_THINKING);
@@ -284,6 +299,7 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
       enabled: enableSwarmMode,
       maxWorkers: swarmMaxWorkers,
     };
+    metadataUpdates.fastMode = fastMode;
 
     const success = await persistUpdateTask(task.id, {
       title: trimmedTitle,
@@ -377,6 +393,9 @@ export function TaskEditDialog({ task, open, onOpenChange, onSaved }: TaskEditDi
         onEnableSwarmModeChange={setEnableSwarmMode}
         swarmMaxWorkers={swarmMaxWorkers}
         onSwarmMaxWorkersChange={setSwarmMaxWorkers}
+        fastMode={fastMode}
+        onFastModeChange={setFastMode}
+        showFastModeToggle={showFastModeToggle && isFastModeEditable}
         disabled={isSaving}
         error={error}
         onError={setError}
