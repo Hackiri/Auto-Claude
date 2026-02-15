@@ -761,9 +761,14 @@ export function buildRunnerArgs(
   options?: {
     model?: string;
     thinkingLevel?: string;
+    repo?: string;
   }
 ): string[] {
   const args = [runnerPath, '--project', projectPath];
+
+  if (options?.repo) {
+    args.push('--repo', options.repo);
+  }
 
   if (options?.model) {
     args.push('--model', options.model);

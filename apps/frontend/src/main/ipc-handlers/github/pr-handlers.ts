@@ -1468,12 +1468,13 @@ async function runPRReview(
   );
 
   const { model, thinkingLevel } = getGitHubPRSettings();
+  const config = getGitHubConfig(project);
   const args = buildRunnerArgs(
     getRunnerPath(backendPath),
     project.path,
     "review-pr",
     [prNumber.toString()],
-    { model, thinkingLevel }
+    { model, thinkingLevel, repo: config?.repo }
   );
 
   debugLog("Spawning PR review process", { args, model, thinkingLevel });
@@ -1493,7 +1494,6 @@ async function runPRReview(
   });
 
   // Create log collector for this review
-  const config = getGitHubConfig(project);
   const repo = config?.repo || project.name || "unknown";
   const logCollector = new PRLogCollector(project, prNumber, repo, false, mainWindow);
 
@@ -2996,7 +2996,7 @@ export function registerPRHandlers(getMainWindow: () => BrowserWindow | null): v
             project.path,
             "followup-review-pr",
             [prNumber.toString()],
-            { model, thinkingLevel }
+            { model, thinkingLevel, repo: config?.repo }
           );
 
           debugLog("Spawning follow-up review process", { args, model, thinkingLevel });

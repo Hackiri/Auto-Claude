@@ -245,6 +245,7 @@ async function runTriage(
   );
 
   const { model, thinkingLevel } = getGitHubIssuesSettings();
+  const config = getGitHubConfig(project);
   const additionalArgs = issueNumbers ? issueNumbers.map(n => n.toString()) : [];
   if (applyLabels) {
     additionalArgs.push('--apply-labels');
@@ -255,7 +256,7 @@ async function runTriage(
     project.path,
     'triage',
     additionalArgs,
-    { model, thinkingLevel }
+    { model, thinkingLevel, repo: config?.repo }
   );
 
   debugLog('Spawning triage process', { args, model, thinkingLevel });
