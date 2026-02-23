@@ -110,13 +110,36 @@ function mockPlatform(platform: 'win32' | 'darwin' | 'linux') {
 /**
  * Helper to get platform-specific expectations for PATH prefix
  */
-function getPathPrefixExpectation(platform: 'win32' | 'darwin' | 'linux', pathValue: string): string {
+function getPathPrefixExpectation(
+  platform: 'win32' | 'darwin' | 'linux',
+  pathValue: string,
+  command: string
+): string {
+  // Absolute executable commands no longer need PATH prefix injection.
+  if (path.isAbsolute(command)) {
+    return '';
+  }
+
   if (platform === 'win32') {
     // Windows: set "PATH=value" &&
     return `set "PATH=${pathValue}" && `;
   }
   // Unix/macOS: PATH='value' '
   return `PATH='${pathValue}' `;
+}
+
+function expectPathPrefix(
+  written: string,
+  platform: 'win32' | 'darwin' | 'linux',
+  pathValue: string,
+  command: string
+): void {
+  const expectedPrefix = getPathPrefixExpectation(platform, pathValue, command);
+  if (expectedPrefix) {
+    expect(written).toContain(expectedPrefix);
+  } else {
+    expect(written).not.toContain('PATH=');
+  }
 }
 
 /**
@@ -242,7 +265,7 @@ describe('claude-integration-handler', () => {
 
       const written = mockWriteToPty.mock.calls[0][1] as string;
       expect(written).toContain(buildCdCommand('/tmp/project'));
-      expect(written).toContain(getPathPrefixExpectation(platform, '/opt/claude/bin:/usr/bin'));
+      expectPathPrefix(written, platform, '/opt/claude/bin:/usr/bin', "/opt/claude bin/claude's");
       expect(written).toContain(getQuotedCommand(platform, "/opt/claude bin/claude's"));
       expect(mockReleaseSessionId).toHaveBeenCalledWith('term-1');
       expect(mockPersistSession).toHaveBeenCalledWith(terminal);
@@ -403,7 +426,7 @@ describe('claude-integration-handler', () => {
 
       expect(written).toContain(histPrefix);
       expect(written).toContain(configDir);
-      expect(written).toContain(getPathPrefixExpectation(platform, '/opt/claude/bin:/usr/bin'));
+      expectPathPrefix(written, platform, '/opt/claude/bin:/usr/bin', command);
       expect(written).toContain(getQuotedCommand(platform, command));
       expect(written).toContain(clearCmd);
       expect(profileManager.getProfile).toHaveBeenCalledWith('prof-2');
@@ -437,7 +460,7 @@ describe('claude-integration-handler', () => {
 
       const written = mockWriteToPty.mock.calls[0][1] as string;
       expect(written).toContain(getQuotedCommand(platform, command));
-      expect(written).toContain(getPathPrefixExpectation(platform, '/opt/claude/bin:/usr/bin'));
+      expectPathPrefix(written, platform, '/opt/claude/bin:/usr/bin', command);
       expect(profileManager.getProfile).toHaveBeenCalledWith('prof-3');
       expect(profileManager.markProfileUsed).toHaveBeenCalledWith('prof-3');
       expect(mockPersistSession).toHaveBeenCalledWith(terminal);
@@ -461,7 +484,7 @@ describe('claude-integration-handler', () => {
       resumeClaude(terminal, 'abc123', () => null);
 
       const resumeCall = mockWriteToPty.mock.calls[0][1] as string;
-      expect(resumeCall).toContain(getPathPrefixExpectation(platform, '/opt/claude/bin:/usr/bin'));
+      expectPathPrefix(resumeCall, platform, '/opt/claude/bin:/usr/bin', '/opt/claude/bin/claude');
       expect(resumeCall).toContain(getQuotedCommand(platform, '/opt/claude/bin/claude') + ' --continue');
       expect(resumeCall).not.toContain('--resume');
       // sessionId is cleared because --continue doesn't track specific sessions
@@ -657,7 +680,7 @@ describe('invokeClaudeAsync', () => {
 
       const written = mockWriteToPty.mock.calls[0][1] as string;
       expect(written).toContain(buildCdCommand('/tmp/project'));
-      expect(written).toContain(getPathPrefixExpectation(platform, '/opt/claude/bin:/usr/bin'));
+      expectPathPrefix(written, platform, '/opt/claude/bin:/usr/bin', '/opt/claude/bin/claude');
       expect(mockReleaseSessionId).toHaveBeenCalledWith('term-1');
       expect(mockPersistSession).toHaveBeenCalledWith(terminal);
       expect(profileManager.markProfileUsed).toHaveBeenCalledWith('default');
@@ -915,7 +938,8 @@ describe('claude-integration-handler - Helper Functions', () => {
       // Use a default terminal name pattern so renaming logic kicks in
       const terminal = createMockTerminal({ title: 'Terminal 1' });
       const mockWindow = {
-        webContents: { send: vi.fn() }
+        isDestroyed: () => false,
+        webContents: { send: vi.fn(), isDestroyed: () => false }
       };
       const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
@@ -936,7 +960,8 @@ describe('claude-integration-handler - Helper Functions', () => {
       // Use a default terminal name pattern so renaming logic kicks in
       const terminal = createMockTerminal({ title: 'Terminal 2' });
       const mockWindow = {
-        webContents: { send: vi.fn() }
+        isDestroyed: () => false,
+        webContents: { send: vi.fn(), isDestroyed: () => false }
       };
       const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
@@ -958,7 +983,8 @@ describe('claude-integration-handler - Helper Functions', () => {
       const terminal = createMockTerminal({ title: 'Terminal 3' });
       const mockSend = vi.fn();
       const mockWindow = {
-        webContents: { send: mockSend }
+        isDestroyed: () => false,
+        webContents: { send: mockSend, isDestroyed: () => false }
       };
       const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
@@ -984,7 +1010,8 @@ describe('claude-integration-handler - Helper Functions', () => {
       const terminal = createMockTerminal({ title: 'Claude' });
       const mockSend = vi.fn();
       const mockWindow = {
-        webContents: { send: mockSend }
+        isDestroyed: () => false,
+        webContents: { send: mockSend, isDestroyed: () => false }
       };
       const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 
@@ -1009,7 +1036,8 @@ describe('claude-integration-handler - Helper Functions', () => {
       const terminal = createMockTerminal({ title: 'My Custom Terminal' });
       const mockSend = vi.fn();
       const mockWindow = {
-        webContents: { send: mockSend }
+        isDestroyed: () => false,
+        webContents: { send: mockSend, isDestroyed: () => false }
       };
       const getWindow: WindowGetter = () => mockWindow as unknown as BrowserWindow;
 

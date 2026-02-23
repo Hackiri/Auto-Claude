@@ -3,13 +3,6 @@ Coder Agent Module
 ==================
 
 Main autonomous agent loop that runs the coder agent to implement subtasks.
-
-Supports Ralph Wiggum iterative loop mode for autonomous overnight builds.
-When ralph_config is provided and enabled, the agent runs with:
-- Configurable max iterations (safety net)
-- Completion promise evaluation after each iteration
-- Intelligent retry strategies with approach variation
-- Consecutive failure tracking to prevent infinite loops
 """
 
 import asyncio
@@ -17,11 +10,12 @@ import json
 import logging
 import os
 import re
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from context.constants import SKIP_DIRS
 from core.client import create_client
+from core.file_utils import write_json_atomic
 from linear_updater import (
     LinearTaskState,
     is_linear_enabled,
@@ -53,19 +47,8 @@ from prompt_generator import (
     load_subtask_context,
 )
 from prompts import is_first_run
-from ralph_loop.config import RalphLoopConfig, get_max_iterations, is_ralph_loop_enabled
-from ralph_loop.promises import (
-    evaluate_all_promises as evaluate_promises,  # Alias for subtask completion checks
-)
-from ralph_loop.promises import (
-    get_default_promises,
-    load_promises_from_plan,
-)
-from ralph_loop.reporter import RalphLoopReporter
-from ralph_loop.strategy import RetryStrategy
 from recovery import RecoveryManager
 from security.constants import PROJECT_DIR_ENV_VAR
-from swarm.config import SwarmConfig, is_swarm_mode_enabled
 from task_logger import (
     LogPhase,
     get_task_logger,
@@ -94,22 +77,16 @@ from .base import (
     MAX_RATE_LIMIT_WAIT_SECONDS,
     MAX_RETRY_DELAY_SECONDS,
     MAX_SUBTASK_RETRIES,
-    RALPH_CONSECUTIVE_FAILURE_LIMIT,
-    RALPH_MAX_CODER_ITERATIONS,
     RATE_LIMIT_CHECK_INTERVAL_SECONDS,
     RATE_LIMIT_PAUSE_FILE,
     RESUME_FILE,
     sanitize_error_message,
 )
 from .memory_manager import debug_memory_system_status, get_graphiti_context
-from .parallel_runner import (
-    get_parallelizable_subtasks,
-    run_parallel_phase,
-    should_use_parallel_execution,
-)
 from .session import post_session_processing, run_agent_session
 from .utils import (
     find_phase_for_subtask,
+    find_subtask_in_plan,
     get_commit_count,
     get_latest_commit,
     load_implementation_plan,
@@ -123,8 +100,383 @@ logger = logging.getLogger(__name__)
 # FILE VALIDATION UTILITIES
 # =============================================================================
 
+# Directories to exclude from file path search — extends context.constants.SKIP_DIRS
+_EXCLUDE_DIRS = frozenset(SKIP_DIRS | {".auto-claude", ".tox", "out"})
 
-def validate_subtask_files(subtask: dict, project_dir: Path) -> dict:
+
+def _build_file_index(
+    project_dir: Path, suffixes: set[str]
+) -> dict[str, list[tuple[str, Path]]]:
+    """
+    Build an index of project files grouped by basename, scanning the tree once.
+
+    Also indexes index.{ext} files under their parent directory name as a
+    secondary key (e.g., api/index.ts is indexed under both "index.ts" and
+    "api" as directory-stem).
+
+    Args:
+        project_dir: Root directory of the project
+        suffixes: File extensions to index (e.g., {".ts", ".tsx"})
+
+    Returns:
+        Dict mapping basename -> list of (relative_path_str, Path(relative_path))
+    """
+    index: dict[str, list[tuple[str, Path]]] = {}
+    resolved_str = str(project_dir.resolve())
+
+    for root, dirs, files in os.walk(project_dir.resolve()):
+        dirs[:] = [d for d in dirs if d not in _EXCLUDE_DIRS]
+
+        for filename in files:
+            ext_idx = filename.rfind(".")
+            if ext_idx == -1:
+                continue
+            file_suffix = filename[ext_idx:]
+            if file_suffix not in suffixes:
+                continue
+
+            full_path = os.path.join(root, filename)
+            rel_str = os.path.relpath(full_path, resolved_str).replace(os.sep, "/")
+            rel_path = Path(rel_str)
+
+            # Index by basename
+            index.setdefault(filename, []).append((rel_str, rel_path))
+
+            # Also index index.{ext} files by parent dir name (for stem matching)
+            stem_part = filename[:ext_idx]
+            if stem_part == "index":
+                dir_name = os.path.basename(root)
+                key = f"__dir_stem__:{dir_name}{file_suffix}"
+                index.setdefault(key, []).append((rel_str, rel_path))
+
+    return index
+
+
+def _score_and_select(candidates: list[tuple[str, float]]) -> str | None:
+    """
+    Select the best candidate from a scored list of (path, score) pairs.
+
+    Requires a minimum score of 8.0 and a gap of at least 3.0 from the
+    runner-up to avoid ambiguous matches.
+
+    Args:
+        candidates: List of (relative_path, score) tuples
+
+    Returns:
+        Best path if unambiguous, None otherwise
+    """
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda x: x[1], reverse=True)
+    best_path, best_score = candidates[0]
+
+    if best_score < 8.0:
+        return None
+
+    if len(candidates) > 1:
+        runner_up_score = candidates[1][1]
+        if best_score - runner_up_score < 3.0:
+            return None
+
+    return best_path
+
+
+def _find_correct_path_indexed(
+    missing_path: str,
+    parent_parts: tuple[str, ...],
+    file_index: dict[str, list[tuple[str, Path]]],
+) -> str | None:
+    """
+    Find the correct path using a pre-built file index (no tree walk needed).
+
+    Args:
+        missing_path: The incorrect file path from the plan
+        parent_parts: Parent directory parts of the missing path
+        file_index: Index built by _build_file_index
+
+    Returns:
+        Corrected relative path, or None if no good match found
+    """
+    missing = Path(missing_path)
+    basename = missing.name
+    stem = missing.stem
+    suffix = missing.suffix
+
+    if not suffix:
+        return None
+
+    candidates: list[tuple[str, float]] = []
+
+    # Strategy 1: Exact basename match
+    for rel_str, rel_path in file_index.get(basename, []):
+        score = 10.0
+        candidate_parts = rel_path.parent.parts
+        for i, part in enumerate(parent_parts):
+            if i < len(candidate_parts) and candidate_parts[i] == part:
+                score += 3.0
+        depth_diff = abs(len(candidate_parts) - len(parent_parts))
+        score -= 0.5 * depth_diff
+        candidates.append((rel_str, score))
+
+    # Strategy 2: index.{ext} in directory matching stem
+    stem_key = f"__dir_stem__:{stem}{suffix}"
+    for rel_str, rel_path in file_index.get(stem_key, []):
+        score = 8.0
+        candidate_parts = rel_path.parent.parts
+        for i, part in enumerate(parent_parts):
+            if i < len(candidate_parts) and candidate_parts[i] == part:
+                score += 3.0
+        depth_diff = abs(len(candidate_parts) - len(parent_parts))
+        score -= 0.5 * depth_diff
+        candidates.append((rel_str, score))
+
+    return _score_and_select(candidates)
+
+
+def _find_correct_path(missing_path: str, project_dir: Path) -> str | None:
+    """
+    Attempt to find the correct path for a missing file using fuzzy matching.
+
+    Strategies:
+    1. Same basename in nearby directory
+    2. index.{ext} pattern (e.g., preload/api.ts -> preload/api/index.ts)
+
+    Uses os.walk with directory pruning to avoid traversing into node_modules,
+    .git, dist, etc. — unlike Path.rglob which traverses everything then filters.
+
+    Args:
+        missing_path: The incorrect file path from the plan
+        project_dir: Root directory of the project
+
+    Returns:
+        Corrected relative path, or None if no good match found
+    """
+    missing = Path(missing_path)
+    basename = missing.name
+    stem = missing.stem
+    suffix = missing.suffix
+    parent_parts = missing.parent.parts
+
+    if not suffix:
+        return None
+
+    candidates: list[tuple[str, float]] = []
+    resolved_project = project_dir.resolve()
+    resolved_str = str(resolved_project)
+
+    # os.walk with pruning: modify dirs in-place to skip excluded directories
+    for root, dirs, files in os.walk(resolved_project):
+        dirs[:] = [d for d in dirs if d not in _EXCLUDE_DIRS]
+
+        for filename in files:
+            if not filename.endswith(suffix):
+                continue
+
+            full_path = os.path.join(root, filename)
+            rel_str = os.path.relpath(full_path, resolved_str).replace(os.sep, "/")
+            rel = Path(rel_str)
+
+            score = 0.0
+
+            # Strategy 1: Exact basename match
+            if filename == basename:
+                score += 10.0
+            # Strategy 2: index.{ext} in directory matching stem
+            elif filename == f"index{suffix}" and os.path.basename(root) == stem:
+                score += 8.0
+            else:
+                continue
+
+            # Bonus: shared parent directory segments
+            candidate_parts = rel.parent.parts
+            for i, part in enumerate(parent_parts):
+                if i < len(candidate_parts) and candidate_parts[i] == part:
+                    score += 3.0
+
+            # Penalty: depth difference
+            depth_diff = abs(len(candidate_parts) - len(parent_parts))
+            score -= 0.5 * depth_diff
+
+            candidates.append((rel_str, score))
+
+    return _score_and_select(candidates)
+
+
+def _auto_correct_subtask_files(
+    subtask: dict,
+    missing_files: list[str],
+    project_dir: Path,
+    spec_dir: Path,
+) -> list[str]:
+    """
+    Attempt to auto-correct missing file paths in a subtask.
+
+    Corrects paths in-memory AND persists changes to implementation_plan.json.
+
+    Args:
+        subtask: Subtask dictionary containing files_to_modify
+        missing_files: List of file paths that don't exist
+        project_dir: Root directory of the project
+        spec_dir: Spec directory containing implementation_plan.json
+
+    Returns:
+        List of file paths that could NOT be corrected
+    """
+    corrections: dict[str, str] = {}
+    still_missing: list[str] = []
+
+    # Build file index once for all missing files (avoids repeated os.walk)
+    suffixes_needed: set[str] = set()
+    for missing_path in missing_files:
+        suffix = Path(missing_path).suffix
+        if suffix:
+            suffixes_needed.add(suffix)
+    file_index = (
+        _build_file_index(project_dir, suffixes_needed) if suffixes_needed else {}
+    )
+
+    for missing_path in missing_files:
+        missing = Path(missing_path)
+        corrected = _find_correct_path_indexed(
+            missing_path, missing.parent.parts, file_index
+        )
+        if corrected:
+            corrections[missing_path] = corrected
+            logger.info(f"Auto-corrected file path: {missing_path} -> {corrected}")
+            print_status(f"Auto-corrected: {missing_path} -> {corrected}", "success")
+        else:
+            still_missing.append(missing_path)
+
+    if not corrections:
+        return still_missing
+
+    # Update subtask in-memory
+    files_to_modify = subtask.get("files_to_modify", [])
+    subtask["files_to_modify"] = [corrections.get(f, f) for f in files_to_modify]
+
+    # Persist corrections to implementation_plan.json
+    plan_file = spec_dir / "implementation_plan.json"
+    if plan_file.exists():
+        try:
+            with open(plan_file, encoding="utf-8") as f:
+                plan = json.load(f)
+
+            subtask_id = subtask.get("id")
+            if subtask_id is not None:
+                plan_subtask = find_subtask_in_plan(plan, subtask_id)
+                if plan_subtask:
+                    plan_files = plan_subtask.get("files_to_modify", [])
+                    plan_subtask["files_to_modify"] = [
+                        corrections.get(f, f) for f in plan_files
+                    ]
+
+            write_json_atomic(plan_file, plan)
+            logger.info(
+                f"Persisted {len(corrections)} path correction(s) to implementation_plan.json"
+            )
+        except (OSError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to persist path corrections: {e}")
+
+    return still_missing
+
+
+def _validate_plan_file_paths(spec_dir: Path, project_dir: Path) -> str | None:
+    """
+    Validate all file paths in the implementation plan after planning.
+
+    Builds a file index once, then checks all paths across all subtasks against it.
+    Attempts auto-correction for missing paths. Returns a retry context string for
+    the planner if uncorrectable paths remain, or None if all paths are valid.
+
+    Args:
+        spec_dir: Spec directory containing implementation_plan.json
+        project_dir: Root directory of the project
+
+    Returns:
+        Retry context string if issues remain, None if all OK
+    """
+    plan_file = spec_dir / "implementation_plan.json"
+    if not plan_file.exists():
+        return None
+
+    try:
+        with open(plan_file, encoding="utf-8") as f:
+            plan = json.load(f)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+    resolved_project = project_dir.resolve()
+
+    # First pass: collect all missing files and their suffixes
+    missing_entries: list[
+        tuple[list[str], int, str]
+    ] = []  # (subtask_files_list, index, path)
+    suffixes_needed: set[str] = set()
+
+    for phase in plan.get("phases", []):
+        for subtask in phase.get("subtasks", []):
+            files = subtask.get("files_to_modify", [])
+            for i, file_path in enumerate(files):
+                full_path = (resolved_project / file_path).resolve()
+                if not full_path.is_relative_to(resolved_project):
+                    continue
+                if full_path.exists():
+                    continue
+
+                missing = Path(file_path)
+                if missing.suffix:
+                    suffixes_needed.add(missing.suffix)
+                    missing_entries.append((files, i, file_path))
+
+    if not missing_entries:
+        return None
+
+    # Build index once for all needed suffixes
+    file_index = _build_file_index(project_dir, suffixes_needed)
+
+    all_missing: list[str] = []
+    corrections_made = 0
+
+    for files_list, idx, file_path in missing_entries:
+        missing = Path(file_path)
+        corrected = _find_correct_path_indexed(
+            file_path, missing.parent.parts, file_index
+        )
+        if corrected:
+            files_list[idx] = corrected
+            corrections_made += 1
+            logger.info(f"Post-plan auto-corrected: {file_path} -> {corrected}")
+            print_status(f"Auto-corrected: {file_path} -> {corrected}", "success")
+        else:
+            all_missing.append(file_path)
+
+    # Persist any corrections that were made
+    if corrections_made > 0:
+        try:
+            write_json_atomic(plan_file, plan)
+            logger.info(f"Persisted {corrections_made} post-plan path correction(s)")
+        except (OSError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to persist post-plan corrections: {e}")
+
+    if not all_missing:
+        return None
+
+    return (
+        "## FILE PATH VALIDATION ERRORS\n\n"
+        "The following files referenced in your implementation plan do NOT exist "
+        "and could not be auto-corrected:\n"
+        + "\n".join(f"- `{p}`" for p in all_missing)
+        + "\n\nPlease fix these file paths in the `implementation_plan.json`.\n"
+        "Use the project's actual file structure to find the correct paths.\n"
+        "Common issues: wrong directory nesting, missing index files "
+        "(e.g., `dir/file.ts` should be `dir/file/index.ts`)."
+    )
+
+
+def validate_subtask_files(
+    subtask: dict, project_dir: Path, spec_dir: Path | None = None
+) -> dict:
     """
     Validate all files_to_modify exist before subtask execution.
 
@@ -162,6 +514,15 @@ def validate_subtask_files(subtask: dict, project_dir: Path) -> dict:
         }
 
     if missing_files:
+        # Attempt auto-correction if spec_dir is provided
+        if spec_dir:
+            still_missing = _auto_correct_subtask_files(
+                subtask, missing_files, project_dir, spec_dir
+            )
+            if not still_missing:
+                return {"success": True, "missing_files": [], "invalid_paths": []}
+            missing_files = still_missing
+
         return {
             "success": False,
             "error": f"Planned files do not exist: {', '.join(missing_files)}",
@@ -393,21 +754,12 @@ async def run_autonomous_agent(
     max_iterations: int | None = None,
     verbose: bool = False,
     source_spec_dir: Path | None = None,
-    ralph_config: RalphLoopConfig | None = None,
-    swarm_config: SwarmConfig | None = None,
 ) -> None:
     """
     Run the autonomous agent loop with automatic memory management.
 
     The agent can use subagents (via Task tool) for parallel execution if needed.
     This is decided by the agent itself based on the task complexity.
-
-    When ralph_config is provided and enabled, the agent runs in Ralph Wiggum
-    iterative loop mode with:
-    - Extended max iterations for overnight autonomous runs
-    - Completion promise evaluation after each iteration
-    - Intelligent retry strategies with approach variation
-    - Consecutive failure tracking to prevent infinite loops
 
     Args:
         project_dir: Root directory for the project
@@ -416,67 +768,10 @@ async def run_autonomous_agent(
         max_iterations: Maximum number of iterations (None for unlimited)
         verbose: Whether to show detailed output
         source_spec_dir: Original spec directory in main project (for syncing from worktree)
-        ralph_config: Optional Ralph loop configuration for iterative autonomous mode
-        swarm_config: Optional swarm configuration for parallel multi-worker execution
     """
     # Set environment variable for security hooks to find the correct project directory
     # This is needed because os.getcwd() may return the wrong directory in worktree mode
     os.environ[PROJECT_DIR_ENV_VAR] = str(project_dir.resolve())
-
-    # =============================================================================
-    # RALPH LOOP INITIALIZATION
-    # =============================================================================
-    # Determine if we're running in Ralph Wiggum iterative loop mode
-    ralph_loop_enabled = ralph_config is not None and is_ralph_loop_enabled(
-        ralph_config
-    )
-
-    # Initialize Ralph loop state tracking
-    ralph_consecutive_failures = 0
-    ralph_retry_strategy: RetryStrategy | None = None
-    ralph_completion_promises = []
-
-    if ralph_loop_enabled:
-        logger.info("Ralph Wiggum iterative loop mode enabled")
-        print_status("Ralph Wiggum iterative loop mode: ENABLED", "success")
-
-        # Get configuration values with defaults
-        ralph_max_iterations = get_max_iterations(ralph_config, "coder")
-        ralph_retry_strategy_type = ralph_config.get("retry_strategy", "adaptive")
-        ralph_overnight_mode = ralph_config.get("overnight_mode", False)
-
-        # Initialize retry strategy
-        ralph_retry_strategy = RetryStrategy(strategy_type=ralph_retry_strategy_type)
-
-        # Initialize reporter for iteration tracking
-        ralph_reporter = RalphLoopReporter(spec_dir)
-        ralph_reporter.start_run(ralph_config)
-
-        # Load completion promises from plan, or use defaults
-        ralph_completion_promises = load_promises_from_plan(spec_dir)
-        if not ralph_completion_promises:
-            ralph_completion_promises = get_default_promises()
-
-        # Print Ralph loop configuration
-        print_key_value("Max iterations", str(ralph_max_iterations))
-        print_key_value("Retry strategy", ralph_retry_strategy_type)
-        print_key_value("Completion promises", str(len(ralph_completion_promises)))
-        if ralph_overnight_mode:
-            print_key_value("Overnight mode", "ENABLED")
-        print()
-
-        # Override max_iterations with Ralph loop's max if not explicitly set
-        if max_iterations is None:
-            max_iterations = ralph_max_iterations
-        else:
-            # Use the minimum of explicit max_iterations and Ralph's max
-            max_iterations = min(max_iterations, ralph_max_iterations)
-    else:
-        # Not in Ralph mode - use default safety limits if no max set
-        if max_iterations is None:
-            ralph_max_iterations = RALPH_MAX_CODER_ITERATIONS  # Safety default
-        else:
-            ralph_max_iterations = max_iterations
 
     # Initialize recovery manager (handles memory persistence)
     recovery_manager = RecoveryManager(spec_dir, project_dir)
@@ -744,48 +1039,6 @@ async def run_autonomous_agent(
                 if sync_spec_to_source(spec_dir, source_spec_dir):
                     print_status("Phase transition synced to main project", "success")
 
-            # === SWARM MODE BYPASS ===
-            # After planning completes, if swarm mode is enabled, hand off to
-            # the SwarmOrchestrator for parallel multi-worker execution.
-            if (
-                just_transitioned_from_planning
-                and swarm_config is not None
-                and is_swarm_mode_enabled(swarm_config)
-            ):
-                from swarm.orchestrator import SwarmOrchestrator
-
-                print_status(
-                    f"Swarm mode: Launching {swarm_config.get('max_workers', 3)} parallel workers",
-                    "success",
-                )
-                orchestrator = SwarmOrchestrator(
-                    project_dir=project_dir,
-                    spec_dir=spec_dir,
-                    model=model,
-                    swarm_config=swarm_config,
-                    recovery_manager=recovery_manager,
-                    task_logger=task_logger,
-                )
-                await orchestrator.run_swarm_build()
-
-                # After swarm completes, check if build is done
-                if is_build_complete(spec_dir):
-                    print_build_complete_banner(spec_dir)
-                    status_manager.update(state=BuildState.COMPLETE)
-                    if task_logger:
-                        task_logger.end_phase(
-                            LogPhase.CODING,
-                            success=True,
-                            message="All subtasks completed via swarm mode",
-                        )
-                    break
-
-                # If not fully complete, fall through to normal sequential processing
-                print_status(
-                    "Swarm mode finished with remaining tasks, continuing sequentially",
-                    "warning",
-                )
-
             if not next_subtask:
                 # FIX for Issue #495: Race condition after planning phase
                 # The implementation_plan.json may not be fully flushed to disk yet,
@@ -819,7 +1072,10 @@ async def run_autonomous_agent(
 
             # Validate that all files_to_modify exist before attempting execution
             # This prevents infinite retry loops when implementation plan references non-existent files
-            validation_result = validate_subtask_files(next_subtask, project_dir)
+            # Pass spec_dir to enable auto-correction of wrong paths
+            validation_result = validate_subtask_files(
+                next_subtask, project_dir, spec_dir
+            )
             if not validation_result["success"]:
                 # File validation failed - record error and skip session
                 error_msg = validation_result["error"]
@@ -853,6 +1109,11 @@ async def run_autonomous_agent(
                         subtask_id,
                         f"File validation failed after {attempt_count} attempts: {error_msg}",
                     )
+                    emit_phase(
+                        ExecutionPhase.FAILED,
+                        f"Subtask {subtask_id} stuck: file validation failed",
+                        subtask=subtask_id,
+                    )
                     print_status(
                         f"Subtask {subtask_id} marked as STUCK after {attempt_count} failed validation attempts",
                         "error",
@@ -869,49 +1130,6 @@ async def run_autonomous_agent(
                 # Small delay before retry
                 await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
                 continue  # Skip to next iteration
-
-            # Check for parallel execution opportunities
-            # If the current phase is parallel_safe and has multiple pending subtasks,
-            # we can run them concurrently using sub-agents
-            plan = load_implementation_plan(spec_dir)
-            if plan and should_use_parallel_execution(spec_dir, plan):
-                phase = find_phase_for_subtask(plan, subtask_id) if subtask_id else None
-                if phase and phase.get("parallel_safe", False):
-                    parallelizable = await get_parallelizable_subtasks(spec_dir, plan)
-                    if len(parallelizable) >= 2:
-                        print_status(
-                            f"Found {len(parallelizable)} parallelizable subtasks",
-                            "success",
-                        )
-
-                        # Run parallel execution
-                        parallel_results = await run_parallel_phase(
-                            project_dir=project_dir,
-                            spec_dir=spec_dir,
-                            plan=plan,
-                            phase=phase,
-                            model=phase_model,
-                            session_num=iteration,
-                            recovery_manager=recovery_manager,
-                        )
-
-                        if parallel_results:
-                            # Update subtask counts after parallel execution
-                            subtasks = count_subtasks_detailed(spec_dir)
-                            status_manager.update_subtasks(
-                                completed=subtasks["completed"],
-                                total=subtasks["total"],
-                                in_progress=0,
-                            )
-
-                            # Sync changes to source spec dir
-                            if sync_spec_to_source(spec_dir, source_spec_dir):
-                                print_status("Parallel results synced", "success")
-
-                            # Skip to next iteration to pick up remaining work
-                            iteration += parallel_results.total_subtasks - 1
-                            await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
-                            continue
 
             # Create client for coding phase (after file validation passes)
             client = create_client(
@@ -980,7 +1198,6 @@ async def run_autonomous_agent(
             task_logger.set_session(iteration)
 
         # Run session with async context manager
-        session_start_time = time.time()
         async with client:
             status, response, error_info = await run_agent_session(
                 client, prompt, spec_dir, verbose, phase=current_log_phase
@@ -990,8 +1207,28 @@ async def run_autonomous_agent(
         if is_planning_phase and status != "error":
             valid, errors = _validate_and_fix_implementation_plan()
             if valid:
-                plan_validated = True
-                planning_retry_context = None
+                # Fix 5: Validate file paths in the newly created plan
+                path_issues = _validate_plan_file_paths(spec_dir, project_dir)
+                if (
+                    path_issues
+                    and planning_validation_failures < max_planning_validation_retries
+                ):
+                    planning_validation_failures += 1
+                    planning_retry_context = path_issues
+                    print_status(
+                        "Plan has invalid file paths - retrying planner",
+                        "warning",
+                    )
+                    first_run = True
+                    status = "continue"
+                else:
+                    if path_issues:
+                        logger.warning(
+                            f"Plan has uncorrectable file paths after "
+                            f"{planning_validation_failures} retries - proceeding anyway"
+                        )
+                    plan_validated = True
+                    planning_retry_context = None
             else:
                 planning_validation_failures += 1
                 if planning_validation_failures >= max_planning_validation_retries:
@@ -1049,6 +1286,11 @@ async def run_autonomous_agent(
                 recovery_manager.mark_subtask_stuck(
                     subtask_id, f"Failed after {attempt_count} attempts"
                 )
+                emit_phase(
+                    ExecutionPhase.FAILED,
+                    f"Subtask {subtask_id} stuck after {attempt_count} attempts",
+                    subtask=subtask_id,
+                )
                 print()
                 print_status(
                     f"Subtask {subtask_id} marked as STUCK after {attempt_count} attempts",
@@ -1069,73 +1311,8 @@ async def run_autonomous_agent(
             if sync_spec_to_source(spec_dir, source_spec_dir):
                 print_status("Implementation plan synced to main project", "success")
 
-        # Record iteration in Ralph reporter
-        if ralph_loop_enabled:
-            session_duration = time.time() - session_start_time
-            ralph_reporter.record_iteration(
-                phase="planning" if current_log_phase == LogPhase.PLANNING else "coder",
-                status="success" if (status != "error") else "error",
-                duration_seconds=session_duration,
-                subtask_id=subtask_id,
-                approach=None,
-            )
-
-        # =============================================================================
-        # RALPH LOOP COMPLETION PROMISE EVALUATION (AFTER SUBTASK COMPLETION)
-        # =============================================================================
-        # When Ralph loop is enabled, evaluate completion promises after each subtask
-        # completion. This allows early exit when all success criteria are met.
-        # Uses evaluate_promises() to check all promises against current project state.
-        if ralph_loop_enabled and ralph_completion_promises:
-            # Evaluate all completion promises after each subtask completes
-            all_promises_met, promise_results = evaluate_promises(
-                ralph_completion_promises,
-                spec_dir,
-                project_dir,
-            )
-
-            # Record promise results in reporter
-            for result in promise_results:
-                ralph_reporter.record_promise_result(result)
-
-            # Log promise evaluation results
-            passed_count = sum(1 for r in promise_results if r.passed)
-            total_count = len(promise_results)
-            logger.info(
-                f"Ralph loop: {passed_count}/{total_count} completion promises passed"
-            )
-
-            if all_promises_met:
-                print()
-                print_status(
-                    f"All completion promises met ({passed_count}/{total_count})",
-                    "success",
-                )
-                # Override status to complete if all promises met
-                status = "complete"
-                # Reset consecutive failures on success
-                ralph_consecutive_failures = 0
-            else:
-                # Show which promises are not yet met
-                failed_promises = [r for r in promise_results if not r.passed]
-                if failed_promises and not ralph_config.get("overnight_mode", False):
-                    print()
-                    print_status(
-                        f"Completion promises: {passed_count}/{total_count} met",
-                        "progress",
-                    )
-                    for result in failed_promises[:3]:  # Show first 3 unmet promises
-                        print(
-                            f"  {icon(Icons.PENDING)} {result.promise.name}: {result.message}"
-                        )
-
         # Handle session status
         if status == "complete":
-            # Reset consecutive failures on completion (Ralph loop)
-            if ralph_loop_enabled:
-                ralph_consecutive_failures = 0
-                logger.info("Ralph loop: Build complete, all promises met")
-
             # Don't emit COMPLETE here - subtasks are done but QA hasn't run yet
             # QA loop will emit COMPLETE after actual approval
             print_build_complete_banner(spec_dir)
@@ -1158,10 +1335,6 @@ async def run_autonomous_agent(
             break
 
         elif status == "continue":
-            # Reset consecutive failures on progress (Ralph loop)
-            if ralph_loop_enabled:
-                ralph_consecutive_failures = 0
-
             # Reset error tracking on successful session
             _reset_concurrency_state()
 
@@ -1416,120 +1589,19 @@ async def run_autonomous_agent(
                 continue  # Resume the loop
 
             else:
-                # Other errors - check Ralph loop first, then standard retry
+                # Other errors - use standard retry logic
                 print_status("Session encountered an error", "error")
-
-                # =============================================================================
-                # RALPH LOOP CONSECUTIVE FAILURE TRACKING
-                # =============================================================================
-                if ralph_loop_enabled:
-                    ralph_consecutive_failures += 1
-                    logger.warning(
-                        f"Ralph loop: consecutive failure {ralph_consecutive_failures}/{RALPH_CONSECUTIVE_FAILURE_LIMIT}"
-                    )
-
-                    # Update the last recorded iteration with error details
-                    if ralph_reporter.history:
-                        last_record = ralph_reporter.history[-1]
-                        last_record.error_message = (
-                            str(response)[:200] if response else None
-                        )
-
-                    # Check if we've hit the consecutive failure limit
-                    if ralph_consecutive_failures >= RALPH_CONSECUTIVE_FAILURE_LIMIT:
-                        print_status(
-                            f"Max consecutive failures reached ({RALPH_CONSECUTIVE_FAILURE_LIMIT})",
-                            "error",
-                        )
-                        print(
-                            muted(
-                                "Stopping Ralph loop due to repeated failures without progress"
-                            )
-                        )
-                        emit_phase(
-                            ExecutionPhase.FAILED,
-                            "Ralph loop: max consecutive failures reached",
-                        )
-                        status_manager.update(state=BuildState.ERROR)
-                        break
-
-                    # Use retry strategy to get varied approach suggestion
-                    if ralph_retry_strategy:
-                        decision = ralph_retry_strategy.should_retry(
-                            attempt_count=ralph_consecutive_failures,
-                            error=response if response else None,
-                            consecutive_failures=ralph_consecutive_failures,
-                        )
-
-                        if decision.should_retry and decision.approach:
-                            # Update approach on the last recorded iteration
-                            if ralph_reporter.history:
-                                ralph_reporter.history[
-                                    -1
-                                ].approach = decision.approach.category.value
-                                ralph_reporter._save_history()
-                            print()
-                            print_status(
-                                f"Ralph loop: Trying different approach - {decision.approach.category.value}",
-                                "info",
-                            )
-                            print(muted(f"  {decision.approach.description}"))
-                            if decision.delay_seconds > AUTO_CONTINUE_DELAY_SECONDS:
-                                print(
-                                    muted(
-                                        f"  Waiting {decision.delay_seconds:.1f}s before retry..."
-                                    )
-                                )
-                                await asyncio.sleep(decision.delay_seconds)
-                            else:
-                                await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
-                        else:
-                            print(muted("Will retry with a fresh session..."))
-                            await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
-                    else:
-                        print(muted("Will retry with a fresh session..."))
-                        await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
-                else:
-                    print(muted("Will retry with a fresh session..."))
-                    await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+                print(muted("Will retry with a fresh session..."))
+                status_manager.update(state=BuildState.ERROR)
+                await asyncio.sleep(AUTO_CONTINUE_DELAY_SECONDS)
 
                 # Reset concurrency error tracking on non-concurrency errors
                 _reset_concurrency_state()
-
-            status_manager.update(state=BuildState.ERROR)
 
         # Small delay between sessions
         if max_iterations is None or iteration < max_iterations:
             print("\nPreparing next session...\n")
             await asyncio.sleep(1)
-
-    # =============================================================================
-    # RALPH LOOP REPORT GENERATION
-    # =============================================================================
-    # Generate Ralph loop report at the end of the run when Ralph mode is enabled.
-    # This provides a comprehensive summary of the overnight run for review.
-    if ralph_loop_enabled:
-        completed, total = count_subtasks(spec_dir)
-
-        # Determine final status based on how the loop ended
-        if completed == total:
-            ralph_final_status = "completed"
-        elif max_iterations and iteration >= max_iterations:
-            ralph_final_status = "max_iterations"
-        elif ralph_consecutive_failures >= RALPH_CONSECUTIVE_FAILURE_LIMIT:
-            ralph_final_status = "failed"
-        else:
-            ralph_final_status = "interrupted"
-
-        # Finish the run and generate the report
-        ralph_reporter.finish_run(
-            final_status=ralph_final_status,
-            subtasks_completed=completed,
-            subtasks_total=total,
-        )
-        report_path = ralph_reporter.generate_report()
-        logger.info(f"Ralph loop report generated: {report_path}")
-        print_status(f"Ralph loop report saved: {report_path.name}", "success")
 
     # Final summary
     content = [
@@ -1578,4 +1650,24 @@ async def run_autonomous_agent(
     if completed == total:
         status_manager.update(state=BuildState.COMPLETE)
     else:
-        status_manager.update(state=BuildState.PAUSED)
+        # Check if all remaining subtasks are stuck — if so, this is an error, not a pause
+        all_remaining_stuck = False
+        if stuck_subtasks:
+            stuck_ids = {s["subtask_id"] for s in stuck_subtasks}
+            plan = load_implementation_plan(spec_dir)
+            if plan:
+                all_remaining_stuck = True
+                for phase in plan.get("phases", []):
+                    for s in phase.get("subtasks", []):
+                        if s.get("status") != "completed":
+                            if s.get("id") not in stuck_ids:
+                                all_remaining_stuck = False
+                                break
+                    if not all_remaining_stuck:
+                        break
+
+        if all_remaining_stuck and stuck_subtasks:
+            emit_phase(ExecutionPhase.FAILED, "All remaining subtasks are stuck")
+            status_manager.update(state=BuildState.ERROR)
+        else:
+            status_manager.update(state=BuildState.PAUSED)

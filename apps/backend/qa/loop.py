@@ -6,8 +6,6 @@ Main QA loop that coordinates reviewer and fixer sessions until
 approval or max iterations.
 """
 
-from __future__ import annotations
-
 import os
 import time as time_module
 from pathlib import Path
@@ -30,15 +28,7 @@ from phase_config import (
     get_phase_model_betas,
 )
 from phase_event import ExecutionPhase, emit_phase
-from progress import count_subtasks, is_build_complete
-from ralph_loop.config import (
-    RalphLoopConfig,
-    is_ralph_loop_enabled,
-)
-from ralph_loop.config import (
-    get_max_iterations as get_ralph_max_iterations,
-)
-from ralph_loop.strategy import RetryStrategy
+from progress import count_subtasks, is_build_ready_for_qa
 from security.constants import PROJECT_DIR_ENV_VAR
 from task_logger import (
     LogPhase,
@@ -77,7 +67,6 @@ async def run_qa_validation_loop(
     spec_dir: Path,
     model: str,
     verbose: bool = False,
-    ralph_config: RalphLoopConfig | None = None,
 ) -> bool:
     """
     Run the full QA validation loop.
@@ -92,14 +81,12 @@ async def run_qa_validation_loop(
     - Iteration tracking with detailed history
     - Recurring issue detection (3+ occurrences -> human escalation)
     - No-test project handling
-    - Ralph loop mode for extended overnight runs
 
     Args:
         project_dir: Project root directory
         spec_dir: Spec directory
         model: Claude model to use
         verbose: Whether to show detailed output
-        ralph_config: Optional Ralph loop configuration for extended iterations
 
     Returns:
         True if QA approved, False otherwise
@@ -109,30 +96,6 @@ async def run_qa_validation_loop(
     os.environ[PROJECT_DIR_ENV_VAR] = str(project_dir.resolve())
     task_event_emitter = TaskEventEmitter.from_spec_dir(spec_dir)
 
-    # Determine max iterations based on Ralph loop config
-    ralph_enabled = ralph_config is not None and is_ralph_loop_enabled(ralph_config)
-    ralph_overnight_mode = False
-    ralph_retry_strategy: RetryStrategy | None = None
-    ralph_consecutive_failures = 0
-
-    if ralph_enabled:
-        max_iterations = get_ralph_max_iterations(ralph_config, "qa")
-        ralph_overnight_mode = ralph_config.get("overnight_mode", False)
-        ralph_retry_strategy_type = ralph_config.get("retry_strategy", "adaptive")
-
-        # Initialize retry strategy for QA loop
-        ralph_retry_strategy = RetryStrategy(strategy_type=ralph_retry_strategy_type)
-
-        debug(
-            "qa_loop",
-            "Ralph loop mode enabled for QA",
-            max_qa_iterations=max_iterations,
-            overnight_mode=ralph_overnight_mode,
-            retry_strategy=ralph_retry_strategy_type,
-        )
-    else:
-        max_iterations = MAX_QA_ITERATIONS
-
     debug_section("qa_loop", "QA Validation Loop")
     debug(
         "qa_loop",
@@ -140,8 +103,7 @@ async def run_qa_validation_loop(
         project_dir=str(project_dir),
         spec_dir=str(spec_dir),
         model=model,
-        max_iterations=max_iterations,
-        ralph_enabled=ralph_enabled,
+        max_iterations=MAX_QA_ITERATIONS,
     )
 
     print("\n" + "=" * 70)
@@ -152,20 +114,31 @@ async def run_qa_validation_loop(
     # Initialize task logger for the validation phase
     task_logger = get_task_logger(spec_dir)
 
-    # Verify build is complete
-    if not is_build_complete(spec_dir):
-        debug_warning("qa_loop", "Build is not complete, cannot run QA")
-        print("\n❌ Build is not complete. Cannot run QA validation.")
-        completed, total = count_subtasks(spec_dir)
-        debug("qa_loop", "Build progress", completed=completed, total=total)
-        print(f"   Progress: {completed}/{total} subtasks completed")
-        return False
+    # Check if there's pending human feedback that needs to be processed
+    fix_request_file = spec_dir / "QA_FIX_REQUEST.md"
+    has_human_feedback = fix_request_file.exists()
+
+    # Human feedback takes priority -- if the user explicitly asked to proceed,
+    # skip the build completeness gate entirely
+    if not has_human_feedback:
+        # Verify build is ready for QA (all subtasks in terminal state)
+        if not is_build_ready_for_qa(spec_dir):
+            debug_warning(
+                "qa_loop", "Build is not ready for QA - subtasks still in progress"
+            )
+            print("\n\u274c Build is not ready for QA validation.")
+            completed, total = count_subtasks(spec_dir)
+            debug("qa_loop", "Build progress", completed=completed, total=total)
+            print(
+                f"   Progress: {completed}/{total} subtasks in terminal state (completed/failed/stuck)"
+            )
+            return False
 
     # Emit phase event at start of QA validation (before any early returns)
     emit_phase(ExecutionPhase.QA_REVIEW, "Starting QA validation")
     task_event_emitter.emit(
         "QA_STARTED",
-        {"iteration": 1, "maxIterations": max_iterations},
+        {"iteration": 1, "maxIterations": MAX_QA_ITERATIONS},
     )
 
     fast_mode = get_fast_mode(spec_dir)
@@ -174,14 +147,10 @@ async def run_qa_validation_loop(
         f"[Fast Mode] {'ENABLED' if fast_mode else 'disabled'} for QA validation",
     )
 
-    # Check if there's pending human feedback that needs to be processed
-    fix_request_file = spec_dir / "QA_FIX_REQUEST.md"
-    has_human_feedback = fix_request_file.exists()
-
     # Check if already approved - but if there's human feedback, we need to process it first
     if is_qa_approved(spec_dir) and not has_human_feedback:
         debug_success("qa_loop", "Build already approved by QA")
-        print("\n✅ Build already approved by QA.")
+        print("\n\u2705 Build already approved by QA.")
         task_event_emitter.emit(
             "QA_PASSED",
             {"iteration": 0, "testsRun": {}},
@@ -200,7 +169,7 @@ async def run_qa_validation_loop(
             "QA_FIXING_STARTED",
             {"iteration": 0},
         )
-        print("\n📝 Human feedback detected. Running QA Fixer first...")
+        print("\n\ud83d\udcdd Human feedback detected. Running QA Fixer first...")
 
         # Get model and thinking budget for fixer (uses QA phase config)
         qa_model = get_phase_model(spec_dir, "qa", model)
@@ -233,7 +202,7 @@ async def run_qa_validation_loop(
                 "QA_FIXING_FAILED",
                 {"iteration": 0, "error": fix_response[:200]},
             )
-            print(f"\n❌ Fixer encountered error: {fix_response}")
+            print(f"\n\u274c Fixer encountered error: {fix_response}")
             # Only delete fix request file on permanent errors
             # Preserve on transient errors (rate limit, concurrency) so user feedback isn't lost
             is_transient = fix_error_info.get("type") in (
@@ -262,7 +231,7 @@ async def run_qa_validation_loop(
             "QA_FIXING_COMPLETE",
             {"iteration": 0},
         )
-        print("\n✅ Fixes applied based on human feedback. Running QA validation...")
+        print("\n\u2705 Fixes applied based on human feedback. Running QA validation...")
 
         # Remove the fix request file after processing
         try:
@@ -274,10 +243,10 @@ async def run_qa_validation_loop(
 
     # Check for no-test projects
     if is_no_test_project(spec_dir, project_dir):
-        print("\n⚠️  No test framework detected in project.")
+        print("\n\u26a0\ufe0f  No test framework detected in project.")
         print("Creating manual test plan...")
         manual_plan = create_manual_test_plan(spec_dir, spec_dir.name)
-        print(f"📝 Manual test plan created: {manual_plan}")
+        print(f"\ud83d\udcdd Manual test plan created: {manual_plan}")
         print("\nNote: Automated testing will be limited for this project.")
 
     # Start validation phase in task logger
@@ -299,35 +268,19 @@ async def run_qa_validation_loop(
     last_error_context = None  # Track error for self-correction feedback
     max_iterations_emitted = False
 
-    while qa_iteration < max_iterations:
+    while qa_iteration < MAX_QA_ITERATIONS:
         qa_iteration += 1
         iteration_start = time_module.time()
 
         debug_section("qa_loop", f"QA Iteration {qa_iteration}")
         debug(
             "qa_loop",
-            f"Starting iteration {qa_iteration}/{max_iterations}",
+            f"Starting iteration {qa_iteration}/{MAX_QA_ITERATIONS}",
             iteration=qa_iteration,
-            max_iters=max_iterations,
-            ralph_enabled=ralph_enabled,
-            ralph_consecutive_failures=ralph_consecutive_failures
-            if ralph_enabled
-            else None,
-            overnight_mode=ralph_overnight_mode if ralph_enabled else None,
+            max_iterations=MAX_QA_ITERATIONS,
         )
 
-        # Reduce output in overnight mode - only log every 5th iteration or first/last
-        if ralph_overnight_mode:
-            if (
-                qa_iteration == 1
-                or qa_iteration % 5 == 0
-                or qa_iteration == max_iterations
-            ):
-                print(
-                    f"\n--- QA Iteration {qa_iteration}/{max_iterations} (overnight mode) ---"
-                )
-        else:
-            print(f"\n--- QA Iteration {qa_iteration}/{max_iterations} ---")
+        print(f"\n--- QA Iteration {qa_iteration}/{MAX_QA_ITERATIONS} ---")
         emit_phase(
             ExecutionPhase.QA_REVIEW, f"Running QA review iteration {qa_iteration}"
         )
@@ -359,7 +312,7 @@ async def run_qa_validation_loop(
                 project_dir,  # Pass project_dir for capability-based tool injection
                 spec_dir,
                 qa_iteration,
-                max_iterations,
+                MAX_QA_ITERATIONS,
                 verbose,
                 previous_error=last_error_context,  # Pass error context for self-correction
             )
@@ -379,23 +332,12 @@ async def run_qa_validation_loop(
             consecutive_errors = 0
             last_error_context = None
 
-            # Reset Ralph loop state on success
-            if ralph_enabled:
-                ralph_consecutive_failures = 0
-                debug(
-                    "qa_loop",
-                    "Ralph loop: QA approved, state reset",
-                    final_iteration=qa_iteration,
-                    overnight_mode=ralph_overnight_mode,
-                )
-
             # Record successful iteration
             debug_success(
                 "qa_loop",
                 "QA APPROVED",
                 iteration=qa_iteration,
                 duration=f"{iteration_duration:.1f}s",
-                ralph_enabled=ralph_enabled,
             )
             record_iteration(spec_dir, qa_iteration, "approved", [], iteration_duration)
             qa_status = get_qa_signoff_status(spec_dir) or {}
@@ -408,7 +350,7 @@ async def run_qa_validation_loop(
             )
 
             print("\n" + "=" * 70)
-            print("  ✅ QA APPROVED")
+            print("  \u2705 QA APPROVED")
             print("=" * 70)
             print("\nAll acceptance criteria verified.")
             print("The implementation is production-ready.")
@@ -436,27 +378,13 @@ async def run_qa_validation_loop(
             consecutive_errors = 0
             last_error_context = None
 
-            # Reset Ralph loop consecutive failures on valid response (progress made)
-            if ralph_enabled:
-                ralph_consecutive_failures = 0
-
             debug_warning(
                 "qa_loop",
                 "QA REJECTED",
                 iteration=qa_iteration,
                 duration=f"{iteration_duration:.1f}s",
-                ralph_enabled=ralph_enabled,
             )
-
-            # Reduce output in overnight mode
-            if not ralph_overnight_mode:
-                print(
-                    f"\n❌ QA found issues. Iteration {qa_iteration}/{max_iterations}"
-                )
-            else:
-                # In overnight mode, only log rejections periodically
-                if qa_iteration % 5 == 0:
-                    print(f"\n❌ QA rejected (iteration {qa_iteration})")
+            print(f"\n\u274c QA found issues. Iteration {qa_iteration}/{MAX_QA_ITERATIONS}")
 
             # Get issues from QA report
             qa_status = get_qa_signoff_status(spec_dir)
@@ -501,7 +429,7 @@ async def run_qa_validation_loop(
                     threshold=RECURRING_ISSUE_THRESHOLD,
                 )
                 print(
-                    f"\n⚠️  Recurring issues detected ({len(recurring_issues)} issue(s) appeared {RECURRING_ISSUE_THRESHOLD}+ times)"
+                    f"\n\u26a0\ufe0f  Recurring issues detected ({len(recurring_issues)} issue(s) appeared {RECURRING_ISSUE_THRESHOLD}+ times)"
                 )
                 print("Escalating to human review due to recurring issues...")
 
@@ -524,7 +452,7 @@ async def run_qa_validation_loop(
                     )
                 task_event_emitter.emit(
                     "QA_MAX_ITERATIONS",
-                    {"iteration": qa_iteration, "maxIterations": max_iterations},
+                    {"iteration": qa_iteration, "maxIterations": MAX_QA_ITERATIONS},
                 )
                 max_iterations_emitted = True
 
@@ -535,15 +463,15 @@ async def run_qa_validation_loop(
                 issues_count = len(current_issues)
                 await linear_qa_rejected(spec_dir, issues_count, qa_iteration)
 
-            if qa_iteration >= max_iterations:
-                print("\n⚠️  Maximum QA iterations reached.")
+            if qa_iteration >= MAX_QA_ITERATIONS:
+                print("\n\u26a0\ufe0f  Maximum QA iterations reached.")
                 print("Escalating to human review.")
                 if not max_iterations_emitted:
                     task_event_emitter.emit(
                         "QA_MAX_ITERATIONS",
                         {
                             "iteration": qa_iteration,
-                            "maxIterations": max_iterations,
+                            "maxIterations": MAX_QA_ITERATIONS,
                         },
                     )
                     max_iterations_emitted = True
@@ -591,7 +519,7 @@ async def run_qa_validation_loop(
 
             if fix_status == "error":
                 debug_error("qa_loop", f"Fixer error: {fix_response[:200]}")
-                print(f"\n❌ Fixer encountered error: {fix_response}")
+                print(f"\n\u274c Fixer encountered error: {fix_response}")
                 record_iteration(
                     spec_dir,
                     qa_iteration,
@@ -605,37 +533,20 @@ async def run_qa_validation_loop(
                 "QA_FIXING_COMPLETE",
                 {"iteration": qa_iteration},
             )
-            print("\n✅ Fixes applied. Re-running QA validation...")
+            print("\n\u2705 Fixes applied. Re-running QA validation...")
 
         elif status == "error":
             consecutive_errors += 1
-
-            # Track Ralph loop consecutive failures
-            if ralph_enabled:
-                ralph_consecutive_failures += 1
-
             debug_error(
                 "qa_loop",
                 f"QA session error: {response[:200]}",
                 consecutive_errors=consecutive_errors,
                 max_consecutive=MAX_CONSECUTIVE_ERRORS,
-                ralph_consecutive_failures=ralph_consecutive_failures
-                if ralph_enabled
-                else None,
             )
-
-            # Reduce error output in overnight mode
-            if not ralph_overnight_mode:
-                print(f"\n❌ QA error: {response}")
-                print(
-                    f"   Consecutive errors: {consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}"
-                )
-            else:
-                # In overnight mode, brief error logging
-                print(
-                    f"\n❌ QA error (iteration {qa_iteration}, errors: {consecutive_errors})"
-                )
-
+            print(f"\n\u274c QA error: {response}")
+            print(
+                f"   Consecutive errors: {consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}"
+            )
             record_iteration(
                 spec_dir,
                 qa_iteration,
@@ -657,10 +568,9 @@ async def run_qa_validation_loop(
                 debug_error(
                     "qa_loop",
                     f"Max consecutive errors ({MAX_CONSECUTIVE_ERRORS}) reached - escalating to human",
-                    ralph_enabled=ralph_enabled,
                 )
                 print(
-                    f"\n⚠️  {MAX_CONSECUTIVE_ERRORS} consecutive errors without progress."
+                    f"\n\u26a0\ufe0f  {MAX_CONSECUTIVE_ERRORS} consecutive errors without progress."
                 )
                 print(
                     "The QA agent is unable to properly update implementation_plan.json."
@@ -683,28 +593,6 @@ async def run_qa_validation_loop(
                     )
                 return False
 
-            # Use retry strategy for approach suggestions when Ralph loop enabled
-            if ralph_enabled and ralph_retry_strategy:
-                decision = ralph_retry_strategy.should_retry(
-                    attempt_count=ralph_consecutive_failures,
-                    error=response if response else None,
-                    consecutive_failures=ralph_consecutive_failures,
-                )
-
-                if decision.should_retry and decision.approach:
-                    debug(
-                        "qa_loop",
-                        f"Ralph loop: Trying approach variation - {decision.approach.category.value}",
-                        delay_seconds=decision.delay_seconds,
-                    )
-                    if not ralph_overnight_mode:
-                        print(f"   Trying approach: {decision.approach.description}")
-                else:
-                    debug(
-                        "qa_loop",
-                        "Ralph loop: Retrying without approach variation",
-                    )
-
             print("Retrying with error feedback...")
 
     # Max iterations reached without approval
@@ -712,23 +600,18 @@ async def run_qa_validation_loop(
     if not max_iterations_emitted:
         task_event_emitter.emit(
             "QA_MAX_ITERATIONS",
-            {"iteration": qa_iteration, "maxIterations": max_iterations},
+            {"iteration": qa_iteration, "maxIterations": MAX_QA_ITERATIONS},
         )
     debug_error(
         "qa_loop",
         "QA VALIDATION INCOMPLETE - max iterations reached",
         iterations=qa_iteration,
-        max_iters=max_iterations,
-        ralph_enabled=ralph_enabled,
-        ralph_consecutive_failures=ralph_consecutive_failures
-        if ralph_enabled
-        else None,
-        overnight_mode=ralph_overnight_mode if ralph_enabled else None,
+        max_iterations=MAX_QA_ITERATIONS,
     )
     print("\n" + "=" * 70)
-    print("  ⚠️  QA VALIDATION INCOMPLETE")
+    print("  \u26a0\ufe0f  QA VALIDATION INCOMPLETE")
     print("=" * 70)
-    print(f"\nReached maximum iterations ({max_iterations}) without approval.")
+    print(f"\nReached maximum iterations ({MAX_QA_ITERATIONS}) without approval.")
     print("\nRemaining issues require human review:")
 
     # Show iteration summary
@@ -742,7 +625,7 @@ async def run_qa_validation_loop(
         unique_issues=summary.get("unique_issues", 0),
     )
     if summary["total_issues"] > 0:
-        print("\n📊 Iteration Summary:")
+        print("\n\ud83d\udcca Iteration Summary:")
         print(f"   Total iterations: {len(history)}")
         print(f"   Total issues found: {summary['total_issues']}")
         print(f"   Unique issues: {summary['unique_issues']}")
