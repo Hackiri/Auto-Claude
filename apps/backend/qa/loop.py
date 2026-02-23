@@ -179,7 +179,7 @@ async def run_qa_validation_loop(
             "QA_FIXING_STARTED",
             {"iteration": 0},
         )
-        print("\n\ud83d\udcdd Human feedback detected. Running QA Fixer first...")
+        print("\n\U0001f4dd Human feedback detected. Running QA Fixer first...")
 
         # Get model and thinking budget for fixer (uses QA phase config)
         qa_model = get_phase_model(spec_dir, "qa", model)
@@ -256,7 +256,7 @@ async def run_qa_validation_loop(
         print("\n\u26a0\ufe0f  No test framework detected in project.")
         print("Creating manual test plan...")
         manual_plan = create_manual_test_plan(spec_dir, spec_dir.name)
-        print(f"\ud83d\udcdd Manual test plan created: {manual_plan}")
+        print(f"\U0001f4dd Manual test plan created: {manual_plan}")
         print("\nNote: Automated testing will be limited for this project.")
 
     # Start validation phase in task logger
@@ -635,7 +635,7 @@ async def run_qa_validation_loop(
         unique_issues=summary.get("unique_issues", 0),
     )
     if summary["total_issues"] > 0:
-        print("\n\ud83d\udcca Iteration Summary:")
+        print("\n\U0001f4ca Iteration Summary:")
         print(f"   Total iterations: {len(history)}")
         print(f"   Total issues found: {summary['total_issues']}")
         print(f"   Unique issues: {summary['unique_issues']}")
