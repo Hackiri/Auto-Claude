@@ -879,6 +879,8 @@ class TestRunCliBuildFlow:
                 skip_qa=False,
                 force_bypass_approval=False,
                 base_branch=None,
+                ralph_loop=False,
+                swarm=False,
             )
 
     def test_build_with_all_options(self, mock_utils, mock_debug):
@@ -917,6 +919,8 @@ class TestRunCliBuildFlow:
                 skip_qa=True,
                 force_bypass_approval=True,
                 base_branch="develop",
+                ralph_loop=False,
+                swarm=False,
             )
 
     def test_build_with_direct_mode(self, mock_utils, mock_debug):

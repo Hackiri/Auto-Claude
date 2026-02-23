@@ -542,8 +542,11 @@ def get_next_subtask(spec_dir: Path) -> dict | None:
             pending_ids = []
             subtask_by_id = {}
             for subtask in phase.get("subtasks", phase.get("chunks", [])):
-                status = subtask.get("status", "pending")
-                subtask_id = subtask.get("id")
+                # Normalize aliases early so subtask_id / title variants are
+                # available as id / description for the rest of the pipeline.
+                normalized, _ = normalize_subtask_aliases(subtask)
+                status = normalized.get("status", "pending")
+                subtask_id = normalized.get("id")
 
                 # Skip stuck subtasks
                 if subtask_id in stuck_subtask_ids:
@@ -551,16 +554,15 @@ def get_next_subtask(spec_dir: Path) -> dict | None:
 
                 if status in {"pending", "not_started", "not started"} and subtask_id:
                     pending_ids.append(subtask_id)
-                    subtask_by_id[subtask_id] = subtask
+                    subtask_by_id[subtask_id] = normalized
 
             # Use DependencyAnalyzer to find which pending subtasks are ready
             ready_ids = analyzer.get_ready_subtasks(pending_ids, completed_subtask_ids)
 
             # Return the first ready subtask
             for subtask_id in ready_ids:
-                subtask = subtask_by_id.get(subtask_id)
-                if subtask:
-                    subtask_out, _changed = normalize_subtask_aliases(subtask)
+                subtask_out = subtask_by_id.get(subtask_id)
+                if subtask_out:
                     subtask_out["status"] = "pending"
                     return {
                         **subtask_out,

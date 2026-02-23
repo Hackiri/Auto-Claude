@@ -241,6 +241,12 @@ def temp_git_repo(temp_dir: Path) -> Generator[Path, None, None]:
             cwd=temp_dir, capture_output=True
         )
 
+        # Disable GPG signing to prevent failures when global config requires it
+        subprocess.run(
+            ["git", "config", "commit.gpgsign", "false"],
+            cwd=temp_dir, capture_output=True
+        )
+
         # Create initial commit
         test_file = temp_dir / "README.md"
         test_file.write_text("# Test Project\n")
