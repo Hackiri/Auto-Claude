@@ -299,7 +299,11 @@
     "enableSwarmModeDescription": "Exécuter plusieurs agents en parallèle pour des builds plus rapides. Exclusif avec Ralph Loop.",
     "swarmMode": {
       "maxWorkers": "Nombre max de workers",
-      "maxWorkersHint": "Nombre d'agents concurrents (1-10). Plus de workers = plus rapide mais plus d'utilisation API."
+      "maxWorkersHint": "Nombre d'agents concurrents (1-10). Plus de workers = plus rapide mais plus d'utilisation API.",
+      "monitor": "Moniteur Essaim",
+      "workersActive_one": "{{count}} worker actif",
+      "workersActive_other": "{{count}} workers actifs",
+      "done": "terminé"
     },
     "fastModeLabel": "Mode Rapide",
     "fastModeDescription": "Même modèle Opus 4.6 avec une sortie plus rapide. Coût plus élevé par token.",

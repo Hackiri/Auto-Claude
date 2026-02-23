@@ -26,13 +26,17 @@ export function SwarmMonitor({ swarmState }: SwarmMonitorProps) {
   const activeWorkers = swarmState.workers.filter(w => w.status === 'working').length;
   const taskEntries = Object.entries(swarmState.tasks);
 
+  if (swarmState.workers.length === 0) {
+    return null;
+  }
+
   return (
     <div className="space-y-3 p-3 rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Swarm Monitor</h4>
+        <h4 className="text-sm font-medium">{t('tasks:swarmMode.monitor')}</h4>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>{swarmState.completed_tasks}/{swarmState.total_tasks} {t('tasks:detail.subtasksCompleted', { defaultValue: 'completed' })}</span>
-          <span>{activeWorkers} {activeWorkers === 1 ? 'worker' : 'workers'} active</span>
+          <span>{t('tasks:swarmMode.workersActive', { count: activeWorkers })}</span>
         </div>
       </div>
 
@@ -51,7 +55,7 @@ export function SwarmMonitor({ swarmState }: SwarmMonitorProps) {
             {worker.current_task && (
               <div className="truncate text-[10px] opacity-75 mt-0.5">{worker.current_task}</div>
             )}
-            <div className="text-[10px] opacity-60 mt-0.5">{worker.tasks_completed} done</div>
+            <div className="text-[10px] opacity-60 mt-0.5">{worker.tasks_completed} {t('tasks:swarmMode.done')}</div>
           </div>
         ))}
       </div>

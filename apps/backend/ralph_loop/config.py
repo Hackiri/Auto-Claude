@@ -96,21 +96,39 @@ def _normalize_config(raw_config: dict[str, Any]) -> RalphLoopConfig:
     """
     Normalize and validate raw configuration from JSON.
 
+    Accepts both camelCase (from frontend/JS) and snake_case keys.
+
     Args:
         raw_config: Raw dictionary from task_metadata.json
 
     Returns:
         Normalized RalphLoopConfig
     """
+    # Map camelCase keys to snake_case so both conventions work.
+    # The frontend writes camelCase (JS convention), CLI uses snake_case.
+    _CAMEL_TO_SNAKE = {
+        "maxCoderIterations": "max_coder_iterations",
+        "maxQaIterations": "max_qa_iterations",
+        "completionPromiseTimeout": "completion_promise_timeout",
+        "retryStrategy": "retry_strategy",
+        "overnightMode": "overnight_mode",
+    }
+    normalized: dict[str, Any] = {}
+    for key, value in raw_config.items():
+        snake_key = _CAMEL_TO_SNAKE.get(key, key)
+        # Don't overwrite a snake_case key that was already set
+        if snake_key not in normalized:
+            normalized[snake_key] = value
+
     config: RalphLoopConfig = {}
 
     # enabled - boolean
-    if "enabled" in raw_config:
-        config["enabled"] = bool(raw_config["enabled"])
+    if "enabled" in normalized:
+        config["enabled"] = bool(normalized["enabled"])
 
     # max_coder_iterations - positive integer
-    if "max_coder_iterations" in raw_config:
-        value = raw_config["max_coder_iterations"]
+    if "max_coder_iterations" in normalized:
+        value = normalized["max_coder_iterations"]
         if isinstance(value, int) and value > 0:
             config["max_coder_iterations"] = value
         else:
@@ -119,16 +137,16 @@ def _normalize_config(raw_config: dict[str, Any]) -> RalphLoopConfig:
             )
 
     # max_qa_iterations - positive integer
-    if "max_qa_iterations" in raw_config:
-        value = raw_config["max_qa_iterations"]
+    if "max_qa_iterations" in normalized:
+        value = normalized["max_qa_iterations"]
         if isinstance(value, int) and value > 0:
             config["max_qa_iterations"] = value
         else:
             logging.warning(f"Invalid max_qa_iterations value: {value}. Using default.")
 
     # completion_promise_timeout - positive integer (seconds)
-    if "completion_promise_timeout" in raw_config:
-        value = raw_config["completion_promise_timeout"]
+    if "completion_promise_timeout" in normalized:
+        value = normalized["completion_promise_timeout"]
         if isinstance(value, int) and value > 0:
             config["completion_promise_timeout"] = value
         else:
@@ -137,8 +155,8 @@ def _normalize_config(raw_config: dict[str, Any]) -> RalphLoopConfig:
             )
 
     # retry_strategy - validated string
-    if "retry_strategy" in raw_config:
-        value = raw_config["retry_strategy"]
+    if "retry_strategy" in normalized:
+        value = normalized["retry_strategy"]
         if value in VALID_RETRY_STRATEGIES:
             config["retry_strategy"] = value
         else:
@@ -148,8 +166,8 @@ def _normalize_config(raw_config: dict[str, Any]) -> RalphLoopConfig:
             )
 
     # overnight_mode - boolean
-    if "overnight_mode" in raw_config:
-        config["overnight_mode"] = bool(raw_config["overnight_mode"])
+    if "overnight_mode" in normalized:
+        config["overnight_mode"] = bool(normalized["overnight_mode"])
 
     return config
 

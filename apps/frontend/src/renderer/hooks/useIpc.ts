@@ -256,6 +256,11 @@ export function useIpcListeners(): void {
         if (!isTaskForCurrentProject(projectId)) return;
         queueUpdate(taskId, { status, reviewReason });
 
+        // Clear swarm state when task finishes to prevent stale UI
+        if (status === 'done' || status === 'pr_created' || status === 'error') {
+          useTaskStore.getState().updateSwarmState(null);
+        }
+
         // Sync roadmap feature when task completes
         if (status === 'done' || status === 'pr_created') {
           useRoadmapStore.getState().markFeatureDoneBySpecId(taskId);

@@ -348,6 +348,7 @@ def handle_build_command(
             model=model,
             max_iterations=max_iterations,
             verbose=verbose,
+            source_spec_dir=source_spec_dir,
             ralph_config=ralph_config,
             swarm_config=swarm_config,
         )
@@ -368,6 +369,7 @@ def _handle_build_interrupt(
     model: str,
     max_iterations: int | None,
     verbose: bool,
+    source_spec_dir: Path | None = None,
     ralph_config: dict | None = None,
     swarm_config: dict | None = None,
 ) -> None:
@@ -382,7 +384,9 @@ def _handle_build_interrupt(
         model: Model being used
         max_iterations: Maximum iterations
         verbose: Verbose mode flag
+        source_spec_dir: Original spec directory for syncing back from worktree
         ralph_config: Ralph loop configuration (optional)
+        swarm_config: Swarm mode configuration (optional)
     """
     from agent import run_autonomous_agent
 
@@ -489,7 +493,9 @@ def _handle_build_interrupt(
                     model=model,
                     max_iterations=max_iterations,
                     verbose=verbose,
+                    source_spec_dir=source_spec_dir,
                     ralph_config=ralph_config,
+                    swarm_config=swarm_config,
                 )
             )
             # Build completed or was interrupted again - exit

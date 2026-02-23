@@ -104,7 +104,13 @@ class SwarmOrchestrator:
 
         # Spawn worker coroutines
         tasks = [self._worker_loop(worker) for worker in self._workers]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Log any worker-level exceptions that were silently captured
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                worker_id = f"worker-{i + 1}"
+                logger.error(f"{worker_id}: Worker coroutine failed with: {result}")
 
         # Mark all workers as done
         for worker in self._workers:
@@ -117,6 +123,9 @@ class SwarmOrchestrator:
         """
         Main loop for a single worker: claim tasks and execute them until none remain.
         """
+        consecutive_idle = 0
+        max_consecutive_idle = 60  # ~3 minutes of idle (3s sleep each)
+
         while True:
             # Check if build is complete
             if is_build_complete(self.spec_dir):
@@ -130,10 +139,22 @@ class SwarmOrchestrator:
 
             subtask = self._claim_next_task(worker.id)
             if subtask is None:
+                consecutive_idle += 1
+
                 # No more tasks available
                 worker.status = "idle"
                 worker.current_task = None
                 self._write_swarm_state()
+
+                # Safety: exit if idle too long (all tasks may be stuck/failed)
+                if consecutive_idle >= max_consecutive_idle:
+                    logger.warning(
+                        f"{worker.id}: Idle for {consecutive_idle * 3}s with no "
+                        f"claimable tasks — exiting to prevent infinite loop"
+                    )
+                    worker.status = "done"
+                    self._write_swarm_state()
+                    break
 
                 # Wait briefly and check again (other workers may fail and release tasks)
                 await asyncio.sleep(3)
@@ -145,6 +166,9 @@ class SwarmOrchestrator:
                     self._write_swarm_state()
                     break
                 continue
+
+            # Reset idle counter on successful claim
+            consecutive_idle = 0
 
             subtask_id = subtask.get("id", "unknown")
             worker.status = "working"
@@ -189,29 +213,39 @@ class SwarmOrchestrator:
         """
         Atomically claim the next available subtask using file locking.
 
+        Uses the same lock as _update_task_status to prevent concurrent writes
+        to implementation_plan.json.
+
         Returns:
             The claimed subtask dict, or None if no tasks available.
         """
+        plan_path = self.spec_dir / "implementation_plan.json"
         try:
-            with FileLock(self._lock_file, timeout=5.0):
+            with FileLock(plan_path, timeout=5.0):
                 subtask = get_next_subtask(self.spec_dir)
                 if subtask is None:
                     return None
 
                 # Mark as in_progress in the implementation plan to prevent
-                # other workers from claiming it
+                # other workers from claiming it (done under the same lock)
                 subtask_id = subtask.get("id")
                 if subtask_id:
-                    self._mark_subtask_in_progress(subtask_id)
+                    self._mark_subtask_in_progress(subtask_id, plan_path)
 
                 return subtask
         except OSError as e:
             logger.error(f"Failed to acquire lock for task claiming: {e}")
             return None
 
-    def _mark_subtask_in_progress(self, subtask_id: str) -> None:
-        """Mark a subtask as in_progress in the implementation plan."""
-        plan_path = self.spec_dir / "implementation_plan.json"
+    def _mark_subtask_in_progress(
+        self, subtask_id: str, plan_path: Path | None = None
+    ) -> None:
+        """Mark a subtask as in_progress in the implementation plan.
+
+        Caller must hold the plan lock when plan_path is provided.
+        """
+        if plan_path is None:
+            plan_path = self.spec_dir / "implementation_plan.json"
         if not plan_path.exists():
             return
 
@@ -225,8 +259,21 @@ class SwarmOrchestrator:
                         subtask["status"] = "in_progress"
                         break
 
-            with open(plan_path, "w") as f:
-                json.dump(plan, f, indent=2)
+            # Atomic write: temp file + rename
+            fd, tmp_path = tempfile.mkstemp(
+                dir=plan_path.parent,
+                prefix=f".{plan_path.name}.tmp.",
+            )
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(plan, f, indent=2)
+                os.replace(tmp_path, plan_path)
+            except Exception:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+                raise
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"Failed to mark subtask {subtask_id} in progress: {e}")
 
@@ -281,7 +328,7 @@ class SwarmOrchestrator:
         from agents.session import run_agent_session
 
         async with client:
-            status, _response = await run_agent_session(
+            status, _response, _error_info = await run_agent_session(
                 client, prompt, self.spec_dir, verbose=False
             )
 
@@ -363,7 +410,11 @@ class SwarmOrchestrator:
             self.task_logger.set_subtask(None)
 
     def _write_swarm_state(self) -> None:
-        """Write current swarm state to swarm_state.json for frontend monitoring."""
+        """Write current swarm state to swarm_state.json for frontend monitoring.
+
+        Uses atomic write (temp file + rename) to prevent the frontend from
+        reading a partially-written JSON file.
+        """
         # Build tasks map from implementation plan
         tasks_map: dict[str, dict[str, Any]] = {}
         plan = self._load_plan()
@@ -405,7 +456,19 @@ class SwarmOrchestrator:
         }
 
         try:
-            with open(self.state_file, "w") as f:
-                json.dump(state, f, indent=2)
+            fd, tmp_path = tempfile.mkstemp(
+                dir=self.state_file.parent,
+                prefix=".swarm_state.tmp.",
+            )
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(state, f, indent=2)
+                os.replace(tmp_path, self.state_file)
+            except Exception:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+                raise
         except OSError as e:
             logger.warning(f"Failed to write swarm state: {e}")

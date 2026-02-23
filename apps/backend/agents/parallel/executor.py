@@ -260,6 +260,7 @@ class ParallelExecutor:
     ) -> list[SubagentResult]:
         """Execute a group of subtasks in parallel."""
         tasks = []
+        active_configs: list[SubagentConfig] = []
 
         for config in configs:
             # Find the full subtask dict
@@ -270,6 +271,7 @@ class ParallelExecutor:
             if not subtask:
                 continue
 
+            active_configs.append(config)
             task = self._execute_single(config, subtask, session_num, mcp_context)
             tasks.append(task)
 
@@ -280,10 +282,11 @@ class ParallelExecutor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Convert exceptions to failed results
+        # Use active_configs (not configs) to maintain 1:1 index mapping with tasks
         final_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                config = configs[i]
+                config = active_configs[i]
                 failed_result = SubagentResult(
                     subtask_id=config.subtask_id,
                     config=config,
@@ -372,7 +375,7 @@ class ParallelExecutor:
 
                 async with client:
                     try:
-                        status, response = await asyncio.wait_for(
+                        status, response, _error_info = await asyncio.wait_for(
                             run_agent_session(
                                 client,
                                 prompt,

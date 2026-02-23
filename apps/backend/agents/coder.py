@@ -754,6 +754,8 @@ async def run_autonomous_agent(
     max_iterations: int | None = None,
     verbose: bool = False,
     source_spec_dir: Path | None = None,
+    ralph_config: dict | None = None,
+    swarm_config: dict | None = None,
 ) -> None:
     """
     Run the autonomous agent loop with automatic memory management.
@@ -768,10 +770,22 @@ async def run_autonomous_agent(
         max_iterations: Maximum number of iterations (None for unlimited)
         verbose: Whether to show detailed output
         source_spec_dir: Original spec directory in main project (for syncing from worktree)
+        ralph_config: Ralph loop configuration (optional)
+        swarm_config: Swarm mode configuration (optional)
     """
     # Set environment variable for security hooks to find the correct project directory
     # This is needed because os.getcwd() may return the wrong directory in worktree mode
     os.environ[PROJECT_DIR_ENV_VAR] = str(project_dir.resolve())
+
+    # Apply Ralph loop max_coder_iterations if no explicit CLI max_iterations was given
+    if ralph_config and max_iterations is None:
+        from ralph_loop.config import get_max_iterations, is_ralph_loop_enabled
+
+        if is_ralph_loop_enabled(ralph_config):
+            max_iterations = get_max_iterations(ralph_config, "coder")
+            logger.info(
+                f"Ralph loop: applying max_coder_iterations={max_iterations}"
+            )
 
     # Initialize recovery manager (handles memory persistence)
     recovery_manager = RecoveryManager(spec_dir, project_dir)
@@ -785,6 +799,18 @@ async def run_autonomous_agent(
 
     # Debug: Print memory system status at startup
     debug_memory_system_status()
+
+    # Initialize Ralph loop reporter for iteration tracking (if Ralph mode enabled)
+    ralph_reporter = None
+    if ralph_config:
+        from ralph_loop.config import is_ralph_loop_enabled
+
+        if is_ralph_loop_enabled(ralph_config):
+            from ralph_loop.reporter import RalphLoopReporter
+
+            ralph_reporter = RalphLoopReporter(spec_dir)
+            ralph_reporter.start_run(ralph_config)
+            logger.info("Ralph loop reporter initialized")
 
     # Update initial subtask counts
     subtasks = count_subtasks_detailed(spec_dir)
@@ -879,6 +905,30 @@ async def run_autonomous_agent(
 
         # Emit phase event when continuing build
         emit_phase(ExecutionPhase.CODING, "Continuing implementation")
+
+    # Swarm mode: if plan already exists, delegate to SwarmOrchestrator
+    if not first_run and swarm_config:
+        from swarm.config import is_swarm_mode_enabled
+
+        if is_swarm_mode_enabled(swarm_config):
+            from swarm.orchestrator import SwarmOrchestrator
+
+            print_status(
+                f"Swarm mode: delegating to {swarm_config.get('max_workers', 3)} workers",
+                "progress",
+            )
+            orchestrator = SwarmOrchestrator(
+                project_dir, spec_dir, model, swarm_config, recovery_manager, task_logger
+            )
+            await orchestrator.run_swarm_build()
+
+            # Check final state
+            if is_build_complete(spec_dir):
+                print_build_complete_banner(spec_dir)
+                status_manager.update(state=BuildState.COMPLETE)
+            else:
+                status_manager.update(state=BuildState.PAUSED)
+            return
 
     # Show human intervention hint
     content = [
@@ -1038,6 +1088,30 @@ async def run_autonomous_agent(
                 # Ensure the planning->coding transition is immediately reflected there.
                 if sync_spec_to_source(spec_dir, source_spec_dir):
                     print_status("Phase transition synced to main project", "success")
+
+                # After planning, check if swarm mode should take over execution
+                if swarm_config:
+                    from swarm.config import is_swarm_mode_enabled
+
+                    if is_swarm_mode_enabled(swarm_config):
+                        from swarm.orchestrator import SwarmOrchestrator
+
+                        print_status(
+                            f"Swarm mode: delegating to {swarm_config.get('max_workers', 3)} workers",
+                            "progress",
+                        )
+                        orchestrator = SwarmOrchestrator(
+                            project_dir, spec_dir, model, swarm_config,
+                            recovery_manager, task_logger,
+                        )
+                        await orchestrator.run_swarm_build()
+
+                        if is_build_complete(spec_dir):
+                            print_build_complete_banner(spec_dir)
+                            status_manager.update(state=BuildState.COMPLETE)
+                        else:
+                            status_manager.update(state=BuildState.PAUSED)
+                        return
 
             if not next_subtask:
                 # FIX for Issue #495: Race condition after planning phase
@@ -1259,6 +1333,16 @@ async def run_autonomous_agent(
                 # Stay in planning mode for the next iteration
                 first_run = True
                 status = "continue"
+
+        # === RALPH LOOP ITERATION TRACKING ===
+        if ralph_reporter:
+            iter_status = "success" if status in ("complete", "continue") else "failure"
+            ralph_reporter.record_iteration(
+                phase="planning" if current_log_phase == LogPhase.PLANNING else "coder",
+                status=iter_status,
+                subtask_id=subtask_id,
+                error_message=error_info.get("message") if error_info else None,
+            )
 
         # === POST-SESSION PROCESSING (100% reliable) ===
         # Only run post-session processing for coding sessions.
@@ -1603,6 +1687,14 @@ async def run_autonomous_agent(
             print("\nPreparing next session...\n")
             await asyncio.sleep(1)
 
+    # Finalize Ralph loop reporter and generate report
+    completed, total = count_subtasks(spec_dir)
+    if ralph_reporter:
+        final_status = "completed" if completed == total else "max_iterations"
+        ralph_reporter.finish_run(final_status, completed, total)
+        report_path = ralph_reporter.generate_report()
+        print_status(f"Ralph loop report: {report_path}", "success")
+
     # Final summary
     content = [
         bold(f"{icon(Icons.SESSION)} SESSION SUMMARY"),
@@ -1622,9 +1714,6 @@ async def run_autonomous_agent(
         print_status("STUCK SUBTASKS (need manual intervention):", "error")
         for stuck in stuck_subtasks:
             print(f"  {icon(Icons.ERROR)} {stuck['subtask_id']}: {stuck['reason']}")
-
-    # Instructions
-    completed, total = count_subtasks(spec_dir)
     if completed < total:
         content = [
             bold(f"{icon(Icons.PLAY)} NEXT STEPS"),
