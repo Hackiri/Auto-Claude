@@ -41,6 +41,15 @@ from workspace import (
 
 from .utils import print_banner
 
+# Conflict prediction and resolution advice
+try:
+    from merge.conflict_predictor import ConflictPredictor
+    from merge.resolution_advisor import ResolutionAdvisor
+
+    _HAS_PREDICTOR = True
+except ImportError:
+    _HAS_PREDICTOR = False
+
 
 def _detect_default_branch(project_dir: Path) -> str:
     """
@@ -1165,6 +1174,49 @@ def handle_merge_preview_command(
             "lockFilesExcluded": lock_files_excluded,
         }
 
+        # Run conflict prediction and resolution advice
+        predictions = None
+        if _HAS_PREDICTOR:
+            try:
+                predictor = ConflictPredictor(
+                    worktree_path=worktree_path,
+                    base_branch=base_branch,
+                )
+                prediction_result = predictor.predict()
+                predictions = prediction_result.to_dict()
+
+                # Add resolution advice for each predicted conflict
+                if prediction_result.conflicts:
+                    try:
+                        advisor = ResolutionAdvisor()
+                        # Convert PredictedConflicts to advice summaries
+                        advice_list = []
+                        for pc in prediction_result.conflicts:
+                            advice_list.append({
+                                "file_path": pc.file_path,
+                                "conflict_type": pc.conflict_type.value,
+                                "severity": pc.severity.value,
+                                "description": pc.description,
+                            })
+                        predictions["advice"] = advice_list
+                    except Exception as adv_err:
+                        debug_warning(
+                            MODULE,
+                            f"Resolution advisor failed: {adv_err}",
+                        )
+                        predictions["advice"] = []
+                else:
+                    predictions["advice"] = []
+
+            except Exception as pred_err:
+                debug_warning(
+                    MODULE,
+                    f"Conflict prediction failed: {pred_err}",
+                )
+                predictions = {"error": str(pred_err)}
+
+        result["predictions"] = predictions
+
         debug_success(
             MODULE,
             "Merge preview complete",
@@ -1190,6 +1242,7 @@ def handle_merge_preview_command(
             "files": [],
             "conflicts": [],
             "gitConflicts": None,
+            "predictions": None,
             "summary": {
                 "totalFiles": 0,
                 "conflictFiles": 0,

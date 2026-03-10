@@ -36,6 +36,10 @@ from .utils import (
     print_banner,
     setup_environment,
 )
+from .conflict_commands import (
+    handle_conflict_check,
+    handle_conflict_status,
+)
 from .workspace_commands import (
     handle_cleanup_worktrees_command,
     handle_create_pr_command,
@@ -209,6 +213,18 @@ Environment Variables:
         help="Preview merge conflicts without actually merging (returns JSON)",
     )
 
+    # Conflict analysis options
+    parser.add_argument(
+        "--conflict-check",
+        action="store_true",
+        help="Run conflict prediction for a spec's worktree against the base branch",
+    )
+    parser.add_argument(
+        "--conflict-status",
+        action="store_true",
+        help="Show the latest conflict report for all worktrees",
+    )
+
     # QA options
     parser.add_argument(
         "--qa",
@@ -374,6 +390,11 @@ def _run_cli() -> None:
         handle_batch_cleanup_command(str(project_dir), dry_run=not args.no_dry_run)
         return
 
+    # Handle conflict-status (doesn't require --spec)
+    if args.conflict_status:
+        handle_conflict_status(project_dir)
+        return
+
     # Require --spec if not listing
     if not args.spec:
         print_banner()
@@ -406,6 +427,11 @@ def _run_cli() -> None:
             "project": str(project_dir),
         },
     )
+
+    # Handle conflict check (requires --spec for spec_dir)
+    if args.conflict_check:
+        handle_conflict_check(project_dir, spec_dir.name)
+        return
 
     # Handle build management commands
     if args.merge_preview:
